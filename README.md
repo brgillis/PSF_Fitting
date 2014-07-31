@@ -19,7 +19,7 @@ Once you've done that, it should be able to be run easily. You can invoke main.p
 This will generate a single PSF for the image (using the centre of the image as the position and the default focus of 0) and test subtracting it from the brightest stars (those with magnitude < 14), then report the quality of the fit. If that works, you can then ask it to attempt to fit
 the best focus, which will take a bit longer. For a full fit, I'd recommend you use the command:
 
-python main.py ???.fits 0.99 22 8 4 True
+`python main.py ???.fits 0.99 22 8 4 True`
 
 This will take a bit of time to run, but it should get a much better fit in the end.
 
