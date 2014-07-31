@@ -16,6 +16,7 @@ from subtract_psf import subtract_psf
 from cut_postage_stamp import cut_postage_stamp
 from residual_chi2 import get_chi2
 from whisker_shear import draw_whisker_shear
+from call_tinytim import call_tinytim
 from fits_functions import *
 
 # Magic values
@@ -29,46 +30,48 @@ sextractor_psf_cfg_template_name = "psf.cfg"
 sextractor_psf_cat_template_name = "psf_output.cat"
 
 def main(argv):
-    """This is the main execution script for testing how well tinytime PSFs fit the Hubble data.
+    """ This is the main execution script for testing how well Tiny Tim PSFs fit the Hubble data.
+    
+        Version 1.1
        
-       Requires: The full name of an image to process, given in the command line.
+        Requires: The full name of an image to process, given in the command line.
        
-       Optional: Class_star threshold
-                 Star_mag threshold
-                 Number of grid psfs in x
-                 Number of grid psfs in y (if these are omitted or set to -1,
-                                           will calc psf for each star)
-                 Whether or not to fit the best focus (True, False, or specific focus value in um)
-                 Whether or not to cleanup files generated except for key output (True if so, blank or
+        Optional: Class_star threshold
+                  Star_mag threshold
+                  Number of grid psfs in x
+                  Number of grid psfs in y (if these are omitted or set to -1,
+                                            will calc psf for each star)
+                  Whether or not to fit the best focus (True, False, or specific focus value in um)
+                  Whether or not to cleanup files generated except for key output (True if so, blank or
                                                                             otherwise to not cleanup.)
-                 Summary file to output fitted data to (Won't output if blank, will append one line to
-                                                        it if entered)
+                  Summary file to output fitted data to (Won't output if blank, will append one line to
+                                                         it if entered)
                  
-                 ex. python main.py file_name.fits 0.95 22 (No fit, use default focus of 0,
-                                                                 calculate PSF for each star)
-                 ex. python main.py file_name.fits 0.95 22 -1 -1 False (No fit, use default focus of 0,
-                                                                 calculate PSF for each star
-                                                                 (same as above))
-                 ex. python main.py file_name.fits 0.95 22 -1 -1 3.0 (No fit, use focus offset of
-                                                                      3.0 um, calculate PSF for each
-                                                                      star)
-                 ex. python main.py file_name.fits 0.95 22 8 4 True (fit focus, 8x4 grid)
+                  ex. python main.py file_name.fits 0.95 22 (No fit, use default focus of 0,
+                                                                  calculate PSF for each star)
+                  ex. python main.py file_name.fits 0.95 22 -1 -1 False (No fit, use default focus of 0,
+                                                                  calculate PSF for each star
+                                                                  (same as above))
+                  ex. python main.py file_name.fits 0.95 22 -1 -1 3.0 (No fit, use focus offset of
+                                                                       3.0 um, calculate PSF for each
+                                                                       star)
+                  ex. python main.py file_name.fits 0.95 22 8 4 True (fit focus, 8x4 grid)
                  
-       Returns: (nothing)
+        Returns: (nothing)
        
-       Side-effects: Creates number of .fits images for postage stamps, PSFs, and PSF residuals.
-                     Creates two .dat ASCII tables listing the the multipole expansion moments
-                         for the residuals,
-                         along with size and shape measurements of PSFs and actual star images,
-                         for both exponential weighting (*_moments.dat) and no weighting
-                         (*_moments_wings.dat)
-                     Creates a stacked residual image of all non-outlier stars minus their PSFs, divided by the
-                          star fluxes.
+        Side-effects: Creates number of .fits images for postage stamps, PSFs, and PSF residuals.
+                      Creates two .dat ASCII tables listing the the multipole expansion moments
+                          for the residuals,
+                          along with size and shape measurements of PSFs and actual star images,
+                          for both exponential weighting (*_moments.dat) and no weighting
+                          (*_moments_wings.dat)
+                      Creates a stacked residual image of all non-outlier stars minus their PSFs, divided by the
+                           star fluxes.
                           
-       Except: Will raise an exception if:
-                   No image file name is passed in the command line
-                      The image file to be used cannot be read
-                      The various files to be created cannot be written
+        Except: Will raise an exception if:
+                    No image file name is passed in the command line
+                    The image file to be used cannot be read
+                    The various files to be created cannot be written
                   
     """
 
@@ -394,7 +397,7 @@ def generate_psf(params, xp, yp, psf_file, subsampled_file):
                    params dictionary is missing needed keys
                       tinytim fails to generate the expected psf files for whatever reason.
                       sextractor fails to analyse the psf to find its barycentre
-                      files the must be written to cannot be accessed or written
+                      files that must be written to cannot be accessed or written
     """
     
     try:
@@ -404,10 +407,11 @@ def generate_psf(params, xp, yp, psf_file, subsampled_file):
         sbp.call(cmd, shell=True)
         
         # Run the call_tinytim.sh script to generate the PSF
-        cmd = "./call_tinytim.sh " + params['file_name_base'] + " " + str(xp) + " " + str(yp) + \
-              " " + str(params['subsampling_factor']) + " " + str(params['focus']) + " " + \
-              str(params['chip']) + " " + str(params['detector']) + " " + str(params['filter'])
-        sbp.call(cmd, shell=True)
+#         cmd = "./call_tinytim.sh " + params['file_name_base'] + " " + str(xp) + " " + str(yp) + \
+#               " " + str(params['subsampling_factor']) + " " + str(params['focus']) + " " + \
+#               str(params['chip']) + " " + str(params['detector']) + " " + str(params['filter'])
+#         sbp.call(cmd, shell=True)
+        call_tinytim(params, xp, yp)
         
         # Check if the output from tinytim exists. If not, skip this star
         if(not isfile(params['file_name_base'] + "00_psf.fits")):
