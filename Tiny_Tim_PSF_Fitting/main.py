@@ -354,8 +354,9 @@ def cleanup(file_name_base):
                      file_name_base + sextractor_cat_name_end + " " + \
                      file_name_base + sextractor_psf_cfg_name_end + " " + \
                      file_name_base + sextractor_psf_cat_name_end + " " + \
-                     file_name_base + ".par "+ \
-                     file_name_base + ".tt3"
+                     file_name_base + ".par " + \
+                     file_name_base + ".tt3 " + \
+                     "check.fits"
     sbp.call(cmd,shell=True)
     
     # Move back the residual stack file
@@ -406,11 +407,7 @@ def generate_psf(params, xp, yp, psf_file, subsampled_file):
               params['file_name_base'] + "00.fits" + params['file_name_base'] + "00_psf.fits"
         sbp.call(cmd, shell=True)
         
-        # Run the call_tinytim.sh script to generate the PSF
-#         cmd = "./call_tinytim.sh " + params['file_name_base'] + " " + str(xp) + " " + str(yp) + \
-#               " " + str(params['subsampling_factor']) + " " + str(params['focus']) + " " + \
-#               str(params['chip']) + " " + str(params['detector']) + " " + str(params['filter'])
-#         sbp.call(cmd, shell=True)
+        # Invoke the calling function
         call_tinytim(params, xp, yp)
         
         # Check if the output from tinytim exists. If not, skip this star
