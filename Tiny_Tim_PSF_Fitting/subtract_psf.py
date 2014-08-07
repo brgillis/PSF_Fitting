@@ -5,7 +5,7 @@
 # OM 2014
 
 import numpy as np
-import pyfits as pyf
+from astropy.io import fits as pyf
 import copy
 from scipy.stats import norm
 

@@ -1,5 +1,5 @@
 import numpy as np
-import pylab
+import matplotlib as matp
 
 def draw_whisker_shear(g1, g2, x, y, size=None, title=None, filename=None, magnify=60, adjust_power=1):
     """Draw shear whisker plots from an array of g1, g2 values.  Write to file `outfile`.
@@ -33,20 +33,20 @@ def draw_whisker_shear(g1, g2, x, y, size=None, title=None, filename=None, magni
     theta = 0.5*np.arctan2(g2, g1)
     gx = np.multiply(g,np.cos(theta))
     gy = np.multiply(g,np.sin(theta))
-    pylab.figure()
-    unused_res=pylab.quiver(x, y, mag*gx, mag*gy, size, scale=16, headwidth=0, pivot='middle',
+    matp.figure()
+    unused_res=matp.quiver(x, y, mag*gx, mag*gy, size, scale=16, headwidth=0, pivot='middle',
                      units='width')
-    pylab.colorbar()
+    matp.colorbar()
     unused_str = str(np.median(g))
     if title is not None:
         if adjust_power==0:
             titlestr = ""
         else:
             titlestr = ", median shear = {0:.3}".format(np.power(np.median(g),1./adjust_power))
-        pylab.title(title+titlestr)
-    pylab.xlabel('X position [pixels]')
-    pylab.ylabel('Y position [pixels]')
+        matp.title(title+titlestr)
+    matp.xlabel('X position [pixels]')
+    matp.ylabel('Y position [pixels]')
     if filename is None:
-        pylab.show()
+        matp.show()
     else:
-        pylab.savefig(filename)
+        matp.savefig(filename)

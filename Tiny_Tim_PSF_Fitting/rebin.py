@@ -7,7 +7,7 @@
 # Edited by Bryan Gillis 2014
 
 import numpy as np
-import pyfits as pyf
+from astropy.io import fits as pyf
 from fits_functions import read_fits, write_fits, add_comment
 
 
@@ -133,7 +133,7 @@ def read_kernel_from_fits(fits_struct):
     
     kernel = []
 
-    fits_comments = fits_struct[0].header.get_comment()
+    fits_comments = fits_struct[0].header['COMMENT']
 
     i = find_substring(fits_comments, 'following kernel')
     if(i==-1):

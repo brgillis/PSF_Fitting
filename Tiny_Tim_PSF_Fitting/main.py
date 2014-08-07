@@ -16,18 +16,24 @@ from subtract_psf import subtract_psf
 from cut_postage_stamp import cut_postage_stamp
 from residual_chi2 import get_chi2
 from whisker_shear import draw_whisker_shear
-from call_tinytim import call_tinytim
 from fits_functions import *
+from module_locator import module_path
 
 # Magic values
 sextractor_cfg_name_end = "_sex.cfg"
 sextractor_cat_name_end = "_sex_output.cat"
-sextractor_cfg_template_name = "test_img.cfg"
+sextractor_cfg_template_name = module_path() + "/test_img.cfg"
 sextractor_cat_template_name = "output.cat" # Make sure this matches the value in the config file sextractor_cfg_name
 sextractor_psf_cfg_name_end = "_psf.cfg"
 sextractor_psf_cat_name_end = "_psf_output.cat"
-sextractor_psf_cfg_template_name = "psf.cfg"
+sextractor_psf_cfg_template_name = module_path() + "/psf.cfg"
 sextractor_psf_cat_template_name = "psf_output.cat"
+sextractor_par_name = "udf_hrc.par"
+sextractor_psf_par_name = "psf.par"
+sextractor_filter_name = "gauss_2.0_5x5.conv"
+sextractor_nnw_name = "detect.nnw"
+
+default_psf_module = "call_tinytim.py"
 
 def main(argv):
     """ This is the main execution script for testing how well Tiny Tim PSFs fit the Hubble data.
@@ -182,6 +188,11 @@ def main(argv):
         params['file_name_base'] = params['image_file']
         params['image_file'] = params['image_file'] + ".fits"
         
+    # Set the module for determining the psf
+    params['psf_module'] = default_psf_module
+    if(params['psf_module'][-3:] == ".py"):
+        params['psf_module'] = params['psf_module'][0:-3]
+        
     # Get the size of the image and other info needed for tinytim
     get_image_info(params)
 
@@ -193,15 +204,19 @@ def main(argv):
     cmd = "rm -f " + sextractor_cat_name
     sbp.call(cmd, shell=True)
     cmd = "awk '{sub(/" + sextractor_cat_template_name + "/,\"" + sextractor_cat_name + \
-        "\")}; 1' " + sextractor_cfg_template_name + " > " + sextractor_cfg_name
+        "\")}; 1' " + sextractor_cfg_template_name + \
+        "| awk '{sub(/" + sextractor_par_name + "/,\"" + module_path() + "/" + sextractor_par_name + "\")}; 1' " + \
+        "| awk '{sub(/" + sextractor_filter_name + "/,\"" + module_path() + "/" + sextractor_filter_name + "\")}; 1' " + \
+        "| awk '{sub(/" + sextractor_nnw_name + "/,\"" + module_path() + "/" + sextractor_nnw_name + "\")}; 1' " + \
+        " > " + sextractor_cfg_name
     sbp.call(cmd, shell=True)
     cmd = "sex " + params['image_file'] + " -c " + sextractor_cfg_name
     sbp.call(cmd, shell=True)
     
     # Check that the output catalog exists now, to see if sextractor worked
     if(not isfile(sextractor_cat_name)):
-        raise "Catalogue of stars could not be generated with sextractor.\n" + \
-              "Check the input file and sextractor config files.\n"
+        raise Exception("Catalogue of stars could not be generated with sextractor.\n" + \
+              "Check the input file and sextractor config files.\n")
 
     # Open the sextractor catalogue, and go through it to get a list of star positions
     object_lines = []
@@ -286,32 +301,32 @@ def main(argv):
             cleanup(params['file_name_base'])
         
 def get_image_info(params):
-    """Gets the size (in pixels) of a .fits image file and other information needed by tinytim,
-       using the image's header.
+    """Gets the size (in pixels) of a .fits image file and any other information needed
+       by the psf-generating method.
     
        Requires: params <dict> (Params dictionary, requiring the 'image_file' key)
        
        Returns: (nothing)
        
        Side-effects: params dictionary loaded with the following keys:
-                         'x_size', 'y_size', 'chip', 'detector', 'filter'
+                         'x_size', 'y_size', and any other keys loaded by
+                         the method-specific function
                           
-       Except: Unknown detector for the image
-               Image cannot be accessed or is missing needed header values
+       Except: Image cannot be accessed or is missing needed header values
     """
     
-    fits_struct = pyf.open(params['image_file'])
-    header = fits_struct[0].header
-    params['x_size'] = header['NAXIS1']
-    params['y_size'] = header['NAXIS2']
-    params['chip'] = header['CCDCHIP']
-    if(header['DETECTOR'].strip().lower()=="wfc"):
-        params['detector'] = 15
-    else:
-        raise Exception("ERROR: Unknown detector for image: " + header['DETECTOR'] + "\n" +
-                    "If tinytim can use this detector, please add its number to the get_image_info function.")
-    params['filter'] = header['FILTER1'].strip().lower()
+    psf_module = __import__(params['psf_module'])
+    psf_module.get_image_info(params)
     
+    # Check that we got the 'x_size' and 'y_size' keys. If not, get them now
+    try:
+        params['x_size']
+        params['y_size']
+    except:
+        fits_struct = pyf.open(params['image_file'])
+        header = fits_struct[0].header
+        params['x_size'] = header['NAXIS1']
+        params['y_size'] = header['NAXIS2']
     
         
 def cleanup(file_name_base):
@@ -362,20 +377,6 @@ def cleanup(file_name_base):
     # Move back the residual stack file
     cmd = "mv " + file_name_base + "_temp.fits " + file_name_base + "_residual_stack.fits"
     sbp.call(cmd, shell=True)
-
-def get_image_size(image_file):
-    """Gets the size (in pixels) of a .fits image file.
-    
-       Requires: image_file <string> (name of image)
-       
-       Returns: nx <int>, ny <int> (number of pixels in x- and y-dimensions, using PyFITS ordering,
-                                    which is notably the reverse order of sextractor/tinytim.)
-                          
-       Side-effects: (none)
-    """
-    
-    fits_struct = pyf.open(image_file)
-    return np.shape(fits_struct[0].data)
     
 def generate_psf(params, xp, yp, psf_file, subsampled_file):
     """Uses tinytim calling script to generate a psf at a given location in the image.
@@ -402,27 +403,16 @@ def generate_psf(params, xp, yp, psf_file, subsampled_file):
     """
     
     try:
-        # Clean previous tinytim files if they exist
-        cmd = "rm -f " + params['file_name_base'] + ".tt3 " + params['file_name_base'] + ".par " + \
-              params['file_name_base'] + "00.fits" + params['file_name_base'] + "00_psf.fits"
-        sbp.call(cmd, shell=True)
         
         # Invoke the calling function
-        call_tinytim(params, xp, yp)
-        
-        # Check if the output from tinytim exists. If not, skip this star
-        if(not isfile(params['file_name_base'] + "00_psf.fits")):
-            raise Exception("Cannot create tinytime psfs.")
-        if(not isfile(params['file_name_base'] + "00.fits")):
-            raise Exception("Cannot create tinytime psfs.")
-        
-        # Move the psf file to store it
-        cmd = "mv " + params['file_name_base'] + "00_psf.fits " + psf_file
-        sbp.call(cmd, shell=True)
-        
-        # Move the unbinned distorted psf file to store it
-        cmd = "mv " + params['file_name_base'] + "00.fits " + subsampled_file
-        sbp.call(cmd, shell=True)
+        psf_module = __import__(params['psf_module'])
+        try:
+            psf_module.get_psf(params, xp, yp, psf_file, subsampled_file)
+        except:
+            # On an exception, we'll skip this star. Make sure to catch this so it doesn't
+            # stop the whole program - it may only be the psf file names for a small number
+            # of stars that are write-protected.
+            raise
         
         # Now, use sextractor to determine the windowed barycentre of the unbinned PSF
         sextractor_psf_cat_name = params['file_name_base'] + sextractor_psf_cat_name_end
@@ -430,7 +420,11 @@ def generate_psf(params, xp, yp, psf_file, subsampled_file):
         cmd = "rm -f " + sextractor_psf_cat_name
         sbp.call(cmd, shell=True)
         cmd = "awk '{sub(/" + sextractor_psf_cat_template_name + "/,\"" + sextractor_psf_cat_name + \
-            "\")}; 1' " + sextractor_psf_cfg_template_name + " > " + sextractor_psf_cfg_name
+            "\")}; 1' " + sextractor_psf_cfg_template_name + \
+        "| awk '{sub(/" + sextractor_psf_par_name + "/,\"" + module_path() + "/" + sextractor_psf_par_name + "\")}; 1' " + \
+        "| awk '{sub(/" + sextractor_filter_name + "/,\"" + module_path() + "/" + sextractor_filter_name + "\")}; 1' " + \
+        "| awk '{sub(/" + sextractor_nnw_name + "/,\"" + module_path() + "/" + sextractor_nnw_name + "\")}; 1' " + \
+        " > " + sextractor_psf_cfg_name
         sbp.call(cmd, shell=True)
         cmd = "sex " + subsampled_file + " -c " + sextractor_psf_cfg_name
         sbp.call(cmd, shell=True)

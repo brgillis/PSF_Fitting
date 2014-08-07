@@ -5,7 +5,7 @@
 # Created by Ole Marggraf 2013-12-10
 # Edited by Bryan Gillis 2014
 
-import pyfits as pyf
+from astropy.io import fits as pyf
 
 def read_fits(filename):
     """ Read the FITS file
