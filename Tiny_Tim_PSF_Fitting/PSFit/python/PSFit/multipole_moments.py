@@ -93,8 +93,9 @@ def get_2d_multipole_moments(struct, xc=-1, yc=-1, weight_power=0, aperture_size
                     if(d<=0):
                         v = 0
                     else:
-                        v = values[ix,iy] * np.power(d,weight_power)
-                        weight += np.power(d,weight_power)
+                        w = get_weight(d,weight_power)
+                        v = values[ix,iy] * w
+                        weight += w
     
                 mp += v
                 
