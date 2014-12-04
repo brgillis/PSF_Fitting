@@ -12,7 +12,7 @@ import subprocess as sbp
 import multiprocessing as mtp
 
 from rebin import rebin_and_shift_psf
-from subtract_psf import subtract_psf
+from subtract_psf import subtract_psf, remove_outliers
 from cut_postage_stamp import cut_postage_stamp
 from residual_chi2 import get_chi2
 from whisker_shear import draw_whisker_shear
@@ -28,6 +28,10 @@ sextractor_psf_cfg_name_end = "_psf.cfg"
 sextractor_psf_cat_name_end = "_psf_output.cat"
 sextractor_psf_cfg_template_name = "psf.cfg"
 sextractor_psf_cat_template_name = "psf_output.cat"
+
+default_gain_value = 2.0
+
+max_num_threads = 5
 
 def main(argv):
     """ This is the main execution script for testing how well Tiny Tim PSFs fit the Hubble data.
@@ -294,7 +298,7 @@ def get_image_info(params):
        Returns: (nothing)
        
        Side-effects: params dictionary loaded with the following keys:
-                         'x_size', 'y_size', 'chip', 'detector', 'filter'
+                         'x_size', 'y_size', 'chip', 'detector', 'filter', 'gain'
                           
        Except: Unknown detector for the image
                Image cannot be accessed or is missing needed header values
@@ -311,6 +315,14 @@ def get_image_info(params):
         raise Exception("ERROR: Unknown detector for image: " + header['DETECTOR'] + "\n" +
                     "If tinytim can use this detector, please add its number to the get_image_info function.")
     params['filter'] = header['FILTER1'].strip().lower()
+    
+    # Try to get the gain. If we can't, use the default value - we may not actually need it
+    try:
+        params['gain'] = header['CCDGAIN']
+    except:
+        params['gain'] = default_gain_value
+        print("WARNING: Could not find CCDGAIN value in header. Assuming default gain of " + default_gain_value + ".\n" +
+              "This may result in incorrect per-star Chi-squared values being calculated.")
     
     
         
@@ -548,28 +560,32 @@ def initialise_moments_files(file_name_base):
         
     return moments_file, moments_wings_file
 
-def remove_psf_from_star(star, params):
-    """Generates a postage stamp for a star, then removes the estimated psf from that stamp and
-       generates a residual file. Also calculates moment data for the residual, and size and shape
-       data for the star and psf.
+def remove_psf_from_star(star, params, calc_chi2=False):
+    """ Generates a postage stamp for a star, then removes the estimated psf from that stamp and
+        generates a residual file. Also calculates moment data for the residual, and size and shape
+        data for the star and psf.
        
-       Requires: star <tuple> (tuple containing information on the star)
-                 params <dictionary> (Must be properly loaded with needed keys:
+        Requires: star <tuple> (tuple containing information on the star)
+                  params <dictionary> (Must be properly loaded with needed keys:
                                           'file_name_base', 'quick_mode', 'image_file',
                                           'subsampling_factor', 'moments_file', 'moments_wings_file',
                                           'focus' (if params['quick_mode']==False))
+                                          
+        Optional: calc_specific_chi2s <bool> (If passed as True, this function will also generate a file
+                                              with the chi2 of each star differring from the PSF)
                  
-       Returns: stamp_file <string>, (name of postage stamp of star created)
+        Returns: stamp_file <string>, (name of postage stamp of star created)
                 psf_file <string>, (name of undistorted psf file for this star)
                 binned_file <string>, (name of rebinned distorted psf file for this star)
                 residual_file <string> (name of residual file for this star, after psf subtracted off)
+                chi2 <float> (Chi-squared of the star in differing from the PSF model)
                 
-       Side-effects: All side-effects of generate_psf if params['quick_mode']==False
+        Side-effects: All side-effects of generate_psf if params['quick_mode']==False
                      Creates and overwrites images for stamp_file, binned_file, and residual_file
                      All side-effects of cut_postage_stamp.cut_postage_stamp
                      All side-effects of subtract_psf.subtract_psf
                      
-       Except: Will raise an exception if:
+        Except: Will raise an exception if:
                    params is not set up with all needed keys
                    generate_psf raises an exception
                    cut_postage_stamp raises an exception
@@ -585,7 +601,6 @@ def remove_psf_from_star(star, params):
         dx = star[6]
         dy = star[7]
         total_flux = star[8]
-            
         
         binned_file = params['file_name_base'] + "_binned_" + str(i) + ".fits"
         stamp_file = params['file_name_base'] + "_stamp_" + str(i) + ".fits"
@@ -607,8 +622,8 @@ def remove_psf_from_star(star, params):
         
         # Subtract the psf and append the moments file with the moments of the residual
         try:
-            subtract_psf(stamp_file, binned_file, residual_file, i, xp, yp, 
-                        params['moments_file'], params['moments_wings_file'],total_flux,star[4])
+            chi2 = subtract_psf(stamp_file, binned_file, residual_file, i, xp, yp, 
+                        params['moments_file'], params['moments_wings_file'],total_flux,star[4], calc_chi2, params['gain'])
         except KeyError, e:
             raise Exception("params dictionary passed to remove_psf_from_star is missing needed key:\n" +
                               str(e))
@@ -616,7 +631,7 @@ def remove_psf_from_star(star, params):
             raise Exception("Cannot subtract psf for this stamp:\n" +
                         "Exception: " + str(e))
             
-        return stamp_file, psf_file, binned_file, residual_file
+        return stamp_file, psf_file, binned_file, residual_file, chi2
     except KeyError, e:
         raise Exception("params dictionary passed to remove_psf_from_star is missing needed key:\n" +
                         str(e))
@@ -704,36 +719,44 @@ def remove_psf_no_fit(stars, params):
         # Set up the moments residual files
         params['moments_file'], params['moments_wings_file'] = \
             initialise_moments_files(params['file_name_base'])
+            
+        # If we're not fitting, we'll want to calculate star-specific chi-squared diffs from models
+        calc_specific_chi2s = not params['fit_focus']
                 
-        processes = []
         # Now, go through each star, generate a PSF for it, and store the residual
-        for star in stars:
-            good_star_found = False
-            try:
-                # Call each thread
-                p = mtp.Process(target=remove_psf_from_star, args=( star, params ) )
-                p.start()
-                processes.append(p)
-                good_star_found = True
-            except Exception, e:
-                # raise # Uncomment this if you want to let any exception here result in a reraise
-                removal_exception = e
-                continue # Skip it. It's possible only certain files are write-protected
+        
+        # Use multiprocessing here to speed things up
+        pool = mtp.Pool(processes=max_num_threads)
+        results = [pool.apply_async(remove_psf_from_star,( star, params, calc_specific_chi2s )) for star in stars]
+        pool.close()
+        pool.join()
+
+        if(calc_specific_chi2s):
+            star_chi2s = []
+            for result in results:
+                star_chi2s.append(result.get()[4])
+                
+            # Remove outliers from this, and track the outlier fraction
+            init_star_chi2s_len = len(star_chi2s)
+            remove_outliers(star_chi2s, 2)
+            final_star_chi2s_len = len(star_chi2s)
             
-        # Join each thread back up so they can finish.
-        for p in processes:
-            p.join()
+            star_chi2_outlier_fraction = (init_star_chi2s_len-final_star_chi2s_len)/init_star_chi2s_len
+                
+            star_chi2_mean = np.mean(star_chi2s)
+            star_chi2_stddev = np.std(star_chi2s)
+            star_chi2_stderr = star_chi2_stddev/np.sqrt(len(star_chi2s)-1)
             
-        if(not good_star_found):
-            raise removal_exception
-            # raise Exception("Cannot remove psfs from any stars in remove_psf_no_fit:\n" +
-            #             str(removal_exception))
-            
+            print("Mean reduced Chi^2 for stars: " + str(star_chi2_mean) + "; stddev: " + str(star_chi2_stddev) +
+                  "; stderr: " + str(star_chi2_stderr) + ".")
+            print("Outlier fraction: " + str(star_chi2_outlier_fraction) + ".")
+        else:
+            star_chi2_mean = star_chi2_stddev = star_chi2_stderr = star_chi2_outlier_fraction = -1
         
             
         # Set up ranges of various quantities within the moments files.
         # We don't actually need to make it this complicated, but it's here so that someone can more
-        # easily to change to, for instance, only remove outliers on the monopole term. 
+        # easily it change to, for instance, only remove outliers on the monopole term. 
         mp_range = range(3,4)
         dp_range = range(4,6)
         qp_range = range(6,8)
@@ -750,7 +773,7 @@ def remove_psf_no_fit(stars, params):
         # Dipole and quadrupole moments of core
         chi2_m_core, good_ids_and_fluxes = get_chi2(params['moments_file'],dp_qp_range,remove_outliers_range)
         
-        # Dipole and quadrupole moments of wings +
+        # Dipole and quadrupole moments of wings
         chi2_m_wings = get_chi2(params['moments_wings_file'],dp_qp_range,remove_outliers_range)[0]
         
         # Diff in radius and shape
@@ -763,17 +786,24 @@ def remove_psf_no_fit(stars, params):
         print("Chi^2 for size and shape: " + str(chi2_rad_shape) + " (3 dof)")
         print("Total Chi^2: " + str(chi2) + " (11 dof)")
         
-        # Draw the whisker plot and stack residuals if we aren't fitting
+        # If we aren't fitting, do final processing now
         if(not params['fit_focus']):
+            
+            # Create a stacked residual plot
             stack_residuals(params['file_name_base'], good_ids_and_fluxes)
+            
+            # Draw whisker plot for core shape
             draw_whisker_plot(params['file_name_base'] + "_whisker.png",params['moments_file'],
                               good_ids_and_fluxes)
+            
+            # Draw whisker plot for wings shape
             draw_whisker_plot(params['file_name_base'] + "_whisker_wings.png",
                               params['moments_wings_file'],
                               good_ids_and_fluxes)
             
         return params['moments_file'], params['moments_wings_file'], chi2, good_ids_and_fluxes, \
-            chi2_m_core, chi2_m_wings, chi2_rad_shape
+            chi2_m_core, chi2_m_wings, chi2_rad_shape, star_chi2_mean, star_chi2_stddev, star_chi2_stderr, \
+            star_chi2_outlier_fraction
     except KeyError, e:
         raise Exception("params dictionary passed to get_psf_file is missing needed key:\n" +
                         str(e))
@@ -820,7 +850,7 @@ def remove_psf_after_fit(stars, params):
             try:
                 # Call the removal method for this test focus
                 unused_moments_file, unused_moments_wings_file, test_chi2, good_ids_and_fluxes, \
-                    unused_chi2_core, unused_chi2_wings, unused_chi2_size_shape = \
+                    unused_chi2_core, unused_chi2_wings, unused_chi2_size_shape, unused_chi2_outlier_fraction = \
                     remove_psf_no_fit(stars, params)
             except Exception, e:
                 print(str(e))
@@ -849,16 +879,14 @@ def remove_psf_after_fit(stars, params):
             
             for test_focus in [best_focus-search_step,best_focus+search_step]:
                 
-                test_state = True
-                
                 params['focus'] = test_focus
                 try:
                     # Call the removal method for this test focus
-                    unused_moments_file, unused_moments_wings_file, test_chi2, good_ids_and_fluxes, \
-                        best_chi2_core, best_chi2_wings, best_chi2_size_shape = \
+                    _, _, test_chi2, good_ids_and_fluxes, \
+                        best_chi2_core, best_chi2_wings, best_chi2_size_shape, \
+                        _, _, _, _ = \
                         remove_psf_no_fit(stars, params)
                 
-                    # Calculate the chi-squared for a null test of the residuals
                 except Exception, e:
                     print(str(e))
                 
@@ -866,23 +894,23 @@ def remove_psf_after_fit(stars, params):
                 if(test_chi2 < best_chi2):
                     best_chi2 = test_chi2
                     best_focus = test_focus
-                    test_state = False
     
             # Narrow the search step for the next loop
             search_step /= 4
             
-        if(test_state):
+        # Regenerate the best results
             
-            # In this case, the last results generated weren't the best, so regenerate the best results
-            
-            params['focus'] = best_focus
-            try:
-                # Call the removal method for this test focus
-                unused_moments_file, unused_moments_wings_file, best_chi2, good_ids_and_fluxes, \
-                        best_chi2_core, best_chi2_wings, best_chi2_size_shape = \
-                    remove_psf_no_fit(stars, params)
-            except Exception, e:
-                print(str(e))
+        params['focus'] = best_focus
+        params['fit_focus'] = False
+        try:
+            # Call the removal method for this test focus
+            unused_moments_file, unused_moments_wings_file, best_chi2, good_ids_and_fluxes, \
+                    best_chi2_core, best_chi2_wings, best_chi2_size_shape, \
+                    star_chi2_mean, star_chi2_stddev, star_chi2_stderr, \
+                    star_chi2_outlier_fraction = \
+                remove_psf_no_fit(stars, params)
+        except Exception, e:
+            print(str(e))
             
         # Print the results
         print("Best focus: " + str(best_focus))
@@ -892,7 +920,8 @@ def remove_psf_after_fit(stars, params):
         if(params['summary_file_name'] is not None):
             cmd = "echo '" + params['image_file'] + "\t" + str(best_focus) + "\t" + str(best_chi2) + \
                     "\t" + str(best_chi2_core) + "\t" + str(best_chi2_wings) + "\t" + str(best_chi2_size_shape) + \
-                    "' >> " + params['summary_file_name']
+                    "\t" + str(star_chi2_mean) + "\t" + str(star_chi2_stddev) + "\t" + str(star_chi2_stderr) + \
+                    "\t" + str(star_chi2_outlier_fraction) +"' >> " + params['summary_file_name']
             sbp.call(cmd,shell=True)
         
         # Draw the whisker plot now

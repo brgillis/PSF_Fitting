@@ -17,76 +17,20 @@ aperture_size = 10
 cut_off_scale = 2
 wing_aperture_size = 20
 
-def center_intensity(data):
-    """UNUSED - Calculates intensity at centre of image, taking the mean of the nine pixels
-       nearest the centre.
-    """
-
-    size = np.shape(data)
-    
-    intensity = np.mean(data[size[0]/2-1:size[0]/2+2,size[1]/2-1:size[1]/2+2])
-
-    return intensity
-
-def max_intensity(data):
-    """UNUSED - Get the maximum intensity on the image. 
-    """
-
-    maxpix = np.unravel_index(data.argmax(), data.shape)
-    return data[maxpix[0],maxpix[1]]
-
-def center_data(data):
-    """UNUSED - Adjust the data to centre it on the barycentre.
-    """
-    
-    centered = False
-    
-    # Iterate here - due to the constraints of the frame, we're unlikely to move more than
-    # a pixel at a time, even if it's badly mis-centred
-    while(not centered):
-        cenpix = mean_pixel(data)
-        size = copy.copy(np.shape(data))
-        halfsize = min((cenpix[0], cenpix[1],
-                        size[0] - cenpix[0] - 1, size[1] - cenpix[1] - 1))
-    
-        data = data[int(cenpix[0] - halfsize):int(cenpix[0] + halfsize+1),
-                             int(cenpix[1] - halfsize):int(cenpix[1] + halfsize+1)]
-        
-        if(np.shape(data)[0] == size[0] and np.shape(data)[1] == size[1]):
-            centered = True
-
-    return data
-
-def mean_pixel(data):
-    """UNUSED - Determine the (unweighted) barycentre of the data.
-    """
-    
-    # Construct two weight arrays, for x and y
-    size = np.shape(data)
-    x_w = np.fromfunction(lambda i,j : i, size)
-    y_w = np.fromfunction(lambda i,j : j, size)
-    
-    try:
-        xm = np.sum(np.multiply(data,x_w))/np.sum(data)
-        xm = int(round(xm))
-    except Exception:
-        xm = int(round(size[0]/2))
-    try:
-        ym = np.sum(np.multiply(data,y_w))/np.sum(data)
-        ym = int(round(ym))
-    except Exception:
-        ym = int(round(size[1]/2))
-        
-    return xm,ym
-
-def remove_psf(fits_data, psf_data, total_flux):
+def remove_psf(fits_data, psf_data, total_flux, calc_chi2=False, background_noise=0, gain=2.0):
     """ Subtracts the PSF from the data, scaling it by total_flux.
     
         Requires: fits_data <HDUList> (star's fits data structure)
                   psf_data <HDUList> (psf's fits data structure)
-                  total_flux (flux of the star, used here to scale the psf)
+                  total_flux <float> (flux of the star, used here to scale the psf)
                   
-        Returns: out_fits <HDUList> (residual's fits data structure)
+        Optional: calc_chi2 <bool> (whether or not to calculate chi-squared for comparison of star
+                                    with psf)
+                  background_noise <float> (standard deviation in background level of star image)
+                  gain <float> (gain of the image)
+                  
+        Returns: out_fits <HDUList> (residual's fits data structure),
+                 chi2 <float> (chi-squared of comparison of star with PSF model)
         
         Side-effects: (none)
         
@@ -136,13 +80,20 @@ def remove_psf(fits_data, psf_data, total_flux):
         # Should never occur, but just in case
         raise Exception("Could not cut images to same size.")
 
-    out = data1 - data2 * total_flux
+    scaled_psf_data = data2 * total_flux
+
+    out = data1 - scaled_psf_data
 
     out_fits = pyf.HDUList(pyf.PrimaryHDU(out))
     out_fits[0].header = fits_data[0].header
     add_comment(out_fits,"Postage stamp removed from central structure")
+    
+    if(calc_chi2):
+        chi2 = calculate_chi2(data1,scaled_psf_data,background_noise,gain)
+    else:
+        chi2 = 0
 
-    return out_fits
+    return out_fits, chi2
 
 def remove_outliers(olist,min_remaining_members=2):
     """ Removes outliers from a list of values, using Chauvenet's criterion.
@@ -180,9 +131,7 @@ def remove_outliers(olist,min_remaining_members=2):
     
     # Check that we still have enough members left in the array
     if(len(olist) < min_remaining_members):
-        raise Exception("WARNING: Too few arguments left after removing outliers. (Only " + str(len(list)) + ")"
-                        "\nReverting to non-trimmed dataset.\n" + 
-                        "Chi-squared value will include presence of outliers.")
+        raise Exception("WARNING: Too few arguments left after removing outliers. (Only " + str(len(list)) + ")")
     else:
         print("Removed " + str(num_tot-len(list)) + "/" + str(num_tot) +  " outliers.")
         return mean, sigma
@@ -216,12 +165,14 @@ def remove_background( stamp_struct ):
         
     edge_data_copy = copy.deepcopy(edge_data)
     try:
-        edge_mean, unused_edge_std = remove_outliers(edge_data)
+        edge_mean, edge_std = remove_outliers(edge_data)
     except:
         edge_data = edge_data_copy
-        edge_mean, unused_edge_std = np.mean(edge_data), np.std(edge_data)
+        edge_mean, edge_std = np.mean(edge_data), np.std(edge_data)
         
     stamp_struct[0].data = np.subtract(stamp_data,edge_mean)
+    
+    return edge_std
     
 
 def add_noise( stamp_struct, psf_struct, noisy_psf_file_name, total_flux=1. ):
@@ -285,7 +236,7 @@ def add_noise( stamp_struct, psf_struct, noisy_psf_file_name, total_flux=1. ):
 
 
 def subtract_psf(data_file_name, psf_file_name, residual_file_name, ID, x_pix, y_pix,
-                 moments_file_name, moments_wings_file_name,total_flux,mag):
+                 moments_file_name, moments_wings_file_name,total_flux,mag,calc_chi2=False,gain=2.0):
     """ Subtracts the psf from the star's image and calculates and stores multipole moment
         information - this is the function that should be called from external files.
         
@@ -301,8 +252,12 @@ def subtract_psf(data_file_name, psf_file_name, residual_file_name, ID, x_pix, y
                   moments_wings_file_name <string> (Ditto, but for the wing-weighted moments)
                   total_flux <float> (flux of the star, used for scaling the PSF)
                   mag <float> (magnitude of the star. Will be printed in the moments files)
+        Optional: calc_chi2 <bool> (whether or not to calculate Chi-squared for comparison of this
+                                    star with the PSF.)
+                  gain <float> (gain of the image)
                   
-        Returns: (nothing)
+        Returns: chi2 <float> (0 if calc_chi2 is False, otherwise the Chi-squared value of the
+                               star compared to the PSF.)
         
         Side-effects: Overwrites noisy_psf_file_name (see below) with a new noisy psf file
                       Overwrites residual_file_name with a new residual file
@@ -316,7 +271,7 @@ def subtract_psf(data_file_name, psf_file_name, residual_file_name, ID, x_pix, y
     data_struct = read_fits(data_file_name)
     psf_struct = read_fits(psf_file_name)
     
-    remove_background(data_struct)
+    background_noise = remove_background(data_struct)
     
     star_size, star_e1, star_e2, star_mp = mpm.get_size_and_shape(data_struct,-1,-1,
                                                                   cut_off_scale,0,aperture_size)
@@ -325,7 +280,7 @@ def subtract_psf(data_file_name, psf_file_name, residual_file_name, ID, x_pix, y
     
     scaling_factor = star_mp/psf_mp
     
-    diff_struct = remove_psf(data_struct, psf_struct, scaling_factor)
+    diff_struct, chi2 = remove_psf(data_struct, psf_struct, scaling_factor, calc_chi2, background_noise, gain)
     
 #     # Save the noisy psf. If this fails, just print a warning, since it's not needed
 #     try:
@@ -349,3 +304,46 @@ def subtract_psf(data_file_name, psf_file_name, residual_file_name, ID, x_pix, y
                  star_e1,star_e2,psf_e1,psf_e2,total_flux)
 
     write_fits(diff_struct, residual_file_name)
+    
+    return chi2
+
+def calculate_chi2(data,model,background_noise=0,gain=2.0):
+    """ Calculates the reduced Chi-squared comparison of a data ndarray with a model.
+    
+        Requires: data <ndarray> (Measured data)
+                  model <ndarray> (Model to compare against)
+                  
+        Optional: background_noise <float> (Extra Gaussian noise which is expected to be present
+                                            in data)
+                  gain <float> (Ratio of counts to values, used to calculate Poisson noise)
+        
+        Returns: red_chi2 (reduced chi-squared value)
+        
+        Side-effects: (none)
+        
+        Except: data and model aren't ndarrays of the same shape
+    """
+    
+    data_shape = np.shape(data)
+    
+    # Check data and model are the same shape
+    if(data_shape != np.shape(model)):
+        raise Exception("calculate_chi2 requires data and model to be ndarrays of the same shape.")
+    
+    num_points = np.product(data_shape)
+    
+    chi2 = 0
+    
+    for (data_value, model_value) in zip(data.ravel(),model.ravel()):
+        
+        Poisson_noise_squared = model_value/gain
+        
+        noise = np.sqrt(Poisson_noise_squared+np.square(background_noise))
+        
+        chi2 += np.square((data_value-model_value)/noise)
+        
+    
+    red_chi2 = chi2/num_points
+    
+    return red_chi2
+    
