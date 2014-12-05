@@ -14,7 +14,7 @@ from fits_functions import read_fits, write_fits, add_comment
 
 # some magic numbers
 aperture_size = 10
-cut_off_scale = 2
+cut_off_scale = 5
 wing_aperture_size = 20
 
 def remove_psf(fits_data, psf_data, total_flux, calc_chi2=False, background_noise=0, gain=2.0):
@@ -133,7 +133,7 @@ def remove_outliers(olist,min_remaining_members=2):
     if(len(olist) < min_remaining_members):
         raise Exception("WARNING: Too few arguments left after removing outliers. (Only " + str(len(list)) + ")")
     else:
-        print("Removed " + str(num_tot-len(list)) + "/" + str(num_tot) +  " outliers.")
+        print("Removed " + str(num_tot-len(olist)) + "/" + str(num_tot) +  " outliers.")
         return mean, sigma
     
 
@@ -336,7 +336,7 @@ def calculate_chi2(data,model,background_noise=0,gain=2.0):
     
     for (data_value, model_value) in zip(data.ravel(),model.ravel()):
         
-        Poisson_noise_squared = model_value/gain
+        Poisson_noise_squared = np.abs(model_value/gain)
         
         noise = np.sqrt(Poisson_noise_squared+np.square(background_noise))
         

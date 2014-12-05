@@ -319,9 +319,9 @@ def get_weight( d, weight_factor ):
             else:
                 return np.power(d,weight_factor)
     else:
-        # Exponential weighting
+        # Gaussian weighting
         if(d<=0):
             return 1
         else:
-            return np.exp(-d/weight_factor)
+            return np.exp(np.square(-d/weight_factor))
         

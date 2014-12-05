@@ -741,7 +741,7 @@ def remove_psf_no_fit(stars, params):
             remove_outliers(star_chi2s, 2)
             final_star_chi2s_len = len(star_chi2s)
             
-            star_chi2_outlier_fraction = (init_star_chi2s_len-final_star_chi2s_len)/init_star_chi2s_len
+            star_chi2_outlier_fraction = float(init_star_chi2s_len-final_star_chi2s_len)/init_star_chi2s_len
                 
             star_chi2_mean = np.mean(star_chi2s)
             star_chi2_stddev = np.std(star_chi2s)
@@ -850,7 +850,8 @@ def remove_psf_after_fit(stars, params):
             try:
                 # Call the removal method for this test focus
                 unused_moments_file, unused_moments_wings_file, test_chi2, good_ids_and_fluxes, \
-                    unused_chi2_core, unused_chi2_wings, unused_chi2_size_shape, unused_chi2_outlier_fraction = \
+                    unused_chi2_core, unused_chi2_wings, unused_chi2_size_shape, _star_chi2_mean, _star_chi2_stddev, \
+                    _star_chi2_stderr, _star_chi2_outlier_fraction = \
                     remove_psf_no_fit(stars, params)
             except Exception, e:
                 print(str(e))
