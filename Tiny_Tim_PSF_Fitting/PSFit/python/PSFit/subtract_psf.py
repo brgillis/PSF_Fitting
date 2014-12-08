@@ -273,10 +273,43 @@ def subtract_psf(data_file_name, psf_file_name, residual_file_name, ID, x_pix, y
     
     background_noise = remove_background(data_struct)
     
-    star_size, star_e1, star_e2, star_mp = mpm.get_size_and_shape(data_struct,-1,-1,
-                                                                  cut_off_scale,0,aperture_size)
+    scale = float(cut_off_scale)
+    
+    # Make sure we have a good scale. If the star's monopole term ends up being negative,
+    # cut the scale in half and try again
+    while(scale>float(cut_off_scale)/16):
+        star_size, star_e1, star_e2, star_mp = mpm.get_size_and_shape(data_struct,-1,-1,
+                                                                  scale,0,aperture_size)
+        if(star_mp>0):
+            break
+        scale /= 2
+        
+    if(scale==float(cut_off_scale)/16):
+        # If we get here, then the most likely scenario is that there's some issue with
+        # the background estimation of this star. The safest is to undo removing the
+        # background and try again
+        
+        # Restore the data structure and scale
+        data_struct = read_fits(data_file_name)
+        scale = float(cut_off_scale)
+        
+        while(scale>float(cut_off_scale)/16):
+            star_size, star_e1, star_e2, star_mp = mpm.get_size_and_shape(data_struct,-1,-1,
+                                                                      scale,0,aperture_size)
+            if(star_mp>0):
+                break
+            scale /= 2
+        
+        if(scale==float(cut_off_scale)/16):
+            # If we get here again, there's something seriously wrong with this star.
+            # Throw an exception
+            raise Exception("Star does not have positive monopole term; cannot scale PSF.")
+        
+        
+    
+    
     psf_size, psf_e1, psf_e2, psf_mp = mpm.get_size_and_shape(psf_struct,-1,-1,
-                                                              cut_off_scale,0,aperture_size)
+                                                              scale,0,aperture_size)
     
     scaling_factor = star_mp/psf_mp
     
@@ -291,15 +324,15 @@ def subtract_psf(data_file_name, psf_file_name, residual_file_name, ID, x_pix, y
 #     except Exception:
 #         print("WARNING: Cannot output noisy PSF file to " + noisy_psf_file_name)
     
-    mm = mpm.get_2d_multipole_moments(diff_struct,-1,-1,cut_off_scale,aperture_size)
+    mm = mpm.get_2d_multipole_moments(diff_struct,-1,-1,scale,aperture_size)
     mpm.append_moments(moments_file_name, ID, x_pix, y_pix, mag, mm,star_size,psf_size,
                  star_e1,star_e2,psf_e1,psf_e2,total_flux)
     
     mm = mpm.get_2d_multipole_moments(diff_struct,-1,-1,0,wing_aperture_size)
     star_size, star_e1, star_e2, unused_mp = mpm.get_size_and_shape(data_struct,-1,-1,
-                                                                    cut_off_scale,0,wing_aperture_size)
+                                                                    scale,0,wing_aperture_size)
     psf_size, psf_e1, psf_e2, unused_mp = mpm.get_size_and_shape(psf_struct,-1,-1,
-                                                                 cut_off_scale,0,wing_aperture_size)
+                                                                 scale,0,wing_aperture_size)
     mpm.append_moments(moments_wings_file_name, ID, x_pix, y_pix, mag, mm,star_size,psf_size,
                  star_e1,star_e2,psf_e1,psf_e2,total_flux)
 
@@ -336,7 +369,10 @@ def calculate_chi2(data,model,background_noise=0,gain=2.0):
     
     for (data_value, model_value) in zip(data.ravel(),model.ravel()):
         
-        Poisson_noise_squared = np.abs(model_value/gain)
+        if(model_value>=0):
+            Poisson_noise_squared = (model_value/gain)
+        else:
+            Poisson_noise_squared = 0
         
         noise = np.sqrt(Poisson_noise_squared+np.square(background_noise))
         

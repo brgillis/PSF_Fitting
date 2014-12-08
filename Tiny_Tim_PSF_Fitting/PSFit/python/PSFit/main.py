@@ -734,7 +734,10 @@ def remove_psf_no_fit(stars, params):
         if(calc_specific_chi2s):
             star_chi2s = []
             for result in results:
-                star_chi2s.append(result.get()[4])
+                try:
+                    star_chi2s.append(result.get()[4])
+                except Exception, e:
+                    print(e)
                 
             # Remove outliers from this, and track the outlier fraction
             init_star_chi2s_len = len(star_chi2s)
