@@ -1,61 +1,9 @@
 import numpy as np
 import copy
-from scipy.stats import norm
 
-
-def remove_outliers(objects,ilist,min_remaining_members=2,p_threshold=0.5):
-    """ Removes outliers from a set of objects, using Chauvenet's criterion.
+from remove_outliers import remove_column_outliers
     
-        Requires: objects <list of lists of floats>
-                  ilist <list of ints> (Indices of columns to check for outliers)
-        Optional: p_threshold <float> (Minimum probability that we'd get a value this extreme for
-                                       which we'll cut an object as an outlier)
-                  min_remaining_members <int> (Minimum number of members that must remain after
-                                               searching for outliers. If we don't have this many,
-                                               an exception will be raised.)
-                                
-        Returns: (nothing)
-                       
-        Side-effects: Removes all outliers from objects list
-        
-        Except: Indices passed in ilist are out of range of the lists contained within objects
-                Too few members remain after removing outliers
-    """
-    
-    
-    outliers_found = True
-    num_tot = len(objects)
-    
-    ifactor = len(ilist)
-    
-    while(outliers_found):
-
-        outliers_found = False
-            
-        # Find any outliers and remove them
-        
-        for index in ilist:
-        
-            mean, sigma = get_mean_sigma(objects, index)
-            
-            for o in objects:
-                
-                p = 1-norm.cdf(abs(o[index] - mean) / sigma)
-                
-                if( p*num_tot*ifactor < p_threshold ):
-                    objects.remove(o)
-                    outliers_found = True
-            
-    
-    # Check that we still have enough members left in the array
-    if(len(objects) < min_remaining_members):
-        raise Exception("WARNING: Too few arguments left after removing outliers. (Only " + str(len(objects)) + ")"
-                        "\nReverting to non-trimmed dataset.\n" + 
-                        "Chi-squared value will include presence of outliers.")
-    else:
-        print("Removed " + str(num_tot-len(objects)) + "/" + str(num_tot) + " outliers.")
-    
-def get_mean_sigma(objects, index):
+def get_mean_and_std_for_index(objects, index):
     """ Gets mean and sigma (std deviation) for a column with a list of lists of floats.
     
         Requires: objects <list of lists of floats>
@@ -67,27 +15,30 @@ def get_mean_sigma(objects, index):
         Side-effects: (none)
     """
     
-    mean = 0
-    mean_sq = 0
-    num = 0
+    mean = np.mean(objects,axis=0)[index]
+    std = np.std(objects,axis=0)[index]
     
-    for o in objects:
-        mean += o[index]
-        mean_sq += np.square(o[index])
-        num += 1
-        
-    if(num == 0):
-        mean = 0
-        mean_sq = 0
-    else:
-        mean /= num
-        mean_sq /= num
-        
-    sigma = np.sqrt(mean_sq - np.square(mean))
+#     mean = 0
+#     mean_sq = 0
+#     num = 0
+#     
+#     for o in objects:
+#         mean += o[index]
+#         mean_sq += np.square(o[index])
+#         num += 1
+#         
+#     if(num == 0):
+#         mean = 0
+#         mean_sq = 0
+#     else:
+#         mean /= num
+#         mean_sq /= num
+#         
+#     sigma = np.sqrt(mean_sq - np.square(mean))
     
-    return mean, sigma
+    return mean, std
 
-def get_chi2_for_index(objects, index, target):
+def get_chi2_and_mean_for_index(objects, index, target):
     """ Calculates a Chi^2 value for a column within a list of lists of floats.
     
         Requires: objects <list of lists of floats>
@@ -99,11 +50,11 @@ def get_chi2_for_index(objects, index, target):
         Side-effects: (none)
         
     """
-    mean, sigma = get_mean_sigma(objects, index)
+    mean, std = get_mean_and_std_for_index(objects, index)
     
-    chi2 = np.square((mean-target)/(sigma/np.sqrt(len(objects))))
+    chi2 = np.square((mean-target)/(std/np.sqrt(len(objects))))
     
-    return chi2
+    return chi2, mean
 
 def get_chi2(file_name,ilist_chi2,ilist_outliers=None):
     """ Calculates a chi-squared value for the data contained within a file in certain columns,
@@ -143,7 +94,7 @@ def get_chi2(file_name,ilist_chi2,ilist_outliers=None):
         objects_backup = copy.deepcopy(objects)
         
         try:
-            remove_outliers(objects,ilist_outliers,min_remaining_members)
+            remove_column_outliers(objects,ilist_outliers,min_remaining_members)
         except Exception, e:
             objects = objects_backup
             print(str(e))
@@ -153,11 +104,16 @@ def get_chi2(file_name,ilist_chi2,ilist_outliers=None):
         good_ids_and_fluxes.append((o[0],o[18]))
     
     # Sum up the chi2 for all dipole and quadrupole components
-    chi2 = 0
+    chi2s = []
+    means = []
     
     for index in ilist_chi2:
-        chi2 += get_chi2_for_index(objects, index, target)
+        chi2, mean = get_chi2_and_mean_for_index(objects, index, target)
+        chi2s.append(chi2)
+        means.append(mean)
     
-    return chi2, good_ids_and_fluxes
+    chi2 = np.sum(chi2s)
+    
+    return chi2, good_ids_and_fluxes, chi2s, means
     
     

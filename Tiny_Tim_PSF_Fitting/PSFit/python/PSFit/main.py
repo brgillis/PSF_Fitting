@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 
 import sys
-oldpath = sys.path
-sys.path = []
+sys.path.append('/home/brg/lib/python2.7/')
 sys.path.append('/home/brg/lib/python2.7/site-packages')
+sys.path.append('/home/brg/lib/python2.7/dist-packages')
+sys.path.append('/disk4/brg/Program_Files/astropy-0.3.2/')
 sys.path.append('.')
-sys.path = sys.path + oldpath
 from os.path import isfile
 import numpy as np
 import subprocess as sbp
 import multiprocessing as mtp
+import astropy.io.ascii as ascii
+import copy
 
 from rebin import rebin_and_shift_psf
 from subtract_psf import subtract_psf, remove_outliers
@@ -51,15 +53,15 @@ def main(argv):
                   Summary file to output fitted data to (Won't output if blank, will append one line to
                                                          it if entered)
                  
-                  ex. python main.py file_name.fits 0.95 22 (No fit, use default focus of 0,
+                  ex. python main.py file_name.fits 0.95 26 (No fit, use default focus of 0,
                                                                   calculate PSF for each star)
-                  ex. python main.py file_name.fits 0.95 22 -1 -1 False (No fit, use default focus of 0,
+                  ex. python main.py file_name.fits 0.95 26 -1 -1 False (No fit, use default focus of 0,
                                                                   calculate PSF for each star
                                                                   (same as above))
-                  ex. python main.py file_name.fits 0.95 22 -1 -1 3.0 (No fit, use focus offset of
+                  ex. python main.py file_name.fits 0.95 26 -1 -1 3.0 (No fit, use focus offset of
                                                                        3.0 um, calculate PSF for each
                                                                        star)
-                  ex. python main.py file_name.fits 0.95 22 8 4 True (fit focus, 8x4 grid)
+                  ex. python main.py file_name.fits 0.95 26 8 4 True (fit focus, 8x4 grid)
                  
         Returns: (nothing)
        
@@ -81,7 +83,11 @@ def main(argv):
 
     # Magic numbers
     default_class_star_threshold = 0.95
-    default_max_star_mag = 22
+    default_max_star_mag = 27.0
+    default_min_mag_star = 22.0
+    flux_rad_min = 1.0
+    flux_rad_max = 1.5
+    fallback_min_mag_star_diff = 2.0
     default_focus = 0.0
     default_subsampling_factor= 5
     stamp_size_factor = 1 # How much bigger the stamps should be at minimum than the size of the detected star
@@ -115,6 +121,12 @@ def main(argv):
                     params['max_star_mag'] = default_max_star_mag
             except:
                 params['max_star_mag'] = default_max_star_mag
+                
+    # Determine the minimum star magnitude
+    if(params['max_star_mag']>default_min_mag_star+fallback_min_mag_star_diff):
+        params['min_star_mag'] = default_min_mag_star
+    else:
+        params['min_star_mag'] = params['max_star_mag']-fallback_min_mag_star_diff
                 
     # Check if we're using the quick mode
     if(len(argv) <= 5):
@@ -223,7 +235,9 @@ def main(argv):
     for object_line in object_lines:
         class_star = float(object_line[16])
         star_mag = float(object_line[17])
-        if((class_star > params['class_star_threshold']) and (star_mag < params['max_star_mag'])):
+        flux_rad = float(object_line[14])
+        if((class_star > params['class_star_threshold']) and (star_mag < params['max_star_mag']) and (star_mag >= params['min_star_mag'])
+           and (flux_rad >= flux_rad_min) and (flux_rad < flux_rad_max)):
             xp = float(object_line[1])
             yp = float(object_line[2])
             
@@ -269,9 +283,12 @@ def main(argv):
                 n = flux_rad / kron_rad
                 
                 total_flux = flux_auto*flux_ratio(n)
+                
+                #background = float(object_line[23])
+                background = None
 
                 star = (i, xp, yp, class_star, star_mag, stamp_size, dx, dy, total_flux,
-                        kron_rad, e1, e2)
+                        kron_rad, e1, e2, background)
                 stars.append(star)
                 i += 1
                 
@@ -339,10 +356,10 @@ def cleanup(file_name_base):
         Returns: (nothing)
         
         Side-effects: Deletes all files which match the following patterns:
-                          file_name_base_stamp_*.fits
+                          file_name_base_stamp_*.fits (except file_name_base_stamp_stack.fits)
                           file_name_base_psf_*.fits
-                          file_name_base_binned_*.fits
-                          file_name_base_unbinned_*.fits
+                          file_name_base_binned_*.fits (except file_name_base_binned_stack.fits)
+                          file_name_base_unbinned_*.fits 
                           file_name_base_residual_*.fits (except file_name_base_residual_stack.fits)
                           file_name_base.par
                           file_name_base.tt3
@@ -352,13 +369,20 @@ def cleanup(file_name_base):
                           file_name_base + sextractor_psf_cat_name_end
     """
     
-    # Move the residual stack file to preserve it if it exists
-    cmd = "mv " + file_name_base + "_residual_stack.fits " + file_name_base + "_temp.fits"
+    # Move the stack files to preserve them if they exist
+    cmd = "mv " + file_name_base + "_noisy_psf_stack.fits " + file_name_base + "_temp_n.fits"
+    sbp.call(cmd, shell=True)
+    cmd = "mv " + file_name_base + "_binned_stack.fits " + file_name_base + "_temp_b.fits"
+    sbp.call(cmd, shell=True)
+    cmd = "mv " + file_name_base + "_stamp_stack.fits " + file_name_base + "_temp_s.fits"
+    sbp.call(cmd, shell=True)
+    cmd = "mv " + file_name_base + "_residual_stack.fits " + file_name_base + "_temp_r.fits"
     sbp.call(cmd, shell=True)
     
     # Delete files matching the right patterns
     cmd = "rm -f " + file_name_base + "_stamp_*.fits "+ \
                      file_name_base + "_psf_*.fits "+ \
+                     file_name_base + "_noisy_psf_*.fits "+ \
                      file_name_base + "_binned_*.fits "+ \
                      file_name_base + "_unbinned_*.fits "+ \
                      file_name_base + "_residual_*.fits "+ \
@@ -371,8 +395,14 @@ def cleanup(file_name_base):
                      "check.fits"
     sbp.call(cmd,shell=True)
     
-    # Move back the residual stack file
-    cmd = "mv " + file_name_base + "_temp.fits " + file_name_base + "_residual_stack.fits"
+    # Move back the stack files
+    cmd = "mv " + file_name_base + "_temp_n.fits " + file_name_base + "_noisy_psf_stack.fits"
+    sbp.call(cmd, shell=True)
+    cmd = "mv " + file_name_base + "_temp_b.fits " + file_name_base + "_binned_stack.fits"
+    sbp.call(cmd, shell=True)
+    cmd = "mv " + file_name_base + "_temp_s.fits " + file_name_base + "_stamp_stack.fits"
+    sbp.call(cmd, shell=True)
+    cmd = "mv " + file_name_base + "_temp_r.fits " + file_name_base + "_residual_stack.fits"
     sbp.call(cmd, shell=True)
 
 def get_image_size(image_file):
@@ -601,6 +631,7 @@ def remove_psf_from_star(star, params, calc_chi2=False):
         dx = star[6]
         dy = star[7]
         total_flux = star[8]
+        background = star[12]
         
         binned_file = params['file_name_base'] + "_binned_" + str(i) + ".fits"
         stamp_file = params['file_name_base'] + "_stamp_" + str(i) + ".fits"
@@ -623,7 +654,7 @@ def remove_psf_from_star(star, params, calc_chi2=False):
         # Subtract the psf and append the moments file with the moments of the residual
         try:
             chi2 = subtract_psf(stamp_file, binned_file, residual_file, i, xp, yp, 
-                        params['moments_file'], params['moments_wings_file'],total_flux,star[4], calc_chi2, params['gain'])
+                        params['moments_file'], params['moments_wings_file'],total_flux,star[4], calc_chi2, params['gain'], background)
         except KeyError, e:
             raise Exception("params dictionary passed to remove_psf_from_star is missing needed key:\n" +
                               str(e))
@@ -774,26 +805,42 @@ def remove_psf_no_fit(stars, params):
         remove_outliers_range = full_range
         
         # Dipole and quadrupole moments of core
-        chi2_m_core, good_ids_and_fluxes = get_chi2(params['moments_file'],dp_qp_range,remove_outliers_range)
+        chi2_m_core, good_ids_and_fluxes, chi2s_core, means_core = get_chi2(params['moments_file'],dp_qp_range,remove_outliers_range)
         
         # Dipole and quadrupole moments of wings
-        chi2_m_wings = get_chi2(params['moments_wings_file'],dp_qp_range,remove_outliers_range)[0]
+        chi2_m_wings, _, chi2s_wings, means_wings = get_chi2(params['moments_wings_file'],dp_qp_range,remove_outliers_range)
         
         # Diff in radius and shape
-        chi2_rad_shape = get_chi2(params['moments_file'],size_shape_range,remove_outliers_range)[0]
+        chi2_rad_shape_core, _, chi2s_size_shape_core, means_size_shape_core = \
+            get_chi2(params['moments_file'],size_shape_range,remove_outliers_range)
         
-        chi2 = chi2_m_core+chi2_m_wings+chi2_rad_shape
+        # Diff in radius and shape
+        chi2_rad_shape_wings, _, chi2s_size_shape_wings, means_size_shape_wings = \
+            get_chi2(params['moments_wings_file'],size_shape_range,remove_outliers_range)
+        
+        chi2 = chi2_m_core+chi2_m_wings+chi2_rad_shape_core+chi2_rad_shape_wings
         
         print("Chi^2 for core moments of this fit: " + str(chi2_m_core) + " (4 dof)")
         print("Chi^2 for wing moments of this fit: " + str(chi2_m_wings) + " (4 dof)")
-        print("Chi^2 for size and shape: " + str(chi2_rad_shape) + " (3 dof)")
-        print("Total Chi^2: " + str(chi2) + " (11 dof)")
+        print("Chi^2 for core size and shape: " + str(chi2_rad_shape_core) + " (3 dof)")
+        print("Chi^2 for wing size and shape: " + str(chi2_rad_shape_wings) + " (3 dof)")
+        print("Total Chi^2: " + str(chi2) + " (14 dof)")
         
         # If we aren't fitting, do final processing now
         if(not params['fit_focus']):
             
+            # Create a stacked psf plot
+            _, psf_max = stack_images(params['file_name_base'] + "_binned", good_ids_and_fluxes, -1.0)
+            # Create a stacked noisy psf plot
+            _, psf_max = stack_images(params['file_name_base'] + "_noisy_psf", good_ids_and_fluxes, -1.0)
             # Create a stacked residual plot
-            stack_residuals(params['file_name_base'], good_ids_and_fluxes)
+            stack_images(params['file_name_base'] + "_residual", good_ids_and_fluxes, 1/psf_max)
+            # Create a stacked star plot
+            stack_images(params['file_name_base'] + "_stamp", good_ids_and_fluxes, 1/psf_max)
+            
+            # Mark outliers in the moments files
+            mark_outliers(good_ids_and_fluxes,params['moments_file'])
+            mark_outliers(good_ids_and_fluxes,params['moments_wings_file'])
             
             # Draw whisker plot for core shape
             draw_whisker_plot(params['file_name_base'] + "_whisker.png",params['moments_file'],
@@ -805,8 +852,9 @@ def remove_psf_no_fit(stars, params):
                               good_ids_and_fluxes)
             
         return params['moments_file'], params['moments_wings_file'], chi2, good_ids_and_fluxes, \
-            chi2_m_core, chi2_m_wings, chi2_rad_shape, star_chi2_mean, star_chi2_stddev, star_chi2_stderr, \
-            star_chi2_outlier_fraction
+            chi2_m_core, chi2_m_wings, chi2_rad_shape_core, chi2_rad_shape_wings, star_chi2_mean, star_chi2_stddev, star_chi2_stderr, \
+            star_chi2_outlier_fraction, chi2s_core, chi2s_wings, chi2s_size_shape_core, chi2s_size_shape_wings, \
+            means_core, means_wings, means_size_shape_core, means_size_shape_wings
     except KeyError, e:
         raise Exception("params dictionary passed to get_psf_file is missing needed key:\n" +
                         str(e))
@@ -839,58 +887,69 @@ def remove_psf_after_fit(stars, params):
         
         min_test_focus = -3.0
         max_test_focus = 3.0
-        test_focus_points = 4
-        target_precision = 0.25
+        test_focus_points = 3
+        target_precision = 3.0
         
         # Start by searching in a grid of evenly-spaced focus points
     
         best_chi2 = 1e99
         best_focus = -1e99
         
-        for test_focus in np.linspace(min_test_focus,max_test_focus, num=test_focus_points):
+        # Set up a file to record the points we test while fitting
+        record_file_name = params['file_name_base'] + "_fitting_record.dat"
+        with open(record_file_name, 'w') as record_file:
+            record_file.write("# Focus\tChi2\tChi2_core\tChi2_wings\t" +
+                     "Chi2_size_shape_core\tChi2_size_shape_wings\t" +
+                     "Star_Chi2_mean\tStar_Chi2_stddev\tStar_Chi2_stderr\t" +
+                     "Star_Chi2_outlier_frac\tChip\t" +
+                     "Core_dp_x_Chi2\tCore_dp_y_Chi2\tCore_qp_xx_Chi2\tCore_qp_xy_Chi2\t" +
+                     "Wings_dp_x_Chi2\tWings_dp_y_Chi2\tWings_qp_xx_Chi2\tWings_qp_xy_Chi2\t" +
+                     "Core_size_diff_Chi2\tCore_e1_diff_Chi2\tCore_e2_diff_Chi2\t" +
+                     "Wings_size_diff_Chi2\tWings_e1_diff_Chi2\tWings_e2_diff_Chi2\t" +
+                     "Core_dp_x\tCore_dp_y\tCore_qp_xx\tCore_qp_xy\t" +
+                     "Wings_dp_x\tWings_dp_y\tWings_qp_xx\tWings_qp_xy\t" +
+                     "Core_size_diff\tCore_e1_diff\tCore_e2_diff\t" +
+                     "Wings_size_diff\tWings_e1_diff\tWings_e2_diff\t" +
+                     "\n")
             
-            params['focus'] = test_focus
-            try:
-                # Call the removal method for this test focus
-                unused_moments_file, unused_moments_wings_file, test_chi2, good_ids_and_fluxes, \
-                    unused_chi2_core, unused_chi2_wings, unused_chi2_size_shape, _star_chi2_mean, _star_chi2_stddev, \
-                    _star_chi2_stderr, _star_chi2_outlier_fraction = \
-                    remove_psf_no_fit(stars, params)
-            except Exception, e:
-                print(str(e))
-            
-            # Store this point if it's the best so far
-            if(test_chi2 < best_chi2):
-                best_chi2 = test_chi2
-                best_focus = test_focus
-                
-        # Check if we found a suitable point to start from
-        if(best_focus == -1e99):
-            raise Exception("No suitable focus found.")
+            record = lambda : record_file.write(str(test_focus) + "\t" + str(test_chi2) + \
+                    "\t" + str(test_chi2_core) + "\t" + str(test_chi2_wings) + \
+                    "\t" + str(test_chi2_size_shape_core) + "\t" + str(test_chi2_size_shape_wings) + \
+                    "\t" + str(star_chi2_mean) + "\t" + str(star_chi2_stddev) + "\t" + str(star_chi2_stderr) + \
+                    "\t" + str(star_chi2_outlier_fraction) + "\t" + str(params['chip']) + \
+                    "\t" + str(test_chi2s_core[0]) + "\t" + str(test_chi2s_core[1]) + "\t" + str(test_chi2s_core[2]) + \
+                    "\t" + str(test_chi2s_core[3]) + "\t" + \
+                    "\t" + str(test_chi2s_wings[0]) + "\t" + str(test_chi2s_wings[1]) + "\t" + str(test_chi2s_wings[2]) + \
+                    "\t" + str(test_chi2s_wings[3]) + "\t" + \
+                    "\t" + str(test_chi2s_size_shape_core[0]) + "\t" + str(test_chi2s_size_shape_core[1]) + \
+                    "\t" + str(test_chi2s_size_shape_core[2]) + \
+                    "\t" + str(test_chi2s_size_shape_wings[0]) + "\t" + str(test_chi2s_size_shape_wings[1]) + \
+                    "\t" + str(means_size_shape_wings[2]) + \
+                    "\t" + str(means_core[0]) + "\t" + str(means_core[1]) + "\t" + str(means_core[2]) + \
+                    "\t" + str(means_core[3]) + "\t" + \
+                    "\t" + str(means_wings[0]) + "\t" + str(means_wings[1]) + "\t" + str(means_wings[2]) + \
+                    "\t" + str(means_wings[3]) + "\t" + \
+                    "\t" + str(means_size_shape_core[0]) + "\t" + str(means_size_shape_core[1]) + \
+                    "\t" + str(means_size_shape_core[2]) + \
+                    "\t" + str(means_size_shape_wings[0]) + "\t" + str(means_size_shape_wings[1]) + \
+                    "\t" + str(means_size_shape_wings[2]) + \
+                    "\n")
         
-        # Now we go to a narrowing search
-        
-        # Initialise search_step and loop counter
-        search_step = (max_test_focus-min_test_focus)/(test_focus_points-1) / 2.0
-        loop_counter = 0
-        
-        # Go through a loop, finding the best of three points, then narrowing the search around it
-        # until we reach the target precision
-        while((search_step > target_precision/2) and (loop_counter < 100)):
-            
-            # Increment loop counter
-            loop_counter += 1
-            
-            for test_focus in [best_focus-search_step,best_focus+search_step]:
+            for test_focus in np.linspace(min_test_focus,max_test_focus, num=test_focus_points):
                 
                 params['focus'] = test_focus
                 try:
                     # Call the removal method for this test focus
-                    _, _, test_chi2, good_ids_and_fluxes, \
-                        best_chi2_core, best_chi2_wings, best_chi2_size_shape, \
-                        _, _, _, _ = \
+                    _, _, test_chi2, _, \
+                            test_chi2_core, test_chi2_wings, test_chi2_size_shape_core, test_chi2_size_shape_wings, \
+                            star_chi2_mean, star_chi2_stddev, star_chi2_stderr, \
+                            star_chi2_outlier_fraction, test_chi2s_core, test_chi2s_wings, \
+                            test_chi2s_size_shape_core, test_chi2s_size_shape_wings, \
+                            means_core, means_wings, \
+                            means_size_shape_core, means_size_shape_wings = \
                         remove_psf_no_fit(stars, params)
-                
+                    record()
+                    
                 except Exception, e:
                     print(str(e))
                 
@@ -898,43 +957,95 @@ def remove_psf_after_fit(stars, params):
                 if(test_chi2 < best_chi2):
                     best_chi2 = test_chi2
                     best_focus = test_focus
-    
-            # Narrow the search step for the next loop
-            search_step /= 4
+                    
+            # Check if we found a suitable point to start from
+            if(best_focus == -1e99):
+                raise Exception("No suitable focus found.")
             
-        # Regenerate the best results
+            # Now we go to a narrowing search
             
-        params['focus'] = best_focus
-        params['fit_focus'] = False
-        try:
-            # Call the removal method for this test focus
-            unused_moments_file, unused_moments_wings_file, best_chi2, good_ids_and_fluxes, \
-                    best_chi2_core, best_chi2_wings, best_chi2_size_shape, \
-                    star_chi2_mean, star_chi2_stddev, star_chi2_stderr, \
-                    star_chi2_outlier_fraction = \
-                remove_psf_no_fit(stars, params)
-        except Exception, e:
-            print(str(e))
+            # Initialise search_step and loop counter
+            search_step = (max_test_focus-min_test_focus)/(test_focus_points-1) / 2.0
+            loop_counter = 0
+            
+            # Go through a loop, finding the best of three points, then narrowing the search around it
+            # until we reach the target precision
+            while((search_step > target_precision/2) and (loop_counter < 100)):
+                
+                # Increment loop counter
+                loop_counter += 1
+                
+                for test_focus in [best_focus-search_step,best_focus+search_step]:
+                    
+                    params['focus'] = test_focus
+                    try:
+                        # Call the removal method for this test focus
+                        _, _, test_chi2, _, \
+                                test_chi2_core, test_chi2_wings, test_chi2_size_shape_core, test_chi2_size_shape_wings, \
+                                star_chi2_mean, star_chi2_stddev, star_chi2_stderr, \
+                                star_chi2_outlier_fraction, test_chi2s_core, test_chi2s_wings, \
+                                test_chi2s_size_shape_core, test_chi2s_size_shape_wings, \
+                                means_core, means_wings, \
+                                means_size_shape_core, means_size_shape_wings = \
+                            remove_psf_no_fit(stars, params)
+                        record()
+                    
+                    except Exception, e:
+                        print(str(e))
+                    
+                    # Store this point if it's the best so far
+                    if(test_chi2 < best_chi2):
+                        best_chi2 = test_chi2
+                        best_focus = test_focus
+        
+                # Narrow the search step for the next loop
+                search_step /= 2
+                
+            # Regenerate the best results and get the star chi^2 as well
+            params['focus'] = best_focus
+            params['fit_focus'] = False
+            try:
+                # Call the removal method for this test focus
+                _, _, test_chi2, _, \
+                        test_chi2_core, test_chi2_wings, test_chi2_size_shape_core, test_chi2_size_shape_wings, \
+                        star_chi2_mean, star_chi2_stddev, star_chi2_stderr, \
+                        star_chi2_outlier_fraction, test_chi2s_core, test_chi2s_wings, \
+                        test_chi2s_size_shape_core, test_chi2s_size_shape_wings, \
+                        means_core, means_wings, \
+                        means_size_shape_core, means_size_shape_wings = \
+                    remove_psf_no_fit(stars, params)
+            except Exception, e:
+                print(str(e))
+        
+        # Output to summary file
+        if(params['summary_file_name'] is not None):
+            cmd = "echo '" + params['image_file'] + "\t" + str(best_focus) + "\t" + str(test_chi2) + \
+                    "\t" + str(test_chi2_core) + "\t" + str(test_chi2_wings) + \
+                    "\t" + str(test_chi2_size_shape_core) + "\t" + str(test_chi2_size_shape_wings) + \
+                    "\t" + str(star_chi2_mean) + "\t" + str(star_chi2_stddev) + "\t" + str(star_chi2_stderr) + \
+                    "\t" + str(star_chi2_outlier_fraction) + "\t" + str(params['chip']) + \
+                    "\t" + str(test_chi2s_core[0]) + "\t" + str(test_chi2s_core[1]) + "\t" + str(test_chi2s_core[2]) + \
+                    "\t" + str(test_chi2s_core[3]) + "\t" + \
+                    "\t" + str(test_chi2s_wings[0]) + "\t" + str(test_chi2s_wings[1]) + "\t" + str(test_chi2s_wings[2]) + \
+                    "\t" + str(test_chi2s_wings[3]) + "\t" + \
+                    "\t" + str(test_chi2s_size_shape_core[0]) + "\t" + str(test_chi2s_size_shape_core[1]) + \
+                    "\t" + str(test_chi2s_size_shape_core[2]) + \
+                    "\t" + str(test_chi2s_size_shape_wings[0]) + "\t" + str(test_chi2s_size_shape_wings[1]) + \
+                    "\t" + str(means_size_shape_wings[2]) + \
+                    "\t" + str(means_core[0]) + "\t" + str(means_core[1]) + "\t" + str(means_core[2]) + \
+                    "\t" + str(means_core[3]) + "\t" + \
+                    "\t" + str(means_wings[0]) + "\t" + str(means_wings[1]) + "\t" + str(means_wings[2]) + \
+                    "\t" + str(means_wings[3]) + "\t" + \
+                    "\t" + str(means_size_shape_core[0]) + "\t" + str(means_size_shape_core[1]) + \
+                    "\t" + str(means_size_shape_core[2]) + \
+                    "\t" + str(means_size_shape_wings[0]) + "\t" + str(means_size_shape_wings[1]) + \
+                    "\t" + str(means_size_shape_wings[2]) + \
+                    "' >> " + params['summary_file_name']
+            sbp.call(cmd,shell=True)
             
         # Print the results
         print("Best focus: " + str(best_focus))
         print("Best chi^2: " + str(best_chi2))
-        
-        # Output to summary file
-        if(params['summary_file_name'] is not None):
-            cmd = "echo '" + params['image_file'] + "\t" + str(best_focus) + "\t" + str(best_chi2) + \
-                    "\t" + str(best_chi2_core) + "\t" + str(best_chi2_wings) + "\t" + str(best_chi2_size_shape) + \
-                    "\t" + str(star_chi2_mean) + "\t" + str(star_chi2_stddev) + "\t" + str(star_chi2_stderr) + \
-                    "\t" + str(star_chi2_outlier_fraction) +"' >> " + params['summary_file_name']
-            sbp.call(cmd,shell=True)
-        
-        # Draw the whisker plot now
-        stack_residuals(params['file_name_base'], good_ids_and_fluxes)
-        draw_whisker_plot(params['file_name_base'] + "_whisker.png",params['moments_file'],
-                              good_ids_and_fluxes)
-        draw_whisker_plot(params['file_name_base'] + "_whisker_wings.png",
-                          params['moments_wings_file'],
-                              good_ids_and_fluxes)
     except KeyError, e:
         raise Exception("params dictionary passed to get_psf_file is missing needed key:\n" +
                         str(e))
@@ -965,7 +1076,7 @@ def flux_ratio(n):
     
     return 1./ratio
 
-def stack_residuals(filename_base, ids_and_fluxes):
+def stack_images(filename_base, ids_and_fluxes, scale=1.0):
     """Generates a fits image which is a stack of the residuals of non-outlier stars.
     
        Requires: filename_base <string> (base for the residual files and output image)
@@ -986,12 +1097,17 @@ def stack_residuals(filename_base, ids_and_fluxes):
     
     stacked_data = None
     
+    num_stars = len(ids_and_fluxes)
+    
     for id_and_flux in ids_and_fluxes:
         
         star_id = id_and_flux[0]
         flux = id_and_flux[1]
         
-        filename = filename_base + "_residual_" + str(int(star_id)) + ".fits"
+        if(scale<0):
+            flux = 1.0
+        
+        filename = filename_base + "_" + str(int(star_id)) + ".fits"
         
         fits_struct = read_fits(filename)
         data = fits_struct[0].data
@@ -1018,12 +1134,16 @@ def stack_residuals(filename_base, ids_and_fluxes):
                 raise Exception("Likely due to size mismatch in stacking residuals.\n" +
                       "Ensure all residuals have odd sizes and are square:\n" +
                       str(e))
-
+                
+                
+    stacked_data = np.multiply(stacked_data,np.abs(scale)/num_stars)
     
     out_fits = pyf.PrimaryHDU(stacked_data)
-    out_fits.header = fits_struct[0].header
-    out_fits.header.add_comment('Residual stack')
-    out_fits.writeto(filename_base + "_residual_stack.fits", clobber=True)
+    #out_fits.header = fits_struct[0].header
+    out_fits.header.add_comment('Image stack')
+    out_fits.writeto(filename_base + "_stack.fits", clobber=True)
+    
+    return np.sum(stacked_data), np.max(stacked_data)
 
 def draw_whisker_plot(whisker_plot_filename, moments_file, good_ids_and_fluxes=None):
     """Draws a whisker plot for the ellipticity difference between a star and PSF.
@@ -1048,17 +1168,20 @@ def draw_whisker_plot(whisker_plot_filename, moments_file, good_ids_and_fluxes=N
         for line in f:
             line.strip()
             if((line[0] != '#') and (len(line) > 0)):
-                o = []
-                for string in line.split():
-                    o.append(float(string))
-                if(good_ids_and_fluxes is None):
-                    objects.append(o)
-                else:
-                    # Check if we find the id. If so, append
-                    for id_and_flux in good_ids_and_fluxes:
-                        if(float(id_and_flux[0])==o[0]):
-                            objects.append(o)
-                            break
+                try:
+                    o = []
+                    for string in line.split():
+                        o.append(float(string))
+                    if(good_ids_and_fluxes is None):
+                        objects.append(o)
+                    else:
+                        # Check if we find the id. If so, append
+                        for id_and_flux in good_ids_and_fluxes:
+                            if(float(id_and_flux[0])==o[0]):
+                                objects.append(o)
+                                break
+                except:
+                    pass # Likely an uncommented comment line
                 
     g1 = []
     g2 = []
@@ -1075,6 +1198,32 @@ def draw_whisker_plot(whisker_plot_filename, moments_file, good_ids_and_fluxes=N
         
     draw_whisker_shear(g1, g2, x, y, size=size, title="Shear differentials",
                         filename=whisker_plot_filename, magnify=1.5, adjust_power=0.25)
+    
+def mark_outliers(ids_and_fluxes, filename):
+    
+    ids = np.transpose(ids_and_fluxes)[0]
+    
+    table = ascii.read(filename)
+    
+    outlier_column = copy.deepcopy(table['ID'])
+    outlier_column.name = "is_outlier"
+    
+    for my_id in xrange(len(outlier_column.data)):
+        outlier_column.data[my_id] = 1
+    
+    for my_id in ids:
+        try:
+            outlier_column.data[int(my_id)-1] = 0
+        except:
+            pass
+        
+    table.add_column(outlier_column)
+    
+    try:
+        table.write(filename,format="ascii.commented_header")
+    except Exception, _e:
+        table.write(filename,format="ascii")
+        print("WARNING: Backup file format had to be used.")
 
 if __name__ == "__main__":
     main(sys.argv)

@@ -1,6 +1,7 @@
 import numpy as np
+from get_size import get_size
 
-def get_2d_multipole_moments(struct, xc=-1, yc=-1, weight_power=0, aperture_size=0):
+def get_2d_multipole_moments(struct, xc=-1, yc=-1, weight_power=0, aperture_size=0, scale=1):
     """Function to get the multipole moments (through quadrupole)
        of a grid of values.
        
@@ -12,6 +13,7 @@ def get_2d_multipole_moments(struct, xc=-1, yc=-1, weight_power=0, aperture_size
                                        If positive, scale for exponential weighting in pixels:
                                        5 weights by e^(-r (in pix)/5))
                  aperture_size <float> (size of circular aperture to measure moments within)
+                 scale <float> (scale to multiply monopole, dipole, and quadrupole moments by)
                  
        Returns: mp <float>,
                 dp_x <float>,
@@ -108,37 +110,31 @@ def get_2d_multipole_moments(struct, xc=-1, yc=-1, weight_power=0, aperture_size
                 qp2_xx += v * dx**2
                 qp2_yy += v * dy**2
         
-    # Normalise by the total weight
+    # Apply scale and normalise by the total weight
     if(weight > 0):
-        mp /= weight
-        dp_x /= weight
-        dp_y /= weight
-        qp_xx /= weight
-        qp_xy /= weight
-        qp2_xx /= weight
-        qp2_yy /= weight
+        mp *= scale/weight
+        dp_x *= scale/weight
+        dp_y *= scale/weight
+        qp_xx *= scale/weight
+        qp_xy *= scale/weight
+        qp2_xx *= scale/weight
+        qp2_yy *= scale/weight
+    else:
+        mp *= scale
+        dp_x *= scale
+        dp_y *= scale
+        qp_xx *= scale
+        qp_xy *= scale
+        qp2_xx *= scale
+        qp2_yy *= scale
         
     qp2_xy = qp_xy/2
-        
-    det = qp2_xx*qp2_yy-qp2_xy**2
-    absdet = np.abs(det)
     
-    if((det==0)or(mp==0)):
-        size = 0
-        e1 = 0
-        e2 = 0
-    else:
-        size = np.power(absdet/(mp*mp),0.25)*absdet/det
-        if(det<0):
-            e1 = 0
-            e2 = 0
-        else:
-            e1 = (qp2_xx - qp2_yy) / (qp2_xx + qp2_yy + 2. * np.sqrt(absdet))
-            e2 = 2. * qp2_xy / (qp2_xx + qp2_yy + 2. * np.sqrt(absdet))
+    size, e1, e2, _ = get_size_and_shape(struct, xc, yc, weight_power, aperture_size)
     
     return mp, dp_x, dp_y, qp_xx, qp_xy, qp2_xx, qp2_yy, qp2_xy, size, e1, e2
 
-def get_size_and_shape(struct, xc=-1, yc=-1, weight_power=0, total_flux=0, aperture_size=0):
+def get_size_and_shape(struct, xc=-1., yc=-1., weight_power=0, total_flux=0, aperture_size=0):
     """Function to estimate the size of an image through a weighted quadrupole
        
        Requires: struct <HDUList> (fits data structure for image)
@@ -177,24 +173,67 @@ def get_size_and_shape(struct, xc=-1, yc=-1, weight_power=0, total_flux=0, apert
     
     # Check/determine the centre points
     if(xc<=0):
-        xc = (x_length-1)/2
+        xc_init = float(x_length-1)/2.
     else:
-        xc = int(np.floor(xc))
+        xc_init = xc
     if(yc<=0):
-        yc = (y_length-1)/2
+        yc_init = float(y_length-1)/2.
     else:
-        yc = int(np.floor(yc))
+        yc_init = yc
         
-    # Get the maximum size of a square that can fit around the centre point
-    # within the value array. Note that this gives half the side-length
-    if(xc<yc):
-        sq_size = int(xc)
-    else:
-        sq_size = int(yc)
-    if(sq_size>x_length-xc-1):
-        sq_size = int(x_length-xc-1)
-    if(sq_size>y_length-yc-1):
-        sq_size = int(y_length-yc)
+    # In order to measure the size, we have to properly centre it. For non-flat weight functions,
+    # this is non-trivial, so we have to iterate on it.
+    
+    loop_counter = 0
+    loop_counter_max = 5
+    
+    xc = float(xc_init)
+    yc = float(yc_init)
+    
+    while(loop_counter<loop_counter_max):
+        
+        loop_counter += 1
+    
+        mp = 0
+        dp_x = 0
+        dp_y = 0
+    
+        # Loop over the values array, summing up each pixel's contribution to the monopole and dipole moments and weight
+        for ix in xrange(0,x_length):
+            dx = ix-xc
+            for iy in xrange(0,y_length):
+                dy = iy-yc
+                d = np.sqrt(dx*dx+dy*dy)
+                
+                if((d<=aperture_size) or (aperture_size<=0)):
+                
+                    # Determine the weighted value for this point
+                    w = get_weight(d,weight_power)
+                    v = values[ix,iy] * w
+                    
+                    mp += v
+                    dp_x += v * dx
+                    dp_y += v * dy
+                    
+        # Shift the centre values proportional to the dipole moments
+        xc += dp_x / mp
+        yc += dp_y / mp
+        
+        # Check if we've gone out of bounds
+        if((xc<=0) or (yc<=0) or (xc>=x_length) or (yc>=y_length)):
+            loop_counter = loop_counter_max # So we'll reset to initial centre coords
+            break
+        
+        # Check for convergence
+        if((np.abs(dp_x/mp)<0.01) and (np.abs(dp_y/mp)<0.01)):
+            break
+        
+    # Check for non-convergence
+    if(loop_counter>=loop_counter_max):
+        xc = xc_init
+        yc = yc_init
+    
+    # Now that we're properly centred, we can calculate the size
         
     # Initialise the moments to zero
     qp2_xx = 0
@@ -205,9 +244,9 @@ def get_size_and_shape(struct, xc=-1, yc=-1, weight_power=0, total_flux=0, apert
     weight = 0
 
     # Loop over the values array, summing up each pixel's contribution to the moment
-    for ix in xrange(xc-sq_size,xc+sq_size+1):
+    for ix in xrange(0,x_length):
         dx = ix-xc
-        for iy in xrange(yc-sq_size,yc+sq_size+1):
+        for iy in xrange(0,y_length):
             dy = iy-yc
             d = np.sqrt(dx*dx+dy*dy)
             
@@ -252,8 +291,10 @@ def get_size_and_shape(struct, xc=-1, yc=-1, weight_power=0, total_flux=0, apert
         else:
             e1 = (qp2_xx - qp2_yy) / (qp2_xx + qp2_yy + 2. * np.sqrt(absdet))
             e2 = 2. * qp2_xy / (qp2_xx + qp2_yy + 2. * np.sqrt(absdet))
+            
+    comp_size = get_size(values,xc,xc,aperture_size,lambda d : get_weight(d,weight_power))
     
-    return size, e1, e2, mp
+    return comp_size, e1, e2, mp
 
 def append_moments( file_name, ID, x_pix, y_pix, star_mag, res_mm, star_size, psf_size,
                  star_e1,star_e2,psf_e1,psf_e2,star_flux ):
@@ -323,5 +364,5 @@ def get_weight( d, weight_factor ):
         if(d<=0):
             return 1
         else:
-            return np.exp(np.square(-d/weight_factor))
+            return np.exp(-np.square(d/weight_factor))
         

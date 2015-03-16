@@ -9,6 +9,10 @@ import subprocess as sbp
 tinytim_path = "/home/brg/Program_Files/tinytim-7.5"
 psf_width = "3.0"
 
+#spec = (2, 5000) # Blackbody, 5000 K
+spec = (1, 15) # K-type star
+#spec = (1, 17)
+
 def call_tinytim(params, xp=-1, yp=-1):
     """ This function calls Tiny Tim to generate a PSF at a given pixel position (xp, yp),
         using the information in the passed params dictionary.
@@ -45,7 +49,8 @@ def call_tinytim(params, xp=-1, yp=-1):
           str(params['chip']) + "\n" + \
           str(xp) + " " + str(yp) + "\n" + \
           str(params['filter'])  + "\n" + \
-          "2\n5000\n" + \
+          str(spec[0]) + "\n" + \
+          str(spec[1]) + "\n" + \
           psf_width + "\n" + \
           str(params['focus']) + "\n" + \
           params['file_name_base'] + "\nEOF"

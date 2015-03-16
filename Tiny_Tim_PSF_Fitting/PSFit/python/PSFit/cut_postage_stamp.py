@@ -26,7 +26,7 @@ def extract_pstamp(fits, pos, size):
                extracted.
     """
 
-    print('Extracting postage stamp.')
+    #print('Extracting postage stamp.')
 
     
     # Swap x/y due to numpy internals
@@ -42,7 +42,6 @@ def extract_pstamp(fits, pos, size):
         raise
 
     stamp = pyf.PrimaryHDU(stamp_data)
-    stamp.header = fits[0].header
 
     stamp.header.add_comment(
         "Postage stamp cut from file at image position (%.2f,%.2f)." % (pos[0],pos[1]))
