@@ -5,7 +5,7 @@
 # Created by Ole Marggraf 2013-12-10
 # Edited by Bryan Gillis 2014
 
-from astropy.io import fits as pyf
+import astropy.io.fits as pyf
 
 def read_fits(filename):
     """ Read the FITS file
@@ -58,7 +58,7 @@ def write_fits(fits_data, filename):
 
     try:
         fits_data.writeto(filename, clobber=True)
-    except:
-        raise Exception("Something went wrong writing the output file: " + filename)
+    except Exception, e:
+        raise Exception("Could not write FITS file " + filename + ":\n" + str(e))
 
     return

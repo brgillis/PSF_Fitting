@@ -7,7 +7,7 @@
 # Edited by Bryan Gillis 2014
 
 import numpy as np
-from astropy.io import fits as pyf
+import pyfits as pyf
 from fits_functions import read_fits, write_fits, add_comment
 
 
@@ -85,7 +85,7 @@ def rebin_psf(fits_struct, xy_offset, binsize, stamp_size):
     
     # Turn this ndarray into a proper fits data structure and set up the header
     fits_rebinned = pyf.HDUList(pyf.PrimaryHDU(binned_frame))
-    fits_rebinned[0].header = fits_struct[0].header
+    #fits_rebinned[0].header = fits_struct[0].header
     fits_rebinned[0].header['NAXIS1'] = new_x_size
     fits_rebinned[0].header['NAXIS2'] = new_y_size
 
@@ -133,7 +133,7 @@ def read_kernel_from_fits(fits_struct):
     
     kernel = []
 
-    fits_comments = fits_struct[0].header['COMMENT']
+    fits_comments = fits_struct[0].header.get_comment()
 
     i = find_substring(fits_comments, 'following kernel')
     if(i==-1):
@@ -258,7 +258,7 @@ def rebin_and_shift_psf(f_infile, f_outfile, subsampling_factor, target_pos, sta
     psf_orig = read_fits(f_infile)
 
     xy_shift = get_adjustment(f_infile, subsampling_factor, target_pos)
-    print 'Shifting by', xy_shift, '(in subsampled scale)'
+    #print 'Shifting by', xy_shift, '(in subsampled scale)'
     psf_binned = rebin_psf(psf_orig, xy_shift, subsampling_factor, stamp_size)
     psf_convolved = convolve_with_kernel(psf_binned, read_kernel_from_fits(psf_orig))
 
