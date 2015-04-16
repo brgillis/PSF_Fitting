@@ -98,8 +98,9 @@ def main(argv):
     
     # First, check that we were passed a string in the command-line for an image file
     if(len(argv)) <= 1:
-        raise Exception("Name of fits image file must be passed at command-line.\n" + \
+        print("ERROR: Name of fits image file must be passed at command-line.\n" + \
                         "eg. python main.py HST_image.fits")
+        return
     
     # Check if a CLASS_STAR or star_mag threshold was passed in the command-line
     if(len(argv) <= 2):
@@ -924,7 +925,7 @@ def remove_psf_after_fit(stars, params):
                     "\t" + str(test_chi2s_size_shape_core[0]) + "\t" + str(test_chi2s_size_shape_core[1]) + \
                     "\t" + str(test_chi2s_size_shape_core[2]) + \
                     "\t" + str(test_chi2s_size_shape_wings[0]) + "\t" + str(test_chi2s_size_shape_wings[1]) + \
-                    "\t" + str(means_size_shape_wings[2]) + \
+                    "\t" + str(test_chi2s_size_shape_wings[2]) + \
                     "\t" + str(means_core[0]) + "\t" + str(means_core[1]) + "\t" + str(means_core[2]) + \
                     "\t" + str(means_core[3]) + "\t" + \
                     "\t" + str(means_wings[0]) + "\t" + str(means_wings[1]) + "\t" + str(means_wings[2]) + \
