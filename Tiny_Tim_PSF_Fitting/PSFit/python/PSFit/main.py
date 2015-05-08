@@ -98,9 +98,8 @@ def main(argv):
     
     # First, check that we were passed a string in the command-line for an image file
     if(len(argv)) <= 1:
-        print("ERROR: Name of fits image file must be passed at command-line.\n" + \
+        raise Exception("Name of fits image file must be passed at command-line.\n" + \
                         "eg. python main.py HST_image.fits")
-        return
     
     # Check if a CLASS_STAR or star_mag threshold was passed in the command-line
     if(len(argv) <= 2):
@@ -1111,15 +1110,17 @@ def stack_images(filename_base, ids_and_fluxes, scale=1.0):
         filename = filename_base + "_" + str(int(star_id)) + ".fits"
         
         fits_struct = read_fits(filename)
-        data = fits_struct[0].data
+        data = fits_struct[0].data/flux
             
         if(stacked_data is None):
-            stacked_data = data/flux
+            stacked_data = data
         else:
             shape_stacked = np.shape(stacked_data)
             shape_data = np.shape(data)
             try:
-                if(shape_stacked[0]>shape_data[0]):
+                if(shape_stacked==shape_data):
+                    stacked_data += data;
+                elif(shape_stacked[0]>shape_data[0]):
                     stacked_data = np.add(data/flux,stacked_data[(shape_stacked[0] - shape_data[0]) / 2:
                                                 shape_stacked[0] - ((shape_stacked[0] - shape_data[0]) / 2),
                           (shape_stacked[1] - shape_data[1]) / 2:
@@ -1129,8 +1130,7 @@ def stack_images(filename_base, ids_and_fluxes, scale=1.0):
                     stacked_data = np.add(stacked_data,data[(shape_data[0] - shape_stacked[0]) / 2:
                               shape_data[0] - ((shape_data[0] - shape_stacked[0]) / 2),
                           (shape_data[1] - shape_stacked[1]) / 2:
-                              shape_data[1] - ((shape_data[1] - shape_stacked[1]) / 2)
-                          ]/flux)
+                              shape_data[1] - ((shape_data[1] - shape_stacked[1]) / 2)])
             except Exception, e:
                 raise Exception("Likely due to size mismatch in stacking residuals.\n" +
                       "Ensure all residuals have odd sizes and are square:\n" +

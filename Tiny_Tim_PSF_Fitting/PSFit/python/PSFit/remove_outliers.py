@@ -16,10 +16,13 @@ def remove_outliers(olist,min_remaining_members=2):
         Except: Less than min_remaining_members values remain in olist after outlier removal                            
     """
     
+    if(min_remaining_members<2):
+        min_remaining_members = 2
+    
     outliers_found = True
     num_tot = len(olist)
     
-    while(outliers_found):
+    while(outliers_found and (len(olist)>2)):
 
         outliers_found = False
             
@@ -68,7 +71,7 @@ def remove_column_outliers(objects,ilist,min_remaining_members=2,p_threshold=0.5
     
     ifactor = len(ilist)
     
-    while(outliers_found):
+    while(outliers_found and (len(objects)>2)):
 
         outliers_found = False
             

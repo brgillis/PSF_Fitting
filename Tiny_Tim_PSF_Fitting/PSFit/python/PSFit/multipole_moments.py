@@ -39,7 +39,7 @@ def get_2d_multipole_moments(struct, xc=-1, yc=-1, weight_power=0, aperture_size
                    
     """
     
-    values = struct[0].data
+    values = struct[0].data.transpose() # So the ordering matches what we expect
     size = np.shape(values)
     
     # Determine length of x/y components of array
@@ -164,7 +164,7 @@ def get_size_and_shape(struct, xc=-1., yc=-1., weight_power=0, total_flux=0, ape
               be for the case when only size and shape are needed, so the other moments don't have to
               be calculated. Perhaps a way should be found to minimize code duplication.
     """
-    values = struct[0].data
+    values = struct[0].data.transpose() # So the ordering matches what we expect
     size = np.shape(values)
     
     # Determine length of x/y components of array

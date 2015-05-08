@@ -233,9 +233,9 @@ def subtract_psf(data_file_name, psf_file_name, residual_file_name, ID, x_pix, y
                  star_e1,star_e2,psf_e1,psf_e2,total_flux)
     
     mm = mpm.get_2d_multipole_moments(diff_struct,-1,-1,0,wing_aperture_size,1./total_flux)
-    star_size, star_e1, star_e2, unused_mp = mpm.get_size_and_shape(data_struct,-1,-1,
+    star_size, star_e1, star_e2, _mp = mpm.get_size_and_shape(data_struct,-1,-1,
                                                                     scale,0,wing_aperture_size)
-    psf_size, psf_e1, psf_e2, unused_mp = mpm.get_size_and_shape(psf_struct,-1,-1,
+    psf_size, psf_e1, psf_e2, _mp = mpm.get_size_and_shape(psf_struct,-1,-1,
                                                                  scale,0,wing_aperture_size)
     mpm.append_moments(moments_wings_file_name, ID, x_pix, y_pix, mag, mm,star_size,psf_size,
                  star_e1,star_e2,psf_e1,psf_e2,total_flux)
