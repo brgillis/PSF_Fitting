@@ -84,7 +84,7 @@ def main(argv):
     # Magic numbers
     default_class_star_threshold = 0.95
     default_max_star_mag = 27.0
-    default_min_mag_star = 22.0
+    default_min_mag_star = 21.0
     flux_rad_min = 1.0
     flux_rad_max = 1.5
     fallback_min_mag_star_diff = 2.0
@@ -236,8 +236,8 @@ def main(argv):
         class_star = float(object_line[16])
         star_mag = float(object_line[17])
         flux_rad = float(object_line[14])
-        if((class_star > params['class_star_threshold']) and (star_mag < params['max_star_mag']) and (star_mag >= params['min_star_mag'])
-           and (flux_rad >= flux_rad_min) and (flux_rad < flux_rad_max)):
+        if((class_star >= params['class_star_threshold']) and (star_mag <= params['max_star_mag']) and (star_mag >= params['min_star_mag'])
+           and (flux_rad >= flux_rad_min) and (flux_rad <= flux_rad_max)):
             xp = float(object_line[1])
             yp = float(object_line[2])
             
