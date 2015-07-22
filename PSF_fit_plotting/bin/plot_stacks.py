@@ -34,9 +34,10 @@ import PSF_fit_plotting.magic_values as mv
               help="Folder where stacks are located.")
 @click.option("--output-folder", "output_folder", default="./plots",
               help="Folder to place generated plots in.")
-@click.option("--nstack", "number_to_plot", default=9, help="Number of stacks to plot.")
 @click.option("--type", "stack_type", default="residual", help="What type of stacks to plot. Allowed are " +
               "'residual', 'stamp', and 'psf'.")
+
+@click.option("--nstack", "number_to_plot", default=9, help="Number of stacks to plot.")
 @click.option("--choose", "how_to_choose", default="slice",
               help="How to choose stacks to plot. Allowed are " +
               "'first', 'random', 'slice', 'list'.")
@@ -44,17 +45,14 @@ import PSF_fit_plotting.magic_values as mv
               help="Size in pixels of central portion to be plotted.")
 @click.option("--zmin", default=None, help="Minimum pixel value for colormap.")
 @click.option("--zmax", default=None, help="Maximum pixel value for colormap.")
-@click.option("--log", "logscale_z", flag_value=True, default=False,
-              help="Log-scale pixel values.")
-@click.option("--lin", "logscale_z", flag_value=False, default=True,
-              help="Linearly scale pixel values.")
+@click.option("--log/--lin", "logscale_z", default=True,
+              help="Log- or lin-scale pixel values.")
 @click.option("--colormap", "colormap_to_use", default="bw", help="Colormap for plotting.")
 @click.option("--slice_offset", default=0, help="If using --choose=slice, initial offset for slice.")
 @click.option("--list", "list_filename", default="stacks_to_plot.dat",
               help="If using --choose=list, filename for" +
               "list of stacks to plot.")
-def main(number_to_plot, stack_type, how_to_choose, size_in_pixels, zmin, zmax,
-         logscale_z, colormap_to_use, slice_offset, list_filename):
+def main(**kwargs):
     """ @TODO main docstring
     """
     
