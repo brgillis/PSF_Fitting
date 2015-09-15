@@ -25,6 +25,7 @@
 from math import log10
 
 import magic_values as mv
+from io import replace_multiple_in_file
 
 def get_mag_zeropoint(exp_time,instrument_zeropoint=mv.zeropoint):
     """ Gets the magnitude zeropoint for an exposure from the exposure time and the instrument's
@@ -32,21 +33,38 @@ def get_mag_zeropoint(exp_time,instrument_zeropoint=mv.zeropoint):
         
         Requires: exp_time <float> (Exposure time)
         Optional: instrument_zeropoint (The instrument's zeropoint. Defaults to the zeropoint of
-                    HST's WFC (...) if not given..)
-        Returns: <float> The magnitude zeropoint for this exposure.
+                    HST's WFC (...) if not given)
+        Returns: <float> (The magnitude zeropoint for this exposure)
     """
     
     return instrument_zeropoint + 2.5 * log10(exp_time)
 
-def make_cfg_file(output_filename,
+def make_cfg_file(output_cfg_filename,
+                  output_catalog_filename,
                   exp_time,
                   template_filename=mv.sex_field_template_cfg_filename,
                   data_path=mv.sex_data_path):
+    """ Makes a cfg file for SExtractor, using a given template file.
+    
+        Requires: output_cfg_filename <string>
+                  output_catalog_filename <string> (The file SExtractor should output the cat to)
+                  exp_time <float> (The exposure time for the image to be analyzed)
+        Optional: template_filename <string> (The name of the template to use)
+                  data_path <string> (The location where needed SExtractor files are.)
+        
+        Returns: None
+    """
     
     mag_zeropoint = str(get_mag_zeropoint(exp_time, mv.zeropoint))
     
-    with open(template_filename, 'r') as template_file:
-        with open(output_filename, 'w') as output_file:
-            for line in template_file:
-                output_file.write(line.replace('A', 'Orange'))
+    replace_multiple_in_file(input_filename=template_filename,
+                             output_filename=output_cfg_filename,
+                             input_strings=[mv.sex_template_cfg_output_tag,
+                                            mv.sex_template_cfg_path_tag,
+                                            mv.sex_template_cfg_zeropoint_tag],
+                             output_strings=[output_catalog_filename,
+                                             data_path,
+                                             mag_zeropoint])
+    
+    return
         
