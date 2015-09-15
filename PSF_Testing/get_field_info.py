@@ -30,6 +30,8 @@ from astropy.io import ascii
 from astropy.io import fits
 from os.path import join
 
+from psf_testing import magic_values as mv
+
 @click.command()
 @click.option("--fields_list",default="data/HST_ACS_WFC_no_drizzle_fields.txt",
               help="List of fields to get details for.")
@@ -67,12 +69,12 @@ def main(**kwargs):
         # Get the FITS header
         field_header = fits.open(full_field_filename)[0].header
         
-        obs_dates.append(field_header['DATE-OBS'])
-        obs_times.append(field_header['TIME-OBS'])
-        exp_times.append(field_header['EXPTIME'])
+        obs_dates.append(field_header[mv.header_obs_date_keyword])
+        obs_times.append(field_header[mv.header_obs_time_keyword])
+        exp_times.append(field_header[mv.header_exp_time_keyword])
         filter1s.append(field_header['FILTER1'])
         filter2s.append(field_header['FILTER2'])
-        chips.append(field_header['CCDCHIP'])
+        chips.append(field_header[mv.header_chip_keyword])
         
     # Create a table of the data to be output
     ascii.write([obs_dates, obs_times, exp_times, filter1s, filter2s, chips], kwargs['output_filename'],

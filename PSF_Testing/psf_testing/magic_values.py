@@ -24,7 +24,13 @@
 
 # Instrument/exposure details
 gain = 2.0
-zeropoint = 26.2266 # F606W filter assuming infinite aperture from www.stsci.edu/hst/wfc3/phot_zp_lbn
+zeropoint = 26.08 # F606W filter in ABmags from www.stsci.edu/hst/wfc3/phot_zp_lbn
+
+# Image header keywords
+header_chip_keyword = "CCDCHIP"
+header_exp_time_keyword = "EXPTIME"
+header_obs_date_keyword = "DATE-OBS"
+header_obs_time_keyword = "TIME-OBS"
 
 # Sextractor config/parameter filenames
 sex_field_par_filename = "hst_acs_wfc.par"

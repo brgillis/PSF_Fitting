@@ -24,8 +24,8 @@
 
 from math import log10
 
-import magic_values as mv
-from io import replace_multiple_in_file
+from psf_testing import magic_values as mv
+from psf_testing.io import replace_multiple_in_file
 
 def get_mag_zeropoint(exp_time,instrument_zeropoint=mv.zeropoint):
     """ Gets the magnitude zeropoint for an exposure from the exposure time and the instrument's
