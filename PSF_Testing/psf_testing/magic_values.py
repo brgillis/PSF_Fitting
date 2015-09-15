@@ -22,7 +22,16 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+# Filename conventions
+image_extension = ".fits"
+sex_cfg_tail = "_sex.cfg"
+sex_cat_tail = "_objects.cat"
+
+# Specific filenames
+update_marker_filename = ".PSF_Testing_update_marker"
+
 # Instrument/exposure details
+pixel_scale = 0.05
 gain = 2.0
 zeropoint = 26.08 # F606W filter in ABmags from www.stsci.edu/hst/wfc3/phot_zp_lbn
 
@@ -45,3 +54,22 @@ sex_template_cfg_zeropoint_tag = "REPLACEME_MAG_ZEROPOINT"
 
 # Other Sextractor values
 sex_data_path = "./data"
+
+# Default values for selecting stars
+default_min_class_star = 0.95
+default_min_star_mag = 21.0
+default_max_star_mag = 27.0
+
+# Values for making objects from a catalog line
+min_stamp_size = 20
+sex_cat_xp_col = 1
+sex_cat_yp_col = 2
+sex_cat_ra_col = 3
+sex_cat_dec_col = 4
+sex_cat_class_star_col = 16
+sex_cat_mag_col = 17
+sex_cat_flux_col = 14
+sex_cat_xp_min_col = 5
+sex_cat_xp_max_col = 7
+sex_cat_yp_min_col = 6
+sex_cat_yp_max_col = 8
