@@ -23,6 +23,7 @@
 """
 
 import numpy as np
+from scipy.spatial import cKDTree
 
 from psf_testing import magic_values as mv
 
@@ -75,3 +76,32 @@ class sky_object(object):
                 test_stamp_size = np.ceil(yp_size / 2.) + 1
             
             self.stamp_size = max((test_stamp_size,mv.min_stamp_size))
+            
+        self.lowest_separation = None
+        
+    def get_position_tuple(self):
+        return (self.x_pix, self.y_pix)
+        
+    def get_lowest_separation(self,all_objects=None, objects_tree=None):
+        
+        # If we haven't been passed an objects list, simply use the cached value
+        if(all_objects is None):
+            assert(self.lowest_separation is not None)
+            return self.lowest_separation
+        
+        # If we haven't been passed an objects_tree, generate one
+        if(objects_tree is None):
+            
+            # Set up list of position tuples
+            positions_tuples = []
+            for obj in all_objects:
+                positions_tuples.append(obj.get_position_tuple())
+                
+            # Create the cKDTree
+            objects_tree = cKDTree(positions_tuples)
+            
+        # Query the cKDTree for the nearest neighbor
+        query_result = objects_tree.query((self.get_position_tuple()),k=1)[0][0][0]
+        self.lowest_separation = query_result[0][0][0]
+        
+        return self.lowest_separation
