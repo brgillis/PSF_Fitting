@@ -23,6 +23,7 @@
 """
 
 from math import log10
+from os.path import isfile
 import subprocess as sbp
 
 from astropy.io import fits
@@ -30,6 +31,7 @@ from astropy.io import fits
 from psf_testing import magic_values as mv
 from psf_testing.io import replace_multiple_in_file
 from psf_testing.image_info import get_exp_time
+from psf_testing.star_selection import get_objects_from_cat, get_stars, get_isolated_stars
 
 def get_mag_zeropoint(exp_time,instrument_zeropoint=mv.zeropoint):
     """ Gets the magnitude zeropoint for an exposure from the exposure time and the instrument's
@@ -84,7 +86,7 @@ def run_sextractor(image_filename, sex_cfg_filename, sex_cat_name=None):
             will be overwritten.
     """
     
-    if(sex_cat_name is not None:)
+    if(sex_cat_name is not None):
         # Delete any old catalog if it exists
         cmd = "rm -f " + sex_cat_name
         sbp.call(cmd, shell=True)
@@ -93,9 +95,9 @@ def run_sextractor(image_filename, sex_cfg_filename, sex_cat_name=None):
     cmd = "sex " + image_filename + " -c " + sex_cfg_filename
     sbp.call(cmd, shell=True)
     
-    if(sex_cat_name is not None:)
+    if(sex_cat_name is not None):
         # Check that the catalog was successfully created
-        assert(isfile(sextractor_cat_name))
+        assert(isfile(sex_cat_name))
     
     return
 
@@ -130,7 +132,7 @@ def get_stars_in_image(image_filename,
     run_sextractor(image_filename, sex_cfg_filename, sex_cat_name=sex_cat_filename)
     
     # Get all objects in the image
-    objects_in_image = get_objects_from_cat(sex_cat_name)
+    objects_in_image = get_objects_from_cat(sex_cat_filename)
     
     # Get a list of those which are stars in the right magnitude range
     stars = get_stars(objects_in_image,min_class_star,min_star_mag,max_star_mag)
