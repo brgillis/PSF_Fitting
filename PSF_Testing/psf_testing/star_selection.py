@@ -66,10 +66,11 @@ def get_isolated_stars(stars,all_objects,min_lowest_separation):
     
     for star in stars:
         # Get the lowest separation for each star
-        if(star.lowest_separation is None):
-            star.get_lowest_separation(all_objects,object_tree)
+        if(star.sky_object.lowest_separation is None):
+            star.sky_object.get_lowest_separation(all_objects,object_tree)
             
         # Select those stars which have a high enough lowest separation
-        isolated_stars.append(star)
+        if(star.sky_object.lowest_separation > min_lowest_separation):
+            isolated_stars.append(star)
         
     return isolated_stars

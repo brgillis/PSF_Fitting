@@ -39,8 +39,8 @@ class sky_object(object):
         
         if(cat_line is None):
         
-            self.x = None
-            self.y = None
+            self.x_pix = None
+            self.y_pix = None
             
             self.ra = None
             self.dec = None
@@ -56,24 +56,24 @@ class sky_object(object):
             
             properties = cat_line.split()
         
-            self.x_pix = properties[1]
-            self.y_pix = properties[2]
+            self.x_pix = float(properties[1])
+            self.y_pix = float(properties[2])
             
-            self.ra = properties[3]
-            self.dec = properties[4]
+            self.ra = float(properties[3])
+            self.dec = float(properties[4])
             
-            self.class_star = properties[16]
+            self.class_star = float(properties[16])
             
-            self.mag = properties[17]
-            self.flux = properties[14]
+            self.mag = float(properties[17])
+            self.flux = float(properties[14])
             
             xp_size = float(properties[7]) - float(properties[5])
             yp_size = float(properties[8]) - float(properties[6])
         
             if(xp_size > yp_size):
-                test_stamp_size = np.ceil(xp_size / 2.) + 1
+                test_stamp_size = int(np.ceil(xp_size / 2.) + 1)
             else:
-                test_stamp_size = np.ceil(yp_size / 2.) + 1
+                test_stamp_size = int(np.ceil(yp_size / 2.) + 1)
             
             self.stamp_size = max((test_stamp_size,mv.min_stamp_size))
             
@@ -101,7 +101,7 @@ class sky_object(object):
             objects_tree = cKDTree(positions_tuples)
             
         # Query the cKDTree for the nearest neighbor
-        query_result = objects_tree.query((self.get_position_tuple()),k=1)
-        self.lowest_separation = query_result[0][0][0] * mv.pixel_scale
+        query_result = objects_tree.query((self.get_position_tuple()),k=2)
+        self.lowest_separation = query_result[0][1] * mv.pixel_scale
         
         return self.lowest_separation

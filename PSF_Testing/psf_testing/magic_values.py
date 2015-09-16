@@ -73,3 +73,4 @@ sex_cat_xp_min_col = 5
 sex_cat_xp_max_col = 7
 sex_cat_yp_min_col = 6
 sex_cat_yp_max_col = 8
+sex_cat_num_cols = 24
