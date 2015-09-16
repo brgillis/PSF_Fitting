@@ -34,7 +34,9 @@ def get_objects_from_cat(sex_cat_filename):
         # Read in the file, except for comment lines
         for object_line in fin:
             object_line = object_line.strip()
-            if((object_line[0] != '#') and (len(object_line) > 0) and (object_line[0] != '[')):
+            if(len(object_line) == 0):
+                continue
+            if((object_line[0] != '#') and (object_line[0] != '[')):
                 objects.append(sky_object(object_line))
     
     return objects
