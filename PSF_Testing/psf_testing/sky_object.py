@@ -101,7 +101,7 @@ class sky_object(object):
             objects_tree = cKDTree(positions_tuples)
             
         # Query the cKDTree for the nearest neighbor
-        query_result = objects_tree.query((self.get_position_tuple()),k=1)[0][0][0]
-        self.lowest_separation = query_result[0][0][0]
+        query_result = objects_tree.query((self.get_position_tuple()),k=1)
+        self.lowest_separation = query_result[0][0][0] * mv.pixel_scale
         
         return self.lowest_separation
