@@ -49,7 +49,7 @@ def make_cfg_file(output_cfg_filename,
                   output_catalog_filename,
                   exp_time,
                   template_filename=mv.sex_field_template_cfg_filename,
-                  data_path=mv.sex_data_path):
+                  data_path=mv.default_sex_data_path):
     """ Makes a cfg file for SExtractor, using a given template file.
     
         Requires: output_cfg_filename <string>
@@ -106,16 +106,23 @@ def get_stars_in_image(image_filename,
                        min_class_star=mv.default_min_class_star,
                        min_star_mag=mv.default_min_star_mag,
                        max_star_mag=mv.default_max_star_mag,
-                       min_lowest_separation=None):
+                       min_lowest_separation=None,
+                       sex_data_path=mv.default_sex_data_path,
+                       files_to_cleanup=None):
+    
+    if(files_to_cleanup is None):
+        files_to_cleanup = []
     
     # Get the root of the filename
     image_filename_root = image_filename.replace(mv.image_extension,"")
     
     # Get the desired name of the sex cfg file
     sex_cfg_filename = image_filename_root + mv.sex_cfg_tail
+    files_to_cleanup.append(sex_cfg_filename)
     
     # Get the desired name of the sex cat file
     sex_cat_filename = image_filename_root + mv.sex_cat_tail
+    files_to_cleanup.append(sex_cat_filename)
     
     # Get the exposure time from the image if necessary
     if exp_time is None:
@@ -126,7 +133,7 @@ def get_stars_in_image(image_filename,
                   output_catalog_filename=sex_cat_filename,
                   exp_time=exp_time,
                   template_filename=mv.sex_field_template_cfg_filename,
-                  data_path=mv.sex_data_path)
+                  data_path=sex_data_path)
     
     # Call SExtracter
     run_sextractor(image_filename, sex_cfg_filename, sex_cat_name=sex_cat_filename)

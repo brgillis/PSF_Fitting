@@ -25,13 +25,13 @@
 import magic_values as mv
 
 def get_chip(image):
-    return image[0].header[mv.header_chip_keyword]
+    return image.header[mv.header_chip_keyword]
 
 def get_exp_time(image):
-    return image[0].header[mv.header_chip_keyword]
+    return image.header[mv.header_chip_keyword]
 
 def get_obs_date(image):
-    return image[0].header[mv.header_obs_date_keyword]
+    return image.header[mv.header_obs_date_keyword]
 
 def get_obs_time(image):
-    return image[0].header[mv.header_obs_time_keyword]
+    return image.header[mv.header_obs_time_keyword]

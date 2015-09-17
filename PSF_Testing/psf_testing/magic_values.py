@@ -53,7 +53,7 @@ sex_template_cfg_output_tag = "REPLACEME_OUTPUT_CAT"
 sex_template_cfg_zeropoint_tag = "REPLACEME_MAG_ZEROPOINT"
 
 # Other Sextractor values
-sex_data_path = "./data"
+default_sex_data_path = "./data"
 
 # Default values for selecting stars
 default_min_class_star = 0.95
@@ -74,3 +74,6 @@ sex_cat_xp_max_col = 7
 sex_cat_yp_min_col = 6
 sex_cat_yp_max_col = 8
 sex_cat_num_cols = 24
+
+# TinyTim values
+default_tinytim_data_path = "/disk2/brg/Data/HST_Fields/PSF_models"
