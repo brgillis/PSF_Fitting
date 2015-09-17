@@ -29,7 +29,27 @@ from psf_testing import magic_values as mv
 from psf_testing.image_info import get_chip, get_exp_time
 from psf_testing.sextractor_utility import get_stars_in_image
 
-def test_psf(image_filename,cleanup=False,**kwargs):
+def test_psf(image_filename,
+             
+             min_class_star = mv.default_min_class_star,
+             min_star_mag = mv.default_min_star_mag,
+             max_star_mag = mv.default_max_star_mag,
+             min_lowest_separation = mv.default_min_lowest_separation,
+             
+             test_single_focus = False,
+             test_focus = None,
+             min_test_focus = mv.default_min_test_focus,
+             max_test_focus = mv.default_max_test_focus,
+             test_focus_samples = mv.default_focus_samples,
+             test_focus_precision = mv.default_focus_precision,
+             
+             sex_data_path = mv.default_sex_data_path,
+             cleanup_sex_files = True,
+             
+             tinytim_data_path = mv.default_tinytim_data_path,
+             cleanup_tinytim_files = False,
+             force_tinytim_update = False,
+             **kwargs):
     
     # Start by inspecting the image and getting needed details about it
     image = fits.open(image_filename)[0]
@@ -41,13 +61,34 @@ def test_psf(image_filename,cleanup=False,**kwargs):
     files_to_cleanup = []
     
     # Get a list of the isolated stars in the image by running SExtractor on it
-    stars = get_stars_in_image(image_filename, exp_time, files_to_cleanup, **kwargs)
+    stars = get_stars_in_image(image_filename = image_filename,
+                               exp_time = exp_time,
+                               min_class_star = min_class_star,
+                               min_star_mag = min_star_mag,
+                               max_star_mag = max_star_mag,
+                               min_lowest_separation = min_lowest_separation,
+                               sex_data_path = sex_data_path,
+                               files_to_cleanup = files_to_cleanup,
+                               cleanup_sex_files = cleanup_sex_files,
+                               **kwargs)
     
-    # ...
+    # If we're testing a single focus value, do that now
+    if(test_single_focus):
+        test_results = test_psf_for_focus(stars=stars,focus=focus,**kwargs)
+    # Otherwise, call the fitting function
+    else:
+        test_results = fit_best_focus_and_test_psf(stars=stars,
+                                                   min_test_focus=min_test_focus,
+                                                   max_test_focus=max_test_focus,
+                                                   test_focus_samples=test_focus_samples,
+                                                   test_focus_precision=test_focus_precision,
+                                                   **kwargs)
+        
+    # Do something with the results
+    report_results(test_results,**kwargs)
     
-    # If we're cleaning up, remove all files in the cleanup list
-    if(cleanup):
-        for filename in files_to_cleanup:
-            os.remove(filename)
+    # Remove all files in the cleanup list
+    for filename in files_to_cleanup:
+        os.remove(filename)
             
     return
