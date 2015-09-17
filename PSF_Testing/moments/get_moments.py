@@ -28,6 +28,7 @@ from psf_testing import magic_values as mv
 
 from moments.centre_image import centre_image
 from moments.coords import get_coords_of_array
+from moments.estimate_background_noise import estimate_background_noise
 from moments.make_weight_mask import make_weight_mask
 
 def get_moments_and_variances(image,
@@ -81,6 +82,9 @@ def get_moments_and_variances(image,
                (Mxx,Myy,Mxy))
         
     # Now calculate the errors
+    
+    if(background_noise is None):
+        background_noise = estimate_background_noise(image)
     
     # Store some new arrays we'll use first
     square_weight_mask = np.square(weight_mask)
