@@ -22,6 +22,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+# Misc runtime paramters
+max_loop_iterations = 100
+
 # Filename conventions
 image_extension = ".fits"
 sex_cfg_tail = "_sex.cfg"
