@@ -108,7 +108,8 @@ def get_stars_in_image(image_filename,
                        max_star_mag=mv.default_max_star_mag,
                        min_lowest_separation=None,
                        sex_data_path=mv.default_sex_data_path,
-                       files_to_cleanup=None):
+                       files_to_cleanup=None,
+                       cleanup_sex_files=False):
     
     if(files_to_cleanup is None):
         files_to_cleanup = []
@@ -118,11 +119,13 @@ def get_stars_in_image(image_filename,
     
     # Get the desired name of the sex cfg file
     sex_cfg_filename = image_filename_root + mv.sex_cfg_tail
-    files_to_cleanup.append(sex_cfg_filename)
     
     # Get the desired name of the sex cat file
     sex_cat_filename = image_filename_root + mv.sex_cat_tail
-    files_to_cleanup.append(sex_cat_filename)
+    
+    if(cleanup_sex_files):
+        files_to_cleanup.append(sex_cfg_filename)
+        files_to_cleanup.append(sex_cat_filename)
     
     # Get the exposure time from the image if necessary
     if exp_time is None:

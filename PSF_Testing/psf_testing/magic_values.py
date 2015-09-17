@@ -59,6 +59,7 @@ default_sex_data_path = "./data"
 default_min_class_star = 0.95
 default_min_star_mag = 21.0
 default_max_star_mag = 27.0
+default_min_lowest_separation = None
 
 # Values for making objects from a catalog line
 min_stamp_size = 20
@@ -74,6 +75,13 @@ sex_cat_xp_max_col = 7
 sex_cat_yp_min_col = 6
 sex_cat_yp_max_col = 8
 sex_cat_num_cols = 24
+
+# Focus fitting values
+default_min_test_focus = -6.0
+default_max_test_focus = 6.0
+default_focus_samples = 7
+default_focus_precision = 0.05
+
 
 # TinyTim values
 default_tinytim_data_path = "/disk2/brg/Data/HST_Fields/PSF_models"

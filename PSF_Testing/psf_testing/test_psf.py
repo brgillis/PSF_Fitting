@@ -74,14 +74,32 @@ def test_psf(image_filename,
     
     # If we're testing a single focus value, do that now
     if(test_single_focus):
-        test_results = test_psf_for_focus(stars=stars,focus=focus,**kwargs)
+        test_results = test_psf_for_focus(stars = stars,
+                                          
+                                          test_focus = test_focus,
+                                          
+                                          tinytim_data_path = tinytim_data_path,
+                                          cleanup_tinytim_files = cleanup_tinytim_files,
+                                          force_tinytim_update = force_tinytim_update,
+                                          
+                                          files_to_cleanup = files_to_cleanup,
+                                          
+                                          **kwargs)
     # Otherwise, call the fitting function
     else:
         test_results = fit_best_focus_and_test_psf(stars=stars,
+                                                   
                                                    min_test_focus=min_test_focus,
                                                    max_test_focus=max_test_focus,
                                                    test_focus_samples=test_focus_samples,
                                                    test_focus_precision=test_focus_precision,
+                                          
+                                                   tinytim_data_path = tinytim_data_path,
+                                                   cleanup_tinytim_files = cleanup_tinytim_files,
+                                                   force_tinytim_update = force_tinytim_update,
+                                                  
+                                                   files_to_cleanup = files_to_cleanup,
+                                          
                                                    **kwargs)
         
     # Do something with the results
