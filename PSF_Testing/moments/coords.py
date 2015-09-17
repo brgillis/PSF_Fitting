@@ -62,12 +62,12 @@ def get_coords_of_array(nx, ny, xc=None, yc=None):
     
     x_array, y_array = get_x_and_y_of_array(nx, ny, xc, yc)
     
-    xx_array = np.square(x_array)
-    yy_array = np.square(y_array)
+    x2_array = np.square(x_array)
+    y2_array = np.square(y_array)
     xy_array = x_array * y_array
     
     return (x_array, 
             y_array,
-            xx_array,
-            yy_array,
+            x2_array,
+            y2_array,
             xy_array)

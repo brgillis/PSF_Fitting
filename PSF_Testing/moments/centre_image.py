@@ -59,8 +59,8 @@ def centre_image(image,
         weight_mask = make_weight_mask(weight_func, nx, ny, xc, yc, x_array, y_array)
         
         # Get the dipole moments
-        dx = (x_array*weight_mask).sum()
-        dy = (y_array*weight_mask).sum()
+        dx = (x_array*image*weight_mask).sum()
+        dy = (y_array*image*weight_mask).sum()
         
         # Get the larger distance we'll move
         d = max((dx,dy))

@@ -31,8 +31,7 @@ def make_weight_mask(weight_func,
                      xc = None,
                      yc = None,
                      x_array = None,
-                     y_array = None,
-                     transpose = False):
+                     y_array = None):
     """ Make a weight mask from a weight function and an optional centre point.
     
         Requires: weight_func <binary function> (Function of x,y. Must be able to handle numpy
@@ -45,8 +44,6 @@ def make_weight_mask(weight_func,
                                      so that it can be reused)
                   y_array <ndarray> (array of x coordinates. Will be generated if not provided
                                      so that it can be reused)
-                  transpose <bool> (If True, array will use indices in order y,x, otherwise
-                                    x,y.)
                                     
         Returns: <ndarray> (Weight mask normalized so sum is 1)
     """
@@ -65,7 +62,4 @@ def make_weight_mask(weight_func,
     # Normalize it
     weight_mask = weight_mask/weight_mask.sum()
     
-    if(transpose):
-        return weight_mask.transpose()
-    else:
-        return weight_mask
+    return weight_mask
