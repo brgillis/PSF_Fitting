@@ -27,7 +27,7 @@ import numpy as np
 
 from psf_testing import magic_values as mv
 from psf_testing.moments.centre_image import centre_image
-from psf_testing.moments.estimate_background_noise import estimate_background_noise
+from psf_testing.moments.estimate_background import get_background_noise
 from psf_testing.moments.get_moments import get_moments_and_variances
 from psf_testing.moments.get_Qsize import get_Qsize_and_var
 
@@ -39,7 +39,7 @@ def get_m0_and_Qs(image,
            gain = mv.gain):
     
     if(background_noise is None):
-        background_noise = estimate_background_noise(image)
+        background_noise = get_background_noise(image)
     
     if((xc is None) or (yc is None)):
         xc, yc, _, _, _ = centre_image(image, weight_func)
