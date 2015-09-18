@@ -33,8 +33,10 @@ nx = ny = 41
 image_sigma = 3.0
 weight_sigma = 5.0
 gain = 2.0
-flux = 100.0
+flux = 10000.0
 background_noise = 1.0
+
+test_shear = 0.2
 
 seed = 151357
 
@@ -46,13 +48,19 @@ def test_weight_func():
     return func
 
 @pytest.fixture(scope="module")
-def noiseless_Gaussian():
+def noiseless_circ_Gaussian():
     unnormed_Gaussian = np.outer(signal.gaussian(nx, image_sigma), signal.gaussian(ny, image_sigma))
     return unnormed_Gaussian/unnormed_Gaussian.sum()
 
 @pytest.fixture(scope="module")
-def Gaussian_image(noiseless_Gaussian):
-    scaled_Gaussian = flux*noiseless_Gaussian
+def noiseless_horiz_Gaussian():
+    unnormed_Gaussian = np.outer(signal.gaussian(nx, image_sigma*(1+test_shear)),
+                                 signal.gaussian(ny, image_sigma*(1-test_shear)))
+    return unnormed_Gaussian/unnormed_Gaussian.sum()
+
+@pytest.fixture(scope="module")
+def circ_Gaussian_image(noiseless_circ_Gaussian):
+    scaled_Gaussian = flux*noiseless_circ_Gaussian
     
     noise_per_pixel = np.sqrt(scaled_Gaussian/gain + np.square(background_noise))
     
@@ -61,12 +69,42 @@ def Gaussian_image(noiseless_Gaussian):
     
     return Gaussian_image
 
-def test_get_Qs(noiseless_Gaussian,Gaussian_image,test_weight_func):
+@pytest.fixture(scope="module")
+def horiz_Gaussian_image(noiseless_horiz_Gaussian):
+    scaled_Gaussian = flux*noiseless_horiz_Gaussian
+    
+    noise_per_pixel = np.sqrt(scaled_Gaussian/gain + np.square(background_noise))
+    
+    np.random.seed(seed)
+    Gaussian_image = scaled_Gaussian + noise_per_pixel * np.random.randn(nx,ny)
+    
+    return Gaussian_image
+
+def test_circular_Gaussian(noiseless_circ_Gaussian,circ_Gaussian_image,test_weight_func):
     
     tolerance = 2.0
     
-    _m0, _err_m0, model_Qs, _err_model_Qs = get_m0_and_Qs(noiseless_Gaussian,weight_func=test_weight_func)
-    _m0, _err_m0, image_Qs, err_image_Qs = get_m0_and_Qs(Gaussian_image,weight_func=test_weight_func)
+    _m0, _err_m0, model_Qs, _err_model_Qs = get_m0_and_Qs(noiseless_circ_Gaussian,
+                                                          weight_func=test_weight_func)
+    _m0, _err_m0, image_Qs, err_image_Qs = get_m0_and_Qs(circ_Gaussian_image,
+                                                         weight_func=test_weight_func)
+    
+    Zs = (image_Qs-model_Qs)/err_image_Qs
+    
+    assert(np.abs(Zs[0]) < tolerance)
+    assert(np.abs(Zs[1]) < tolerance)
+    assert(np.abs(Zs[2]) < tolerance)
+    assert(np.abs(Zs[3]) < tolerance)
+    assert(np.abs(Zs[4]) < tolerance)
+
+def test_horiz_Gaussian(noiseless_horiz_Gaussian,horiz_Gaussian_image,test_weight_func):
+    
+    tolerance = 2.0
+    
+    _m0, _err_m0, model_Qs, _err_model_Qs = get_m0_and_Qs(noiseless_horiz_Gaussian,
+                                                          weight_func=test_weight_func)
+    _m0, _err_m0, image_Qs, err_image_Qs = get_m0_and_Qs(horiz_Gaussian_image,
+                                                         weight_func=test_weight_func)
     
     Zs = (image_Qs-model_Qs)/err_image_Qs
     
