@@ -102,18 +102,23 @@ def get_Qsize_and_err(image,
         
         # For the bin with itself, we want the first term to be the variance of the contained mean
         # For this, we need a sum of a function on all lesser bins.
-        indices = np.indices((dmax), dtype=int)
-        covar_W[ri,ri] = np.sum( np.square( N[indices<ri] ) * var_I_mean[indices<ri] ) \
-                          / np.square(N_lt[ri]) + var_I_mean[ri]
+        if(N_lt[ri]==0):
+            covar_W[ri,ri] = 0.
+        else:
+            covar_W[ri,ri] = np.sum( np.square( N[0:ri] ) * var_I_mean[0:ri] ) \
+                              / np.square(N_lt[ri]) + var_I_mean[ri]
                           
         var_W[ri] = covar_W[ri,ri]
                          
         # Now, the covariance with all smaller bins
         for rj in xrange(ri):
-            covar_W[ri,rj] = np.sum( np.square( N[indices<rj] ) * var_I_mean[indices<rj] ) \
-                                / (N_lt[ri]*N_lt[rj]) - \
-                             N[rj] * var_I_mean[rj] \
-                                / N_lt[ri]
+            if((N_lt[ri]==0) or (N_lt[rj]==0)):
+                covar_W[ri,rj] = 0
+            else:
+                covar_W[ri,rj] = np.sum( np.square( N[0:rj] ) * var_I_mean[0:rj] ) \
+                                    / (N_lt[ri]*N_lt[rj]) - \
+                                 N[rj] * var_I_mean[rj] \
+                                    / N_lt[ri]
             
             covar_W[rj,ri] = covar_W[ri,rj]
             
@@ -123,7 +128,7 @@ def get_Qsize_and_err(image,
     
     weighted_W = W * w_ri_array
     
-    Qsize_numerator = (weighted_W * ri).sum() * mv.pixel_scale
+    Qsize_numerator = (weighted_W * ri_array).sum() * mv.pixel_scale
     square_Qsize_numerator = np.square(Qsize_numerator)
     
     Qsize_denominator = weighted_W.sum()
