@@ -24,7 +24,7 @@
 import pytest
 
 from psf_testing import magic_values as mv
-from psf_testing.sky_object import sky_object
+from psf_testing.star_selection.sky_object import sky_object
 
 @pytest.fixture(scope="session")
 def test_x_pix():

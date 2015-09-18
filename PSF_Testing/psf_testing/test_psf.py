@@ -26,8 +26,8 @@ from astropy.io import fits
 import os
 
 from psf_testing import magic_values as mv
-from psf_testing.image_info import get_chip, get_exp_time
-from psf_testing.sextractor_utility import get_stars_in_image
+from psf_testing.star_selection.image_info import get_chip, get_exp_time
+from psf_testing.star_selection.sextractor_utility import get_stars_in_image
 
 def test_psf(image_filename,
              

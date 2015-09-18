@@ -23,9 +23,9 @@
 """
 
 from psf_testing import magic_values as mv
-from psf_testing.sky_object import sky_object
-from psf_testing.star import star
-from psf_testing.star_selection import get_isolated_stars
+from psf_testing.star_selection.sky_object import sky_object
+from psf_testing.star_selection.star import star
+from psf_testing.star_selection.star_selection import get_isolated_stars
 
 def test_initialize_sky_obj(test_cat_line,test_x_pix,test_y_pix,test_mag,test_class_star,
                             test_x_size,test_y_size):

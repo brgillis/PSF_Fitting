@@ -24,7 +24,7 @@
 import pytest
 import os
 
-from psf_testing.sextractor_utility import get_objects_from_cat
+from psf_testing.star_selection.sextractor_utility import get_objects_from_cat
 from tests.conftest import make_cat_line
 
 @pytest.fixture(scope="module")
