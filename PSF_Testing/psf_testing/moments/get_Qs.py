@@ -29,7 +29,9 @@ from psf_testing import magic_values as mv
 from psf_testing.moments.centre_image import centre_image
 from psf_testing.moments.estimate_background import get_background_noise
 from psf_testing.moments.get_moments import get_moments_and_variances
-from psf_testing.moments.get_Qsize import get_Qsize_and_var
+from psf_testing.moments.Qsize import get_Qsize_and_err
+from psf_testing.moments.coords import get_coords_of_array
+from psf_testing.moments.make_weight_mask import make_weight_mask
 
 def get_m0_and_Qs(image,
            weight_func = lambda x,y : 1.,
@@ -42,11 +44,22 @@ def get_m0_and_Qs(image,
         background_noise = get_background_noise(image)
     
     if((xc is None) or (yc is None)):
-        xc, yc, _, _, _ = centre_image(image, weight_func)
+        xc, yc, x_array, y_array, weight_mask = centre_image(image, weight_func)
+    else:
+        nx, ny = np.shape(image)
+        x_array, y_array = get_coords_of_array(nx=nx, ny=ny, xc=xc, yc=yc)
+        weight_mask = make_weight_mask(weight_func=weight_func,
+                                       nx=nx,
+                                       ny=ny,
+                                       xc=xc,
+                                       yc=yc,
+                                       x_array=x_array,
+                                       y_array=y_array)
         
     # Get the moments and variances
     moments_and_variances = get_moments_and_variances(image=image,
                                                       weight_func=weight_func,
+                                                      weight_mask=weight_mask,
                                                       xc = xc,
                                                       yc = yc,
                                                       background_noise = background_noise,
@@ -80,13 +93,14 @@ def get_m0_and_Qs(image,
     err_Qcross = np.sqrt(var_Qcross)
     
     # Get Qsize and its error now
-    Qsize, var_Qsize = get_Qsize_and_var(image=image,
+    Qsize, err_Qsize = get_Qsize_and_err(image=image,
                                 weight_func=weight_func,
                                 xc = xc,
                                 yc = yc,
+                                x_array = x_array,
+                                y_array = y_array,
                                 background_noise = background_noise,
                                 gain = gain)
-    err_Qsize = np.sqrt(var_Qsize)
     
     # Put the Q values into a numpy array
     Qs = np.array([Qx,Qy,Qplus,Qcross,Qsize])

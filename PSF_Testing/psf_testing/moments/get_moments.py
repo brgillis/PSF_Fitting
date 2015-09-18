@@ -28,18 +28,23 @@ from psf_testing import magic_values as mv
 
 from psf_testing.moments.centre_image import centre_image
 from psf_testing.moments.coords import get_coords_of_array
-from psf_testing.moments.estimate_background_noise import estimate_background_noise
+from psf_testing.moments.estimate_background import get_background_noise
 from psf_testing.moments.make_weight_mask import make_weight_mask
 
 def get_moments_and_variances(image,
                 weight_func = lambda x,y : 1.,
+                weight_mask = None,
                 xc = None,
                 yc = None,
                 background_noise = None,
                 gain = mv.gain):
     
     if((xc is None) or (yc is None)):
-        xc, yc, x_array, y_array, weight_mask = centre_image(image, weight_func)
+        # Don't overwrite weight_mask if it's given; trust the user
+        if(weight_mask is None):
+            xc, yc, x_array, y_array, weight_mask = centre_image(image, weight_func)
+        else:
+            xc, yc, x_array, y_array, _ = centre_image(image, weight_func)
         x2_array = np.square(x_array)
         y2_array = np.square(y_array)
         xy_array = x_array * y_array
@@ -49,7 +54,8 @@ def get_moments_and_variances(image,
                                                ny=ny,
                                                xc=xc,
                                                yc=yc)
-        weight_mask = make_weight_mask(weight_func=weight_func,
+        if(weight_mask is None):
+            weight_mask = make_weight_mask(weight_func=weight_func,
                                        nx=nx,
                                        ny=ny,
                                        xc=xc,
@@ -84,7 +90,7 @@ def get_moments_and_variances(image,
     # Now calculate the errors
     
     if(background_noise is None):
-        background_noise = estimate_background_noise(image)
+        background_noise = get_background_noise(image)
     
     # Store some new arrays we'll use first
     square_weight_mask = np.square(weight_mask)
