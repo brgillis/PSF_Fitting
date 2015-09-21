@@ -42,6 +42,7 @@ def centre_image(image,
                  x_array <ndarray> (x coords relative to centroid),
                  y_array <ndarray> (y coords relative to centroid),
                  weight_mask <ndarray>
+                 m0 <float> (monopole moment of image)
     """
     # Get the shape of the image
     nx, ny = np.shape(image)
@@ -59,8 +60,9 @@ def centre_image(image,
         weight_mask = make_weight_mask(weight_func, nx, ny, xc, yc, x_array, y_array)
         
         # Get the dipole moments
-        dx = (x_array*image*weight_mask).sum()/(image*weight_mask).sum()
-        dy = (y_array*image*weight_mask).sum()/(image*weight_mask).sum()
+        m0 = (image*weight_mask).sum()
+        dx = (x_array*image*weight_mask).sum()/m0
+        dy = (y_array*image*weight_mask).sum()/m0
         
         # Get the larger distance we'll move
         d = max((np.abs(dx),np.abs(dy)))
@@ -78,4 +80,5 @@ def centre_image(image,
             yc,
             x_array,
             y_array,
-            weight_mask)
+            weight_mask,
+            m0)

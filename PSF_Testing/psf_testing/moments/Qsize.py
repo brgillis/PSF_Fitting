@@ -42,7 +42,7 @@ def get_Qsize_and_err(image,
     dmax = np.max((nx,ny))/2
     
     if((xc is None) or (yc is None)):
-        xc, yc, x_array, y_array, _ = centre_image(image, weight_func)
+        xc, yc, x_array, y_array, _, _ = centre_image(image, weight_func)
     else:
         if((x_array is None) or (y_array is None)):
             x_array, y_array = get_coords_of_array(nx=nx, ny=ny, xc=xc, yc=yc)

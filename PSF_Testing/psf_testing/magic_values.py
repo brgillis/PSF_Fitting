@@ -22,6 +22,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import numpy as np
+
 # Misc runtime paramters
 max_loop_iterations = 100
 
@@ -80,11 +82,16 @@ sex_cat_yp_max_col = 8
 sex_cat_num_cols = 24
 
 # Focus fitting values
+default_test_focus = 0.0
 default_min_test_focus = -6.0
 default_max_test_focus = 6.0
 default_focus_samples = 7
 default_focus_precision = 0.05
 
+# Default weight function for measuring star/model moments
+default_weight_sigma = 3.0 # Pixels
+def default_weight_func(x,y):
+    np.exp(-(np.square(x)+np.square(y)) / (2. * np.square(default_weight_sigma)))
 
 # TinyTim values
 default_tinytim_data_path = "/disk2/brg/Data/HST_Fields/PSF_models"

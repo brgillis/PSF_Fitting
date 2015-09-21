@@ -42,9 +42,9 @@ def get_moments_and_variances(image,
     if((xc is None) or (yc is None)):
         # Don't overwrite weight_mask if it's given; trust the user
         if(weight_mask is None):
-            xc, yc, x_array, y_array, weight_mask = centre_image(image, weight_func)
+            xc, yc, x_array, y_array, weight_mask, m0 = centre_image(image, weight_func)
         else:
-            xc, yc, x_array, y_array, _ = centre_image(image, weight_func)
+            xc, yc, x_array, y_array, _, m0 = centre_image(image, weight_func)
         x2_array = np.square(x_array)
         y2_array = np.square(y_array)
         xy_array = x_array * y_array
@@ -65,8 +65,6 @@ def get_moments_and_variances(image,
     plus_array = x2_array - y2_array
     
     # Get the unnormalized moments
-    
-    m0 = (image*weight_mask).sum()
     
     mx = (x_array*image*weight_mask).sum()
     my = (y_array*image*weight_mask).sum()

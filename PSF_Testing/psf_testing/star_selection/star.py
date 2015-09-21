@@ -36,7 +36,12 @@ class star(object):
         self.sky_object = sky_obj
         
         self.stamp = None
-        self.moments = None
+        
+        self.m0 = None
+        self.m0_err = None
+        
+        self.Qs = None
+        self.Q_errs = None
         
     def get_position(self):
         return self.sky_object.get_position()

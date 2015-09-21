@@ -44,7 +44,7 @@ def get_m0_and_Qs(image,
         background_noise = get_background_noise(image)
     
     if((xc is None) or (yc is None)):
-        xc, yc, x_array, y_array, weight_mask = centre_image(image, weight_func)
+        xc, yc, x_array, y_array, weight_mask, _ = centre_image(image, weight_func)
     else:
         nx, ny = np.shape(image)
         x_array, y_array = get_x_and_y_of_array(nx=nx, ny=ny, xc=xc, yc=yc)
