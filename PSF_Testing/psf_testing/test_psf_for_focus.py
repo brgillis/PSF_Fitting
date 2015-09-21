@@ -22,9 +22,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import numpy as np
+
 from psf_testing import magic_values as mv
-from psf_testing.moments.centre_image import centre_image
-from psf_testing.extract_stamp import extract_stamp_for_star
+from psf_testing.get_model_psf import get_model_psf_for_star
+from psf_testing.psf_model_scheme import psf_model_scheme
 
 def test_psf_for_focus(stars,
                        
@@ -33,6 +35,9 @@ def test_psf_for_focus(stars,
                        image = None,
                        
                        test_focus = mv.default_test_focus,
+                       num_grid_points = mv.default_num_grid_points,
+                       
+                       weight_func = mv.default_weight_func,
                                   
                        tinytim_data_path = mv.default_tinytim_data_path,
                        cleanup_tinytim_files = False,
@@ -58,21 +63,18 @@ def test_psf_for_focus(stars,
     psf_m0_errs = []
     comp_Zs = []
     
-    # Set up the weight function we'll use
-    weight_func = mv.default_weight_func
+    # Get the image shape, and reverse its ordering to x,y in fits ordering
+    image_shape = np.shape(image)
+    image_shape = image_shape[1], image_shape[0]
     
-    # Loop through stars and get results for Each
+    # Set up the focus generating scheme
+    model_scheme = psf_model_scheme(focus=test_focus,
+                                    num_grid_points=num_grid_points,
+                                    image_shape=image_shape)
+    
+    # Loop through stars and get results for each
     for star in stars:
         
-        # Extract the star's postage stamp
-        star.stamp = extract_stamp_for_star(star=star,
-                                            image=image)
-        
-        star_xc, star_yc, star_x_array, star_y_array, star_weight_mask, star.m0 = \
-            centre_image(image=image, weight_func=weight_func)
-        
-        psf_stamp = get_psf_for_star(star=star,
-                                     chip=chip,
-                                     star_xc=star_xc,
-                                     star_yc=star_yc,
-                                     star_m0=star_m0)
+        model_psf = get_model_psf_for_star(star=star,
+                                           scheme=model_scheme,
+                                           tinytim_data_path=tinytim_data_path)

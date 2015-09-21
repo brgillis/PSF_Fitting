@@ -61,7 +61,11 @@ def file_needs_update(filename):
         return True
     
     # Get the last modification time of the file
-    file_last_updated = getmtime(filename)
+    try:
+        file_last_updated = getmtime(filename)
+    except os.error:
+        # The file doesn't exist, so we'll have to create it
+        return True
     
     # If the file was last modified since the update marker was updated, it needs to be updated
     if(file_last_updated < last_update_time):

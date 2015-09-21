@@ -28,6 +28,9 @@ import os
 from psf_testing import magic_values as mv
 from psf_testing.star_selection.image_info import get_chip, get_exp_time
 from psf_testing.star_selection.sextractor_utility import get_stars_in_image
+from psf_testing.test_psf_for_focus import test_psf_for_focus
+from psf_testing.moments.centre_image import centre_image
+from psf_testing.extract_stamp import extract_stamp_for_star
 
 def test_psf(image_filename,
              
@@ -42,6 +45,7 @@ def test_psf(image_filename,
              max_test_focus = mv.default_max_test_focus,
              test_focus_samples = mv.default_focus_samples,
              test_focus_precision = mv.default_focus_precision,
+             num_grid_points = mv.default_num_grid_points,
              
              sex_data_path = mv.default_sex_data_path,
              cleanup_sex_files = True,
@@ -72,11 +76,33 @@ def test_psf(image_filename,
                                cleanup_sex_files = cleanup_sex_files,
                                **kwargs)
     
+    # Set up the weight function we'll use
+    weight_func = mv.default_weight_func
+    
+    # Get general data on all stars
+    for star in stars:
+        
+        # Extract the star's postage stamp
+        star.stamp = extract_stamp_for_star(star=star,
+                                            image=image)
+        
+        star.xc, star.yc, star.x_array, star.y_array, star.weight_mask, star.m0 = \
+            centre_image(image=image, weight_func=weight_func)
+            
+        star.chip = chip
+    
     # If we're testing a single focus value, do that now
     if(test_single_focus):
         test_results = test_psf_for_focus(stars = stars,
                                           
+                                          image_filename = image_filename,
+                                          chip = chip,
+                                          image = image,
+                                          
                                           test_focus = test_focus,
+                                          num_grid_points = num_grid_points,
+                                          
+                                          weight_func = weight_func,
                                           
                                           tinytim_data_path = tinytim_data_path,
                                           cleanup_tinytim_files = cleanup_tinytim_files,
@@ -93,6 +119,8 @@ def test_psf(image_filename,
                                                    max_test_focus=max_test_focus,
                                                    test_focus_samples=test_focus_samples,
                                                    test_focus_precision=test_focus_precision,
+                                                   
+                                                   num_grid_points = num_grid_points,
                                           
                                                    tinytim_data_path = tinytim_data_path,
                                                    cleanup_tinytim_files = cleanup_tinytim_files,

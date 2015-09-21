@@ -87,6 +87,9 @@ default_min_test_focus = -6.0
 default_max_test_focus = 6.0
 default_focus_samples = 7
 default_focus_precision = 0.05
+default_num_grid_points = (8,4) # (x,y) in fits ordering, (y,x) in C ordering
+
+default_image_shape = (2048,4096) # (x,y) in fits ordering, (y,x) in C ordering
 
 # Default weight function for measuring star/model moments
 default_weight_sigma = 3.0 # Pixels
