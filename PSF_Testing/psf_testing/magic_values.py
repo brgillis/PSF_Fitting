@@ -89,12 +89,26 @@ default_focus_samples = 7
 default_focus_precision = 0.05
 default_num_grid_points = (8,4) # (x,y) in fits ordering, (y,x) in C ordering
 
-default_image_shape = (2048,4096) # (x,y) in fits ordering, (y,x) in C ordering
+default_image_shape = (4096,2048) # (x,y) in fits ordering, (y,x) in C ordering
 
 # Default weight function for measuring star/model moments
 default_weight_sigma = 3.0 # Pixels
 def default_weight_func(x,y):
-    np.exp(-(np.square(x)+np.square(y)) / (2. * np.square(default_weight_sigma)))
+    return np.exp(-(np.square(x)+np.square(y)) / (2. * np.square(default_weight_sigma)))
 
 # TinyTim values
 default_tinytim_data_path = "/disk2/brg/Data/HST_Fields/PSF_models"
+default_tinytim_path = "/home/brg/Program_Files/tinytim-7.5"
+default_model_psf_width = "2.0"
+default_model_psf_spec_type = (1, 15) # K-type star
+default_detector = 15 # WFC
+default_filter = "f606w"
+default_subsampling_factor = 5
+
+undistorted_model_tail = "00_psf.fits"
+subsampled_model_tail = "00.fits"
+
+# Header values to store in the subsampled model psf's header
+ss_model_xc_label = "XP_CEN"
+ss_model_yc_label = "YP_CEN"
+ss_model_m0_label = "M0"

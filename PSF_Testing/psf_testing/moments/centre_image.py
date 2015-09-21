@@ -61,6 +61,8 @@ def centre_image(image,
         
         # Get the dipole moments
         m0 = (image*weight_mask).sum()
+        if not (m0>0):
+            pass
         dx = (x_array*image*weight_mask).sum()/m0
         dy = (y_array*image*weight_mask).sum()/m0
         

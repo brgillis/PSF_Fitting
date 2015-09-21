@@ -23,7 +23,7 @@
 """
 
 from math import log10
-from os.path import isfile
+from os.path import isfile, join
 import subprocess as sbp
 
 from astropy.io import fits
@@ -32,6 +32,7 @@ from psf_testing import magic_values as mv
 from psf_testing.io import replace_multiple_in_file
 from psf_testing.star_selection.image_info import get_exp_time
 from psf_testing.star_selection.star_selection import get_objects_from_cat, get_stars, get_isolated_stars
+from psf_testing.check_updates import file_needs_update
 
 def get_mag_zeropoint(exp_time,instrument_zeropoint=mv.zeropoint):
     """ Gets the magnitude zeropoint for an exposure from the exposure time and the instrument's
@@ -63,7 +64,7 @@ def make_cfg_file(output_cfg_filename,
     
     mag_zeropoint = str(get_mag_zeropoint(exp_time, mv.zeropoint))
     
-    replace_multiple_in_file(input_filename=template_filename,
+    replace_multiple_in_file(input_filename=join(data_path,template_filename),
                              output_filename=output_cfg_filename,
                              input_strings=[mv.sex_template_cfg_output_tag,
                                             mv.sex_template_cfg_path_tag,
@@ -130,16 +131,18 @@ def get_stars_in_image(image_filename,
     # Get the exposure time from the image if necessary
     if exp_time is None:
         exp_time = get_exp_time(fits.open(image_filename))
-        
-    # Make the cfg file for running SExtractor
-    make_cfg_file(output_cfg_filename=sex_cfg_filename,
-                  output_catalog_filename=sex_cat_filename,
-                  exp_time=exp_time,
-                  template_filename=mv.sex_field_template_cfg_filename,
-                  data_path=sex_data_path)
     
-    # Call SExtracter
-    run_sextractor(image_filename, sex_cfg_filename, sex_cat_name=sex_cat_filename)
+    # Run SExtractor if needed
+    if(file_needs_update(sex_cat_filename)):
+        # Make the cfg file for running SExtractor
+        make_cfg_file(output_cfg_filename=sex_cfg_filename,
+                      output_catalog_filename=sex_cat_filename,
+                      exp_time=exp_time,
+                      template_filename=mv.sex_field_template_cfg_filename,
+                      data_path=sex_data_path)
+        
+        # Call SExtracter
+        run_sextractor(image_filename, sex_cfg_filename, sex_cat_name=sex_cat_filename)
     
     # Get all objects in the image
     objects_in_image = get_objects_from_cat(sex_cat_filename)

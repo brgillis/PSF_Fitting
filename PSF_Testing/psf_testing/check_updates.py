@@ -25,7 +25,7 @@
 
 from os.path import getmtime
 from time import time
-import os.error
+import os
 
 from psf_testing import magic_values as mv
 

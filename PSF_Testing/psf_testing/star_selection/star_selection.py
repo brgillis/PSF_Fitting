@@ -60,6 +60,10 @@ def get_stars(objects,min_class_star,min_star_mag,max_star_mag):
 
 def get_isolated_stars(stars,all_objects,min_lowest_separation):
     
+    # If there is no min lowest separation, simply return the full stars list
+    if(min_lowest_separation is None):
+        return stars
+    
     # Create a variable for the objects tree we'll share between stars
     object_tree = None
     
@@ -69,7 +73,7 @@ def get_isolated_stars(stars,all_objects,min_lowest_separation):
     for star in stars:
         # Get the lowest separation for each star
         if(star.sky_object.lowest_separation is None):
-            star.sky_object.get_lowest_separation(all_objects,object_tree)
+            _, object_tree = star.sky_object.get_lowest_separation(all_objects,object_tree)
             
         # Select those stars which have a high enough lowest separation
         if(star.sky_object.lowest_separation > min_lowest_separation):

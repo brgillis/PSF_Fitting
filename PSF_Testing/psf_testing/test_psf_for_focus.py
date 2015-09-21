@@ -39,9 +39,9 @@ def test_psf_for_focus(stars,
                        
                        weight_func = mv.default_weight_func,
                                   
+                       tinytim_path = mv.default_tinytim_path,
                        tinytim_data_path = mv.default_tinytim_data_path,
                        cleanup_tinytim_files = False,
-                       force_tinytim_update = False,
                       
                        files_to_cleanup = None,
                       
@@ -75,6 +75,11 @@ def test_psf_for_focus(stars,
     # Loop through stars and get results for each
     for star in stars:
         
+        if not star.valid:
+            continue
+        
         model_psf = get_model_psf_for_star(star=star,
                                            scheme=model_scheme,
+                                           weight_func=weight_func,
+                                           tinytim_path=tinytim_path,
                                            tinytim_data_path=tinytim_data_path)

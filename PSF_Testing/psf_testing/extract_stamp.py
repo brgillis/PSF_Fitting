@@ -22,17 +22,19 @@ def extract_stamp_for_star(star, image):
                extracted.
     """
     
+    stamp_size = 2*star.sky_object.stamp_size - 1
+    
     # Swap x/y due to fits ordering
-    x1=star.sky_object.y_pix-np.floor_divide(star.sky_object.stamp_size-1, 2)
-    y1=star.sky_object.x_pix-np.floor_divide(star.sky_object.stamp_size-1, 2)
+    x1=star.sky_object.y_pix-np.floor_divide(stamp_size-1, 2)
+    y1=star.sky_object.x_pix-np.floor_divide(stamp_size-1, 2)
+    
+    image_nx, image_ny = np.shape(image.data)
+    
+    # Check that the stamp isn't too close to an edge
+    assert((x1>0) and (y1>0) and (x1+stamp_size-1<image_nx) and (y1+stamp_size-1<image_ny))
 
-    # Create the stamp data. This may fail if the stamp is too large and near and edge
-    try:
-        stamp = image.data[x1-1:x1+star.sky_object.stamp_size-1,
-                           y1-1:y1+star.sky_object.stamp_size-1]
-    except:
-        print("ERROR: Cannot create postage stamp. Check that it isn't too large and/or close\n" +
-              "to an edge.")
-        raise
+    # Create the stamp data
+    stamp = image.data[x1-1:x1+stamp_size-1,
+                       y1-1:y1+stamp_size-1]
 
     return stamp

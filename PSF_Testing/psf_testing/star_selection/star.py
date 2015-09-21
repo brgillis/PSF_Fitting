@@ -51,5 +51,7 @@ class star(object):
         
         self.weight_mask = None
         
+        self.valid = True
+        
     def get_position(self):
         return self.sky_object.get_position()

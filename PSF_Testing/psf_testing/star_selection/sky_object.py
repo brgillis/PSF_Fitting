@@ -104,4 +104,4 @@ class sky_object(object):
         query_result = objects_tree.query((self.get_position_tuple()),k=2)
         self.lowest_separation = query_result[0][1] * mv.pixel_scale
         
-        return self.lowest_separation
+        return (self.lowest_separation, objects_tree)

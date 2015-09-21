@@ -31,6 +31,7 @@ from psf_testing.star_selection.sextractor_utility import get_stars_in_image
 from psf_testing.test_psf_for_focus import test_psf_for_focus
 from psf_testing.moments.centre_image import centre_image
 from psf_testing.extract_stamp import extract_stamp_for_star
+from psf_testing.check_updates import make_update_marker
 
 def test_psf(image_filename,
              
@@ -50,10 +51,15 @@ def test_psf(image_filename,
              sex_data_path = mv.default_sex_data_path,
              cleanup_sex_files = True,
              
+             tinytim_path = mv.default_tinytim_path,
              tinytim_data_path = mv.default_tinytim_data_path,
              cleanup_tinytim_files = False,
-             force_tinytim_update = False,
+             force_update = False,
              **kwargs):
+    
+    # Mark that we need an update if we're forcing an update
+    if(force_update):
+        make_update_marker()
     
     # Start by inspecting the image and getting needed details about it
     image = fits.open(image_filename)[0]
@@ -82,12 +88,16 @@ def test_psf(image_filename,
     # Get general data on all stars
     for star in stars:
         
-        # Extract the star's postage stamp
-        star.stamp = extract_stamp_for_star(star=star,
+        # Extract the star's postage stamp if possible
+        try:
+            star.stamp = extract_stamp_for_star(star=star,
                                             image=image)
+        except:
+            star.valid = False
+            continue
         
         star.xc, star.yc, star.x_array, star.y_array, star.weight_mask, star.m0 = \
-            centre_image(image=image, weight_func=weight_func)
+            centre_image(image=star.stamp, weight_func=weight_func)
             
         star.chip = chip
     
@@ -104,9 +114,9 @@ def test_psf(image_filename,
                                           
                                           weight_func = weight_func,
                                           
+                                          tinytim_path = tinytim_path,
                                           tinytim_data_path = tinytim_data_path,
                                           cleanup_tinytim_files = cleanup_tinytim_files,
-                                          force_tinytim_update = force_tinytim_update,
                                           
                                           files_to_cleanup = files_to_cleanup,
                                           
