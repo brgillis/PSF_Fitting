@@ -30,6 +30,7 @@ import numpy as np
 from psf_testing import magic_values as mv
 from psf_testing.check_updates import file_needs_update
 from psf_testing.moments.centre_image import centre_image
+from psf_testing.rebin_psf import rebin
 
 def make_subsampled_psf_model(filename,
                               xp,
@@ -150,6 +151,26 @@ def get_model_psf_for_star(star,
         # It doesn't need an update, so open up the old image
         subsampled_model = fits.open(subsampled_name)[0]
         
+    # Get the charge diffusion kernel from the FITS comments
+    
+    fits_comments = subsampled_model.header['COMMENT']
+    
+    for test_i, s in enumerate(fits_comments):
+        if 'following kernel' in s:
+            i = test_i
+            break
+    if(i==-1):
+        raise Exception("Cannot find charge-diffusion kernel in fits file passed to " +
+                        "read_kernel_from_fits")
+        
+    # kernel parameters are located in the three lines following to that index
+    kernel = []
+    for j in fits_comments[i+1:i+4]:
+        kernel.append([float(x) for x in j.split()])
+        
+    # Convert to an ndarray        
+    kernel = np.asarray(kernel)
+        
     # Determine how far off the centre of the subsampled image is from the centre
     ss_ny, ss_nx = np.shape(subsampled_model.data)
         
@@ -166,4 +187,15 @@ def get_model_psf_for_star(star,
     # Determine how many subsampled pixels we'll have to shift the subsampled psf by
     x_shift = int(mv.default_subsampling_factor * star_d_xc - ss_model_d_xc + 0.5)
     y_shift = int(mv.default_subsampling_factor * star_d_yc - ss_model_d_yc + 0.5)
+    
+    # Get the rebinned PSF model
+    rebinned_model = rebin(subsampled_model.data,
+                           kernel,
+                           x_shift = x_shift,
+                           y_shift = y_shift,
+                           subsampling_factor = mv.default_subsampling_factor)
+    
+    scaled_model = rebinned_model * star.m0 / ss_model_m0
+    
+    return scaled_model
     

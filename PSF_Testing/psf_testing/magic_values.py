@@ -108,6 +108,8 @@ default_subsampling_factor = 5
 undistorted_model_tail = "00_psf.fits"
 subsampled_model_tail = "00.fits"
 
+charge_diffusion_kernel = np.array([])
+
 # Header values to store in the subsampled model psf's header
 ss_model_xc_label = "XP_CEN"
 ss_model_yc_label = "YP_CEN"
