@@ -32,7 +32,7 @@ from psf_testing.moments.estimate_background import get_background_noise
 from psf_testing.moments.make_weight_mask import make_weight_mask
 
 def get_moments_and_variances(image,
-                weight_func = lambda x,y : 1.,
+                weight_func = lambda x,y : np.ones_like(x),
                 weight_mask = None,
                 xc = None,
                 yc = None,
@@ -62,6 +62,7 @@ def get_moments_and_variances(image,
                                        yc=yc,
                                        x_array=x_array,
                                        y_array=y_array)
+    plus_array = x2_array - y2_array
     
     # Get the unnormalized moments
     
@@ -73,6 +74,7 @@ def get_moments_and_variances(image,
     mxx = (x2_array*image*weight_mask).sum()
     myy = (y2_array*image*weight_mask).sum()
     mxy = (xy_array*image*weight_mask).sum()
+    mplus = (plus_array*image*weight_mask).sum()
     
     # Normalize the moments and store these values in a tuple of tuples
     
@@ -82,10 +84,11 @@ def get_moments_and_variances(image,
     Mxx = mxx/m0
     Myy = myy/m0
     Mxy = mxy/m0
+    Mplus = mplus/m0
     
     moments = ((m0,),
                (Mx,My),
-               (Mxx,Myy,Mxy))
+               (Mxx,Myy,Mxy,Mplus))
         
     # Now calculate the errors
     
@@ -98,6 +101,7 @@ def get_moments_and_variances(image,
     x4_array = np.square(x2_array)
     y4_array = np.square(y2_array)
     x2y2_array = np.square(xy_array)
+    plus2_array = np.square(plus_array)
     
     var_m0 = (image_var * square_weight_mask).sum()
     
@@ -107,6 +111,7 @@ def get_moments_and_variances(image,
     var_mxx = (x4_array * image_var * square_weight_mask).sum()
     var_myy = (y4_array * image_var * square_weight_mask).sum()
     var_mxy = (x2y2_array * image_var * square_weight_mask).sum()
+    var_mplus = (plus2_array * image_var * square_weight_mask).sum()
     
     # And now get the variances of the normalized moments
     square_m0 = np.square(m0)
@@ -118,9 +123,10 @@ def get_moments_and_variances(image,
     var_Mxx = var_mxx/square_m0 + np.square(mxx)*var_m0/quart_m0
     var_Myy = var_myy/square_m0 + np.square(myy)*var_m0/quart_m0
     var_Mxy = var_mxy/square_m0 + np.square(mxy)*var_m0/quart_m0
+    var_Mplus = var_mplus/square_m0 + np.square(mplus)*var_m0/quart_m0
     
     variances = ((var_m0,),
                  (var_Mx,var_My),
-                 (var_Mxx,var_Myy,var_Mxy))
+                 (var_Mxx,var_Myy,var_Mxy,var_Mplus))
     
     return moments, variances

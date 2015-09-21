@@ -30,11 +30,11 @@ from psf_testing.moments.centre_image import centre_image
 from psf_testing.moments.estimate_background import get_background_noise
 from psf_testing.moments.get_moments import get_moments_and_variances
 from psf_testing.moments.Qsize import get_Qsize_and_err
-from psf_testing.moments.coords import get_coords_of_array
+from psf_testing.moments.coords import get_x_and_y_of_array
 from psf_testing.moments.make_weight_mask import make_weight_mask
 
 def get_m0_and_Qs(image,
-           weight_func = lambda x,y : 1.,
+           weight_func = lambda x,y : np.ones_like(x),
            xc = None,
            yc = None,
            background_noise = None,
@@ -47,7 +47,7 @@ def get_m0_and_Qs(image,
         xc, yc, x_array, y_array, weight_mask = centre_image(image, weight_func)
     else:
         nx, ny = np.shape(image)
-        x_array, y_array = get_coords_of_array(nx=nx, ny=ny, xc=xc, yc=yc)
+        x_array, y_array = get_x_and_y_of_array(nx=nx, ny=ny, xc=xc, yc=yc)
         weight_mask = make_weight_mask(weight_func=weight_func,
                                        nx=nx,
                                        ny=ny,
@@ -65,8 +65,8 @@ def get_m0_and_Qs(image,
                                                       background_noise = background_noise,
                                                       gain = gain)
     
-    ((m0,), (Mx,My), (Mxx,Myy,Mxy)) = moments_and_variances[0]
-    ((var_m0,), (var_Mx,var_My), (var_Mxx,var_Myy,var_Mxy)) = moments_and_variances[1]
+    ((m0,), (Mx,My), (_Mxx,_Myy,Mxy,Mplus)) = moments_and_variances[0]
+    ((var_m0,), (var_Mx,var_My), (_var_Mxx,_var_Myy,var_Mxy,var_Mplus)) = moments_and_variances[1]
     
     # Get the Q values from the moments, plus errors from the variances
     
@@ -84,8 +84,8 @@ def get_m0_and_Qs(image,
     var_Qy = var_My*square_scale
     err_Qy = np.sqrt(var_Qy)
     
-    Qplus = (Mxx-Myy) * square_scale
-    var_Qplus = (var_Mxx + var_Myy) * quart_scale
+    Qplus = Mplus * square_scale
+    var_Qplus = var_Mplus * quart_scale
     err_Qplus = np.sqrt(var_Qplus)
     
     Qcross = 2. * Mxy * square_scale

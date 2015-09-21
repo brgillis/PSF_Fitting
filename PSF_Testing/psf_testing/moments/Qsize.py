@@ -30,7 +30,7 @@ from psf_testing.moments.centre_image import centre_image
 from psf_testing.moments.coords import get_coords_of_array
 
 def get_Qsize_and_err(image,
-           weight_func = lambda x,y : 1.,
+           weight_func = lambda x,y : np.ones_like(x),
            xc = None,
            yc = None,
            x_array = None,
@@ -90,13 +90,19 @@ def get_Qsize_and_err(image,
             # If we have any pixels here, get the mean, contained mean, and variances
             I_mean[ri] = np.mean(I[ri])
             
-            for rj in xrange(ri):
-                I_lt_mean[ri] += ( I_mean[rj] * N[rj] ) / N_lt[ri]
+            if( N_lt[ri]==0 ):
+                I_lt_mean[ri] = 0
+            else:
+                for rj in xrange(ri):
+                    I_lt_mean[ri] += ( I_mean[rj] * N[rj] ) / N_lt[ri]
                 
-            var_I_mean[ri] = np.sum(I[ri])/(gain*np.square(N[ri]))
+                
+            var_I_mean[ri] = np.sum(np.abs(I[ri])/gain + np.square(background_noise)) \
+                                / (np.square(N[ri]))
                 
         # Get W for this bin
-        W[ri] = I_lt_mean[ri] - I_mean[ri]
+        if(ri>0):
+            W[ri] = I_lt_mean[ri] - I_mean[ri]
         
         # Get the covariance of this bin with itself and every smaller bin
         
@@ -139,7 +145,7 @@ def get_Qsize_and_err(image,
     # Get Qsize from this
     Qsize = Qsize_numerator/Qsize_denominator
     
-    # TODO get err_Qsize
+    # Now get the error on Qsize
     
     weighted_var_W = var_W * np.square(w_ri_array)
     

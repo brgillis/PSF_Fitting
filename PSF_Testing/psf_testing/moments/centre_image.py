@@ -29,7 +29,7 @@ from psf_testing.moments.coords import get_x_and_y_of_array
 from psf_testing import magic_values as mv
 
 def centre_image(image,
-                 weight_func = lambda x,y: 1.,
+                 weight_func = lambda x,y: np.ones_like(x),
                  precision = 0.01):
     """ Get the centroid of an image for a given weight function.
     

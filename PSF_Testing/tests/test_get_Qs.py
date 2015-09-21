@@ -53,6 +53,16 @@ def noiseless_circ_Gaussian():
     return unnormed_Gaussian/unnormed_Gaussian.sum()
 
 @pytest.fixture(scope="module")
+def noiseless_2x_circ_Gaussian():
+    unnormed_Gaussian = np.outer(signal.gaussian(nx, 2*image_sigma), signal.gaussian(ny, image_sigma))
+    return unnormed_Gaussian/unnormed_Gaussian.sum()
+
+@pytest.fixture(scope="module")
+def noiseless_4x_circ_Gaussian():
+    unnormed_Gaussian = np.outer(signal.gaussian(nx, 4*image_sigma), signal.gaussian(ny, image_sigma))
+    return unnormed_Gaussian/unnormed_Gaussian.sum()
+
+@pytest.fixture(scope="module")
 def noiseless_horiz_Gaussian():
     unnormed_Gaussian = np.outer(signal.gaussian(nx, image_sigma*(1+test_shear)),
                                  signal.gaussian(ny, image_sigma*(1-test_shear)))
@@ -113,3 +123,78 @@ def test_horiz_Gaussian(noiseless_horiz_Gaussian,horiz_Gaussian_image,test_weigh
     assert(np.abs(Zs[2]) < tolerance)
     assert(np.abs(Zs[3]) < tolerance)
     assert(np.abs(Zs[4]) < tolerance)
+    
+def test_err_calcs(noiseless_circ_Gaussian,test_weight_func):
+    
+    tolerance = 0.2
+    
+    num_test_Gaussians = 100
+    
+    all_Qs = []
+    
+    np.random.seed(seed)
+    
+    scaled_Gaussian = flux*noiseless_circ_Gaussian
+        
+    noise_per_pixel = np.sqrt(scaled_Gaussian/gain + np.square(background_noise))
+    
+    for _i in xrange(num_test_Gaussians):
+        
+        Gaussian_image = scaled_Gaussian + noise_per_pixel * np.random.randn(nx,ny)
+        _m0, _err_m0, Qs, _err_Qs = get_m0_and_Qs(Gaussian_image,
+                                                 weight_func=test_weight_func,
+                                                 xc = (nx-1)/2.,
+                                                 yc = (ny-1)/2.,
+                                                 background_noise=background_noise,
+                                                 gain=gain)
+        
+        all_Qs.append(Qs)
+        
+    _m0, _err_m0, _Qs, mean_err_Qs = get_m0_and_Qs(scaled_Gaussian,
+                                             weight_func=test_weight_func,
+                                             xc = (nx-1)/2.,
+                                             yc = (ny-1)/2.,
+                                             background_noise=background_noise,
+                                             gain=gain)
+        
+    std_Qs = np.std(all_Qs,axis=0)
+    
+    assert(np.abs(mean_err_Qs[0]-std_Qs[0])/std_Qs[0] < tolerance)
+    assert(np.abs(mean_err_Qs[1]-std_Qs[1])/std_Qs[1] < tolerance)
+    assert(np.abs(mean_err_Qs[2]-std_Qs[2])/std_Qs[2] < tolerance)
+    assert(np.abs(mean_err_Qs[3]-std_Qs[3])/std_Qs[3] < tolerance)
+    assert(np.abs(mean_err_Qs[4]-std_Qs[4])/std_Qs[4] < tolerance)
+    
+    pass
+
+def test_Qsize_scaling(noiseless_circ_Gaussian,noiseless_2x_circ_Gaussian,
+                       noiseless_4x_circ_Gaussian,test_weight_func):
+    
+    # Get size measurement for 1x size Gaussian
+    _m0, _err_m0, Qs_1x, _err_Qs = get_m0_and_Qs(flux*noiseless_circ_Gaussian,
+                                             xc = (nx-1)/2.,
+                                             yc = (ny-1)/2.,
+                                             background_noise=background_noise,
+                                             gain=gain)
+    Qsize_1x = Qs_1x[4]
+    
+    # Get size measurement for 2x size Gaussian
+    _m0, _err_m0, Qs_2x, _err_Qs = get_m0_and_Qs(flux*noiseless_2x_circ_Gaussian,
+                                             xc = (nx-1)/2.,
+                                             yc = (ny-1)/2.,
+                                             background_noise=background_noise,
+                                             gain=gain)
+    Qsize_2x = Qs_2x[4]
+    
+    # Get size measurement for 4x size Gaussian
+    _m0, _err_m0, Qs_4x, _err_Qs = get_m0_and_Qs(flux*noiseless_4x_circ_Gaussian,
+                                             xc = (nx-1)/2.,
+                                             yc = (ny-1)/2.,
+                                             background_noise=background_noise,
+                                             gain=gain)
+    Qsize_4x = Qs_4x[4]
+    
+    assert((Qsize_4x > Qsize_2x) and (Qsize_2x>Qsize_1x), "Qsize doesn't scale with size of " +
+           "input Gaussian.")
+    
+    pass
