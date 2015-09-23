@@ -33,18 +33,14 @@ class star(object):
             @TODO Constructor
         """
         
+        # Data on position, etc of the star
         self.sky_object = sky_obj
         
+        # Extracted postage stamp and background noise estimate of this star
         self.stamp = None
-        
         self.background_noise = None
         
-        self.m0 = None
-        self.m0_err = None
-        
-        self.Qs = None
-        self.Q_errs = None
-        
+        # Data determined from testing this star
         self.xc = None
         self.yc = None
         
@@ -53,10 +49,33 @@ class star(object):
         
         self.weight_mask = None
         
-        self.valid = True
+        self.m0 = None
+        self.m0_err = None
         
+        self.Qs = None
+        self.Q_errs = None
+        
+        self.valid = True
+        self.outlier = False
+        
+        # Data for the model PSF corresponding to this star's position
         self.model_psf = None
+        
+        self.model_m0 = None
+        self.model_m0_err = None
+        
+        self.model_Qs = None
+        self.model_Q_errs = None
+        
+        # Data for the corresponding noisy model PSF 
         self.noisy_model_psf = None
+        
+        self.noisy_m0 = None
+        self.noisy_m0_err = None
+        
+        self.noisy_model_Qs = None
+        self.noisy_model_Q_errs = None
+        
         
     def get_position(self):
         return self.sky_object.get_position()
