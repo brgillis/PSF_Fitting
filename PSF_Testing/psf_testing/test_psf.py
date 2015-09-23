@@ -22,16 +22,19 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import numpy as np
 from astropy.io import fits
 import os
 
 from psf_testing import magic_values as mv
-from psf_testing.star_selection.image_info import get_chip, get_exp_time
+from psf_testing.star_selection.image_info import get_chip, get_exp_time, get_gain
 from psf_testing.star_selection.sextractor_utility import get_stars_in_image
 from psf_testing.test_psf_for_focus import test_psf_for_focus
 from psf_testing.moments.centre_image import centre_image
 from psf_testing.extract_stamp import extract_stamp_for_star
 from psf_testing.check_updates import make_update_marker
+from psf_testing.moments.estimate_background import get_background_level_and_noise
+from psf_testing.moments.get_Qs import get_m0_and_Qs
 
 def test_psf(image_filename,
              
@@ -66,6 +69,7 @@ def test_psf(image_filename,
     
     chip = get_chip(image)
     exp_time = get_exp_time(image)
+    gain = get_gain(image)
     
     # Keep track of a list of files we'll want to cleanup when done
     files_to_cleanup = []
@@ -86,6 +90,10 @@ def test_psf(image_filename,
     weight_func = mv.default_weight_func
     
     # Get general data on all stars
+    star_m0s = []
+    star_m0_errs = []
+    star_Qs = []
+    star_Q_errs = []
     for star in stars:
         
         # Extract the star's postage stamp if possible
@@ -96,14 +104,48 @@ def test_psf(image_filename,
             star.valid = False
             continue
         
+        background_level, star.background_noise = get_background_level_and_noise(star.stamp)
+        
+        star.stamp -= background_level
+        
         star.xc, star.yc, star.x_array, star.y_array, star.weight_mask, star.m0 = \
             centre_image(image=star.stamp, weight_func=weight_func)
             
+        star.m0, star.m0_err, star.Qs, star.Q_errs = \
+            get_m0_and_Qs(image = star.stamp,
+                          weight_func = weight_func,
+                          xc = star.xc,
+                          yc = star.yc,
+                          background_noise = star.background_noise,
+                          gain = gain)
+            
         star.chip = chip
+            
+        # If the monopole term is negative or zero, mark it as invalid
+        if(star.m0 <= 0):
+            star.valid = False
+            continue
+        
+        # Append m0 and Q data to the storage lists
+        star_m0s.append(star.m0)
+        star_m0_errs.append(star.m0_err)
+        star_Qs.append(star.Qs)
+        star_Q_errs.append(star.Q_errs)
+        
+    # Convert the star m0 and Q storage lists to numpy arrays
+    star_m0s = np.array(star_m0s)
+    star_m0_errs = np.array(star_m0_errs)
+    star_Qs = np.array(star_Qs)
+    star_Q_errs = np.array(star_Q_errs)
     
     # If we're testing a single focus value, do that now
     if(test_single_focus):
         test_results = test_psf_for_focus(stars = stars,
+                                          
+                                          star_m0s = star_m0s,
+                                          star_m0_errs = star_m0_errs,
+                                          star_Qs = star_Qs,
+                                          star_Q_errs = star_Q_errs,
                                           
                                           image_filename = image_filename,
                                           chip = chip,
@@ -120,7 +162,8 @@ def test_psf(image_filename,
                                           
                                           files_to_cleanup = files_to_cleanup,
                                           
-                                          **kwargs)
+                                          gain = gain,
+                                          save_models = True)
     # Otherwise, call the fitting function
     else:
         test_results = fit_best_focus_and_test_psf(stars=stars,

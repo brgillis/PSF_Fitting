@@ -30,9 +30,9 @@ class psf_model_scheme(object):
     """
 
 
-    def __init__(self, focus=mv.default_test_focus,
-                       num_grid_points=mv.default_num_grid_points,
-                       image_shape=mv.default_image_shape):
+    def __init__(self, focus = mv.default_test_focus,
+                       num_grid_points = mv.default_num_grid_points,
+                       image_shape = mv.default_image_shape):
         """ Optional: focus <float> (focus value for the model)
                       num_grid_points <float, float> (number of grid points to use for focus
                                                       determinations. If None, will use stars' exact

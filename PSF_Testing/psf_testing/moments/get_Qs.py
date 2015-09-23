@@ -34,11 +34,11 @@ from psf_testing.moments.coords import get_x_and_y_of_array
 from psf_testing.moments.make_weight_mask import make_weight_mask
 
 def get_m0_and_Qs(image,
-           weight_func = lambda x,y : np.ones_like(x),
-           xc = None,
-           yc = None,
-           background_noise = None,
-           gain = mv.gain):
+                  weight_func = lambda x,y : np.ones_like(x),
+                  xc = None,
+                  yc = None,
+                  background_noise = None,
+                  gain = mv.gain):
     
     if(background_noise is None):
         background_noise = get_background_noise(image)
@@ -94,13 +94,13 @@ def get_m0_and_Qs(image,
     
     # Get Qsize and its error now
     Qsize, err_Qsize = get_Qsize_and_err(image=image,
-                                weight_func=weight_func,
-                                xc = xc,
-                                yc = yc,
-                                x_array = x_array,
-                                y_array = y_array,
-                                background_noise = background_noise,
-                                gain = gain)
+                                         weight_func=weight_func,
+                                         xc = xc,
+                                         yc = yc,
+                                         x_array = x_array,
+                                         y_array = y_array,
+                                         background_noise = background_noise,
+                                         gain = gain)
     
     # Put the Q values into a numpy array
     Qs = np.array([Qx,Qy,Qplus,Qcross,Qsize])

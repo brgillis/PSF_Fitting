@@ -32,12 +32,14 @@ from psf_testing.moments.estimate_background import get_background_noise
 from psf_testing.moments.make_weight_mask import make_weight_mask
 
 def get_moments_and_variances(image,
-                weight_func = lambda x,y : np.ones_like(x),
-                weight_mask = None,
-                xc = None,
-                yc = None,
-                background_noise = None,
-                gain = mv.gain):
+                              weight_func = lambda x,y : np.ones_like(x),
+                              weight_mask = None,
+                              xc = None,
+                              yc = None,
+                              background_noise = None,
+                              gain = mv.gain):
+    
+    m0 = None
     
     if((xc is None) or (yc is None)):
         # Don't overwrite weight_mask if it's given; trust the user
@@ -56,15 +58,18 @@ def get_moments_and_variances(image,
                                                yc=yc)
         if(weight_mask is None):
             weight_mask = make_weight_mask(weight_func=weight_func,
-                                       nx=nx,
-                                       ny=ny,
-                                       xc=xc,
-                                       yc=yc,
-                                       x_array=x_array,
-                                       y_array=y_array)
+                                           nx=nx,
+                                           ny=ny,
+                                           xc=xc,
+                                           yc=yc,
+                                           x_array=x_array,
+                                           y_array=y_array)
     plus_array = x2_array - y2_array
     
     # Get the unnormalized moments
+    
+    if(m0 is None):
+        m0 = (image*weight_mask).sum()
     
     mx = (x_array*image*weight_mask).sum()
     my = (y_array*image*weight_mask).sum()
@@ -95,7 +100,7 @@ def get_moments_and_variances(image,
     
     # Store some new arrays we'll use first
     square_weight_mask = np.square(weight_mask)
-    image_var = image/gain + np.square(background_noise)
+    image_var = np.abs(image)/gain + np.square(background_noise)
     x4_array = np.square(x2_array)
     y4_array = np.square(y2_array)
     x2y2_array = np.square(xy_array)

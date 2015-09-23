@@ -30,13 +30,13 @@ from psf_testing.moments.centre_image import centre_image
 from psf_testing.moments.coords import get_coords_of_array
 
 def get_Qsize_and_err(image,
-           weight_func = lambda x,y : np.ones_like(x),
-           xc = None,
-           yc = None,
-           x_array = None,
-           y_array = None,
-           background_noise = None,
-           gain = mv.gain):
+                      weight_func = lambda x,y : np.ones_like(x),
+                      xc = None,
+                      yc = None,
+                      x_array = None,
+                      y_array = None,
+                      background_noise = None,
+                      gain = mv.gain):
     
     nx, ny = np.shape(image)
     dmax = np.max((nx,ny))/2
@@ -101,7 +101,7 @@ def get_Qsize_and_err(image,
                                 / (np.square(N[ri]))
                 
         # Get W for this bin
-        if(ri>0):
+        if(N_lt[ri]>0):
             W[ri] = I_lt_mean[ri] - I_mean[ri]
         
         # Get the covariance of this bin with itself and every smaller bin
@@ -134,7 +134,7 @@ def get_Qsize_and_err(image,
     
     weighted_W = W * w_ri_array
     
-    Qsize_numerator = (weighted_W * ri_array).sum() * mv.pixel_scale
+    Qsize_numerator = (weighted_W * ri_array).sum()
     square_Qsize_numerator = np.square(Qsize_numerator)
     
     Qsize_denominator = weighted_W.sum()
@@ -147,19 +147,24 @@ def get_Qsize_and_err(image,
     
     # Now get the error on Qsize
     
-    weighted_var_W = var_W * np.square(w_ri_array)
+    w_ri_ri_array = ri_array*w_ri_array
     
-    var_Qsize_numerator = (np.square(ri_array)*weighted_var_W).sum() * np.square(mv.pixel_scale)
-    var_Qsize_denominator = weighted_var_W.sum()
+    var_Qsize_numerator = (np.outer(w_ri_ri_array,w_ri_ri_array) \
+                             * covar_W).sum()
+    var_Qsize_denominator = (np.outer(w_ri_array,w_ri_array) \
+                             * covar_W).sum()
     
     covar_Qsize_num_denom = (np.outer(ri_array*w_ri_array,w_ri_array) \
-                             * covar_W).sum() * mv.pixel_scale
+                             * covar_W).sum()
                    
     var_Qsize = var_Qsize_numerator/square_Qsize_denominator \
                  + square_Qsize_numerator*var_Qsize_denominator/quart_Qsize_denominator \
                  - 2. * Qsize_numerator*covar_Qsize_num_denom / cube_Qsize_denominator
                  
-    err_Qsize = np.sqrt(var_Qsize)
+    if(var_Qsize<0):
+        err_Qsize = 0.
+    else:      
+        err_Qsize = np.sqrt(var_Qsize)
     
-    return Qsize, err_Qsize
+    return Qsize*mv.pixel_scale, err_Qsize*mv.pixel_scale
     

@@ -30,6 +30,9 @@ def get_chip(image):
 def get_exp_time(image):
     return image.header[mv.header_exp_time_keyword]
 
+def get_gain(image):
+    return image.header[mv.header_gain_keyword]
+
 def get_obs_date(image):
     return image.header[mv.header_obs_date_keyword]
 

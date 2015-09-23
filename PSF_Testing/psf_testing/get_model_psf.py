@@ -91,9 +91,13 @@ def make_subsampled_psf_model(filename,
     # Open the subsampled model image
     subsampled_image = fits.open(filename_base + mv.subsampled_model_tail)
     
+    # Define a modified weight function to work on subsampled pixels
+    def ss_weight_func(x,y):
+        return weight_func(mv.default_subsampling_factor*x,mv.default_subsampling_factor*y)
+    
     # Get the centre of this image
     ss_xc, ss_yc, _ss_x_array, _ss_y_array, _ss_weight_mask, ss_m0 = \
-            centre_image(image=subsampled_image[0].data, weight_func=weight_func)
+            centre_image(image=subsampled_image[0].data, weight_func=ss_weight_func)
             
     subsampled_image[0].header[mv.ss_model_xc_label] = ss_xc
     subsampled_image[0].header[mv.ss_model_yc_label] = ss_yc
@@ -176,7 +180,6 @@ def get_model_psf_for_star(star,
         
     ss_model_d_xc = subsampled_model.header[mv.ss_model_xc_label] - (ss_nx-1.)/2
     ss_model_d_yc = subsampled_model.header[mv.ss_model_yc_label] - (ss_ny-1.)/2
-    ss_model_m0 = subsampled_model.header[mv.ss_model_m0_label]
     
     # Get the same for the star's postage stamp
     star_ny, star_nx = np.shape(star.stamp)
@@ -195,7 +198,10 @@ def get_model_psf_for_star(star,
                            y_shift = y_shift,
                            subsampling_factor = mv.default_subsampling_factor)
     
-    scaled_model = rebinned_model * star.m0 / ss_model_m0
+    # Get the zeroth-order moment for the rebinned psf
+    _, _, _, _, _, rb_model_m0 = centre_image(rebinned_model,weight_func=weight_func)
+    
+    scaled_model = rebinned_model * star.m0 / rb_model_m0
     
     return scaled_model
     

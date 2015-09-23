@@ -43,6 +43,7 @@ zeropoint = 26.08 # F606W filter in ABmags from www.stsci.edu/hst/wfc3/phot_zp_l
 # Image header keywords
 header_chip_keyword = "CCDCHIP"
 header_exp_time_keyword = "EXPTIME"
+header_gain_keyword = "CCDGAIN"
 header_obs_date_keyword = "DATE-OBS"
 header_obs_time_keyword = "TIME-OBS"
 

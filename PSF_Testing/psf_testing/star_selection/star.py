@@ -37,6 +37,8 @@ class star(object):
         
         self.stamp = None
         
+        self.background_noise = None
+        
         self.m0 = None
         self.m0_err = None
         
@@ -52,6 +54,9 @@ class star(object):
         self.weight_mask = None
         
         self.valid = True
+        
+        self.model_psf = None
+        self.noisy_model_psf = None
         
     def get_position(self):
         return self.sky_object.get_position()
