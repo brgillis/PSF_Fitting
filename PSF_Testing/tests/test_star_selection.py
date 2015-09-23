@@ -54,7 +54,7 @@ def test_get_lowest_separations(get_default_sky_objs_list):
     objects_tree = None
     
     for obj in sky_objs:
-        obj.get_lowest_separation(sky_objs,objects_tree)
+        _, objects_tree = obj.get_lowest_separation(sky_objs,objects_tree)
         
         assert(obj.lowest_separation==1.*mv.pixel_scale)
         

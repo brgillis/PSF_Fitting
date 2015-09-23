@@ -34,7 +34,7 @@ image_sigma = 3.0
 weight_sigma = 5.0
 gain = 2.0
 flux = 10000.0
-background_noise = 1.0
+background_noise = 10.0
 
 test_shear = 0.2
 
