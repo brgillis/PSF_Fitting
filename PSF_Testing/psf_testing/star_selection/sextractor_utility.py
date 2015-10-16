@@ -48,9 +48,12 @@ def get_mag_zeropoint(exp_time,instrument_zeropoint=mv.zeropoint):
 
 def make_cfg_file(output_cfg_filename,
                   output_catalog_filename,
-                  exp_time,
+                  exp_time=None,
+                  mag_zeropoint=None,
                   template_filename=mv.sex_field_template_cfg_filename,
-                  data_path=mv.default_sex_data_path):
+                  data_path=mv.default_sex_data_path,
+                  gain="2.0",
+                  pixel_scale="0"):
     """ Makes a cfg file for SExtractor, using a given template file.
     
         Requires: output_cfg_filename <string>
@@ -62,16 +65,21 @@ def make_cfg_file(output_cfg_filename,
         Returns: None
     """
     
-    mag_zeropoint = str(get_mag_zeropoint(exp_time, mv.zeropoint))
+    if(mag_zeropoint is None):
+        mag_zeropoint = get_mag_zeropoint(exp_time, mv.zeropoint)
     
     replace_multiple_in_file(input_filename=join(data_path,template_filename),
                              output_filename=output_cfg_filename,
                              input_strings=[mv.sex_template_cfg_output_tag,
                                             mv.sex_template_cfg_path_tag,
-                                            mv.sex_template_cfg_zeropoint_tag],
+                                            mv.sex_template_cfg_zeropoint_tag,
+                                            mv.sex_template_cfg_gain_tag,
+                                            mv.sex_template_cfg_pixel_scale_tag],
                              output_strings=[output_catalog_filename,
                                              data_path,
-                                             mag_zeropoint])
+                                             str(mag_zeropoint),
+                                             str(gain),
+                                             str(pixel_scale)])
     
     return
 

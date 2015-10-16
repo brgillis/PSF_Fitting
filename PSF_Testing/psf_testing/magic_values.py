@@ -57,6 +57,8 @@ sex_psf_template_cfg_filename = "psf.cfg"
 sex_template_cfg_path_tag = "REPLACEME_PATH"
 sex_template_cfg_output_tag = "REPLACEME_OUTPUT_CAT"
 sex_template_cfg_zeropoint_tag = "REPLACEME_MAG_ZEROPOINT"
+sex_template_cfg_gain_tag = "REPLACEME_GAIN"
+sex_template_cfg_pixel_scale_tag = "REPLACEME_PIXEL_SCALE"
 
 # Other Sextractor values
 default_sex_data_path = "./data"

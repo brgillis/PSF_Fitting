@@ -58,5 +58,7 @@ def replace_multiple_in_file(input_filename,output_filename,input_strings,output
             for line in fin:
                 new_line = line
                 for input_string, output_string in zip(input_strings, output_strings):
+                    if((input_string is None) or (output_string is None)):
+                        continue
                     new_line = new_line.replace(input_string, output_string)
                 fout.write(new_line)
