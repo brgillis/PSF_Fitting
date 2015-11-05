@@ -80,8 +80,7 @@ def get_Qsize_and_var(image,
 
         # Start by binning pixels by radial distances
         I.append(flattened_image[ np.logical_and(flattened_rs <= ri + 0.5,
-                                                  flattened_rs > ri - 0.5) ]
-                  * radial_weight_func(ri))
+                                                  flattened_rs > ri - 0.5) ])
         N.append(np.size(I[ri]))
 
         # Get the number of contained pixels
@@ -89,11 +88,11 @@ def get_Qsize_and_var(image,
         for rj in xrange(ri):
             N_lt[ri] += N[rj]
 
-        if(N[-1] > 0):
+        if N[-1] > 0:
             # If we have any pixels here, get the mean, contained mean, and variances
             I_mean[ri] = np.mean(I[ri])
 
-            if(N_lt[ri] == 0):
+            if N_lt[ri] == 0:
                 I_lt_mean[ri] = 0
             else:
                 for rj in xrange(ri):
@@ -133,63 +132,46 @@ def get_Qsize_and_var(image,
 
     # Put this into the calculation for Qsize
     ri_array = np.linspace(start=0., stop=dmax, num=dmax, endpoint=False)
-    prim_w_ri_array = prim_radial_weight_func(ri_array)
-    sec_w_ri_array = sec_radial_weight_func(ri_array)
 
-    prim_weighted_W = W * prim_w_ri_array
-    sec_weighted_W = W * sec_w_ri_array
+    Qsize = np.zeros(2)
+    var_Qsize = np.zeros((2, 2))
 
-    prim_Qsize_numerator = (prim_weighted_W * ri_array).sum()
-    prim_square_Qsize_numerator = np.square(prim_Qsize_numerator)
+    for i, weight_func in zip(range(2), (prim_radial_weight_func, sec_radial_weight_func)):
 
-    sec_Qsize_numerator = (sec_weighted_W * ri_array).sum()
-    sec_square_Qsize_numerator = np.square(sec_Qsize_numerator)
+        w_ri_array = weight_func(ri_array)
 
-    prim_Qsize_denominator = prim_weighted_W.sum()
-    prim_square_Qsize_denominator = np.square(prim_Qsize_denominator)
-    prim_cube_Qsize_denominator = prim_Qsize_denominator * prim_square_Qsize_denominator
-    prim_quart_Qsize_denominator = prim_Qsize_denominator * prim_cube_Qsize_denominator
+        weighted_W = W * w_ri_array
 
-    sec_Qsize_denominator = sec_weighted_W.sum()
-    sec_square_Qsize_denominator = np.square(sec_Qsize_denominator)
-    sec_cube_Qsize_denominator = sec_Qsize_denominator * sec_square_Qsize_denominator
-    sec_quart_Qsize_denominator = sec_Qsize_denominator * sec_cube_Qsize_denominator
+        Qsize_numerator = (weighted_W * ri_array).sum()
+        square_Qsize_numerator = np.square(Qsize_numerator)
 
-    # Get Qsize from this
-    prim_Qsize = prim_Qsize_numerator / prim_Qsize_denominator
-    sec_Qsize = sec_Qsize_numerator / sec_Qsize_denominator
+        Qsize_denominator = weighted_W.sum()
+        square_Qsize_denominator = np.square(Qsize_denominator)
+        cube_Qsize_denominator = Qsize_denominator * square_Qsize_denominator
+        quart_Qsize_denominator = Qsize_denominator * cube_Qsize_denominator
 
-    # Now get the error on Qsize
+        # Get Qsize from this
+        Qsize[i] = Qsize_numerator / Qsize_denominator
 
-    prim_w_ri_ri_array = ri_array * prim_w_ri_array
-    sec_w_ri_ri_array = ri_array * sec_w_ri_array
+        # Now get the variance on Qsize
 
-    prim_var_Qsize_numerator = (np.outer(prim_w_ri_ri_array, prim_w_ri_ri_array) \
-                             * covar_W).sum()
-    prim_var_Qsize_denominator = (np.outer(prim_w_ri_array, prim_w_ri_array) \
-                             * covar_W).sum()
-    sec_var_Qsize_numerator = (np.outer(sec_w_ri_ri_array, sec_w_ri_ri_array) \
-                             * covar_W).sum()
-    sec_var_Qsize_denominator = (np.outer(sec_w_ri_array, sec_w_ri_array) \
-                             * covar_W).sum()
+        w_ri_ri_array = ri_array * w_ri_array
 
-    prim_covar_Qsize_num_denom = (np.outer(ri_array * prim_w_ri_array, prim_w_ri_array) \
-                             * covar_W).sum()
-    sec_covar_Qsize_num_denom = (np.outer(ri_array * sec_w_ri_array, sec_w_ri_array) \
-                             * covar_W).sum()
+        for j, weight_func in zip(range(2), (prim_radial_weight_func, sec_radial_weight_func)):
 
-    prim_var_Qsize = prim_var_Qsize_numerator / prim_square_Qsize_denominator \
-                 + prim_square_Qsize_numerator * prim_var_Qsize_denominator / prim_quart_Qsize_denominator \
-                 - 2. * prim_Qsize_numerator * prim_covar_Qsize_num_denom / prim_cube_Qsize_denominator
-    sec_var_Qsize = sec_var_Qsize_numerator / sec_square_Qsize_denominator \
-                 + sec_square_Qsize_numerator * sec_var_Qsize_denominator / sec_quart_Qsize_denominator \
-                 - 2. * sec_Qsize_numerator * sec_covar_Qsize_num_denom / sec_cube_Qsize_denominator
+            other_w_ri_array = weight_func(ri_array)
+            other_w_ri_ri_array = ri_array * other_w_ri_array
 
-    covar_Qsize = np.sqrt(prim_var_Qsize) * np.sqrt(sec_var_Qsize)
-    assert False # FIXME
+            var_Qsize_numerator = (np.outer(w_ri_ri_array, other_w_ri_ri_array) \
+                                     * covar_W).sum()
+            var_Qsize_denominator = (np.outer(w_ri_array, other_w_ri_array) \
+                                     * covar_W).sum()
 
-    Qsize = np.array((prim_Qsize, sec_Qsize))
-    var_Qsize = np.array(((prim_var_Qsize, covar_Qsize),
-                         (covar_Qsize, sec_var_Qsize)))
+            covar_Qsize_num_denom = (np.outer(w_ri_ri_array, other_w_ri_array) \
+                                     * covar_W).sum()
 
-    return Qsize * mv.pixel_scale, var_Qsize * mv.pixel_scale
+            var_Qsize[i, j] = var_Qsize_numerator / square_Qsize_denominator \
+                         + square_Qsize_numerator * var_Qsize_denominator / quart_Qsize_denominator \
+                         - 2. * Qsize_numerator * covar_Qsize_num_denom / cube_Qsize_denominator
+
+    return Qsize * mv.pixel_scale, var_Qsize * np.square(mv.pixel_scale)
