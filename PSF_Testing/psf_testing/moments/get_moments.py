@@ -46,7 +46,7 @@ def get_moments_and_variances(image,
     if (xc is None) or (yc is None):
         # Don't overwrite weight_mask if it's given; trust the user
         if prim_weight_mask is None:
-            xc, yc, x_array, y_array, prim_weight_mask, m0 = centre_image(image, prim_weight_func)
+            xc, yc, x_array, y_array, prim_weight_mask, _ = centre_image(image, prim_weight_func)
         else:
             xc, yc, x_array, y_array, _, _ = centre_image(image, prim_weight_func)
 

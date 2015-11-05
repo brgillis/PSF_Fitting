@@ -33,12 +33,9 @@ from psf_testing.remove_outliers import remove_outliers
 def test_psf_for_focus(stars,
 
                        star_m0s,
-                       star_m0_errs,
                        star_Qs,
-                       star_Q_errs,
 
                        image_filename,
-                       chip,
                        image=None,
 
                        test_focus=mv.default_test_focus,
@@ -49,18 +46,17 @@ def test_psf_for_focus(stars,
 
                        tinytim_path=mv.default_tinytim_path,
                        tinytim_data_path=mv.default_tinytim_data_path,
-                       cleanup_tinytim_files=False,
 
                        files_to_cleanup=None,
 
                        gain=mv.gain,
                        save_models=False):
 
-    if(image is None):
+    if image is None:
         from astropy.io import fits
         image = fits.open(image_filename)[0]
 
-    if(files_to_cleanup is None):
+    if files_to_cleanup is None:
         files_to_cleanup = []
 
     # Initialize arrays for results per star tested
@@ -90,13 +86,14 @@ def test_psf_for_focus(stars,
 
         model_psf = get_model_psf_for_star(star=star,
                                            scheme=model_scheme,
-                                           weight_func=weight_func,
+                                           weight_func=prim_weight_func,
                                            tinytim_path=tinytim_path,
                                            tinytim_data_path=tinytim_data_path)
 
         psf_m0, psf_m0_err, psf_Q, psf_Q_err = \
             get_m0_and_Qs(image=model_psf,
-                          weight_func=weight_func,
+                          prim_weight_func=prim_weight_func,
+                          sec_weight_func=sec_weight_func,
                           background_noise=star.background_noise,
                           gain=gain)
 
@@ -115,11 +112,12 @@ def test_psf_for_focus(stars,
 
         noisy_psf_m0, noisy_psf_m0_err, noisy_psf_Q, noisy_psf_Q_err = \
             get_m0_and_Qs(image=noisy_model_psf,
-                          weight_func=weight_func,
+                          prim_weight_func=prim_weight_func,
+                          sec_weight_func=sec_weight_func,
                           background_noise=star.background_noise,
                           gain=gain)
 
-        if(not (noisy_psf_m0 > 0)):
+        if not (noisy_psf_m0 > 0):
             pass
 
         # Append m0 and Q data to the storage lists
@@ -129,7 +127,7 @@ def test_psf_for_focus(stars,
         noisy_psf_Q_errs.append(noisy_psf_Q_err)
 
         # Save the models if desired
-        if(save_models):
+        if save_models:
             star.model_psf = model_psf
             star.noisy_model_psf = noisy_model_psf
 

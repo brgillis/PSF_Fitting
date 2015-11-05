@@ -28,55 +28,55 @@ from psf_testing.star_selection.star import star
 
 def get_objects_from_cat(sex_cat_filename):
     objects = []
-    
+
     # Loop through the catalog file and load each line as a sky_object
     with open(sex_cat_filename) as fin:
         # Read in the file, except for comment lines
         for object_line in fin:
             object_line = object_line.strip()
-            if(len(object_line) == 0):
+            if len(object_line) == 0:
                 continue
-            if((object_line[0] != '#') and (object_line[0] != '[')):
+            if (object_line[0] != '#') and (object_line[0] != '['):
                 objects.append(sky_object(object_line))
-    
+
     return objects
 
-def get_stars(objects,min_class_star,min_star_mag,max_star_mag):
+def get_stars(objects, min_class_star, min_star_mag, max_star_mag):
     stars = []
 
     for obj in objects:
         # Test it against conditions, starting with the most likely to fail
-        if(obj.class_star < min_class_star):
+        if obj.class_star < min_class_star:
             continue
-        if(obj.mag > max_star_mag):
+        if obj.mag > max_star_mag:
             continue
-        if(obj.mag < min_star_mag):
+        if obj.mag < min_star_mag:
             continue
-        
+
         # If we get here, it passed all tests
         stars.append(star(obj))
-    
+
     return stars
 
-def get_isolated_stars(stars,all_objects,min_lowest_separation):
-    
+def get_isolated_stars(stars, all_objects, min_lowest_separation):
+
     # If there is no min lowest separation, simply return the full stars list
-    if(min_lowest_separation is None):
+    if min_lowest_separation is None:
         return stars
-    
+
     # Create a variable for the objects tree we'll share between stars
     object_tree = None
-    
+
     # Create a list for isolated stars
     isolated_stars = []
-    
-    for star in stars:
+
+    for my_star in stars:
         # Get the lowest separation for each star
-        if(star.sky_object.lowest_separation is None):
-            _, object_tree = star.sky_object.get_lowest_separation(all_objects,object_tree)
-            
+        if my_star.sky_object.lowest_separation is None:
+            _, object_tree = my_star.sky_object.get_lowest_separation(all_objects, object_tree)
+
         # Select those stars which have a high enough lowest separation
-        if(star.sky_object.lowest_separation > min_lowest_separation):
+        if my_star.sky_object.lowest_separation > min_lowest_separation:
             isolated_stars.append(star)
-        
+
     return isolated_stars

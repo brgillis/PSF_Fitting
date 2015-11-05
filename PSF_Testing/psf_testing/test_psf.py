@@ -147,9 +147,7 @@ def test_psf(image_filename,
         test_results = test_psf_for_focus(stars=stars,
 
                                           star_m0s=star_m0s,
-                                          star_m0_errs=star_m0_vars,
                                           star_Qs=star_Qs,
-                                          star_Q_errs=star_Q_vars,
 
                                           image_filename=image_filename,
                                           chip=chip,
@@ -182,7 +180,7 @@ def test_psf(image_filename,
 
                                                    tinytim_data_path=tinytim_data_path,
                                                    cleanup_tinytim_files=cleanup_tinytim_files,
-                                                   force_tinytim_update=force_tinytim_update,
+                                                   force_tinytim_update=force_update,
 
                                                    files_to_cleanup=files_to_cleanup,
 
