@@ -168,16 +168,27 @@ def test_psf(image_filename,
     else:
         test_results = fit_best_focus_and_test_psf(stars=stars,
 
-                                                   min_test_focus=min_test_focus,
-                                                   max_test_focus=max_test_focus,
-                                                   test_focus_samples=test_focus_samples,
-                                                   test_focus_precision=test_focus_precision,
+                                                    star_m0s=star_m0s,
+                                                    star_Qs=star_Qs,
 
-                                                   num_grid_points=num_grid_points,
+                                                    image_filename=image_filename,
+                                                    image=image,
 
-                                                   tinytim_data_path=tinytim_data_path,
-                                                   cleanup_tinytim_files=cleanup_tinytim_files,
-                                                   force_tinytim_update=force_update)
+                                                    min_test_focus=min_test_focus,
+                                                    max_test_focus=max_test_focus,
+                                                    test_focus_samples=test_focus_samples,
+                                                    test_focus_precision=test_focus_precision,
+
+                                                    num_grid_points=num_grid_points,
+
+                                                    prim_weight_func=prim_weight_func,
+                                                    sec_weight_func=sec_weight_func,
+
+                                                    tinytim_path=tinytim_path,
+                                                    tinytim_data_path=tinytim_data_path,
+
+                                                    gain=gain,
+                                                    save_models=True)
 
     # Do something with the results
     report_results(test_results, **kwargs)

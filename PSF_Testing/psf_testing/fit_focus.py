@@ -38,7 +38,10 @@ def fit_best_focus_and_test_psf(stars,
                                 image_filename,
                                 image=None,
 
-                                init_test_focus=mv.default_init_test_focus,
+                                min_test_focus=mv.default_min_test_focus,
+                                max_test_focus=mv.default_max_test_focus,
+                                test_focus_samples=mv.default_focus_samples,
+                                test_focus_precision=mv.default_focus_precision,
 
                                 test_focus=mv.default_test_focus,
                                 num_grid_points=mv.default_num_grid_points,
@@ -50,9 +53,10 @@ def fit_best_focus_and_test_psf(stars,
                                 tinytim_data_path=mv.default_tinytim_data_path,
 
                                 gain=mv.gain,
-                                save_models=True,
+                                save_models=True):
 
-                                outliers_mask=None):
+    # Use a set outliers mask for all tests
+    outliers_mask = []
 
     # Define a function that we can use for fitting the focus
     def get_chi2_for_focus(test_focus):
@@ -74,12 +78,17 @@ def fit_best_focus_and_test_psf(stars,
                                             tinytim_data_path=tinytim_data_path,
 
                                             gain=gain,
-                                            save_models=True)
+                                            save_models=save_models,
+                                            outliers_mask=outliers_mask)
         return get_chi2_of_test_results(test_results)
 
     # Initialize the test
 
-    best_focus = bf_minimize(get_chi2_for_focus, init_test_focus)
+    best_focus = bf_minimize(get_chi2_for_focus,
+                min_input=min_test_focus,
+                max_input=max_test_focus,
+                test_points=test_focus_samples,
+                precision=test_focus_precision)
 
     test_results = test_psf_for_focus(stars=stars,
 
