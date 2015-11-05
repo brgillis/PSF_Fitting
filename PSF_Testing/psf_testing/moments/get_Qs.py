@@ -24,86 +24,94 @@
 """
 
 import numpy as np
-
 from psf_testing import magic_values as mv
+from psf_testing.moments.Qsize import get_Qsize_and_var
 from psf_testing.moments.centre_image import centre_image
+from psf_testing.moments.coords import get_x_and_y_of_array
 from psf_testing.moments.estimate_background import get_background_noise
 from psf_testing.moments.get_moments import get_moments_and_variances
-from psf_testing.moments.Qsize import get_Qsize_and_err
-from psf_testing.moments.coords import get_x_and_y_of_array
 from psf_testing.moments.make_weight_mask import make_weight_mask
 
+
 def get_m0_and_Qs(image,
-                  weight_func = lambda x,y : np.ones_like(x),
-                  xc = None,
-                  yc = None,
-                  background_noise = None,
-                  gain = mv.gain):
-    
-    if(background_noise is None):
+                  prim_weight_func=mv.default_prim_weight_func,
+                  sec_weight_func=mv.default_sec_weight_func,
+                  xc=None,
+                  yc=None,
+                  background_noise=None,
+                  gain=mv.gain):
+
+    if background_noise is None:
         background_noise = get_background_noise(image)
-    
-    if((xc is None) or (yc is None)):
-        xc, yc, x_array, y_array, weight_mask, _ = centre_image(image, weight_func)
+
+    if (xc is None) or (yc is None):
+        xc, yc, x_array, y_array, prim_weight_mask, _ = centre_image(image, prim_weight_func)
     else:
         nx, ny = np.shape(image)
         x_array, y_array = get_x_and_y_of_array(nx=nx, ny=ny, xc=xc, yc=yc)
-        weight_mask = make_weight_mask(weight_func=weight_func,
+        prim_weight_mask = make_weight_mask(weight_func=prim_weight_func,
                                        nx=nx,
                                        ny=ny,
                                        xc=xc,
                                        yc=yc,
                                        x_array=x_array,
                                        y_array=y_array)
-        
+    sec_weight_mask = make_weight_mask(weight_func=sec_weight_func,
+                                   nx=nx,
+                                   ny=ny,
+                                   xc=xc,
+                                   yc=yc,
+                                   x_array=x_array,
+                                   y_array=y_array)
+
     # Get the moments and variances
     moments_and_variances = get_moments_and_variances(image=image,
-                                                      weight_func=weight_func,
-                                                      weight_mask=weight_mask,
-                                                      xc = xc,
-                                                      yc = yc,
-                                                      background_noise = background_noise,
-                                                      gain = gain)
-    
-    ((m0,), (Mx,My), (_Mxx,_Myy,Mxy,Mplus)) = moments_and_variances[0]
-    ((var_m0,), (var_Mx,var_My), (_var_Mxx,_var_Myy,var_Mxy,var_Mplus)) = moments_and_variances[1]
-    
+                                                      prim_weight_func=prim_weight_func,
+                                                      prim_weight_mask=prim_weight_mask,
+                                                      sec_weight_func=sec_weight_func,
+                                                      sec_weight_mask=sec_weight_mask,
+                                                      xc=xc,
+                                                      yc=yc,
+                                                      background_noise=background_noise,
+                                                      gain=gain)
+
+    ((m0,), (Mx, My), (_Mxx, _Myy, Mxy, Mplus)) = \
+        moments_and_variances[0]
+    ((var_m0,), (var_Mx, var_My),
+     (_var_Mxx, _var_Myy, var_Mxy, var_Mplus)) = moments_and_variances[1]
+
     # Get the Q values from the moments, plus errors from the variances
-    
+
     scale = mv.pixel_scale
     square_scale = np.square(scale)
     quart_scale = np.square(square_scale)
-    
-    err_m0 = np.sqrt(var_m0)
-    
-    Qx = Mx*scale
-    var_Qx = var_Mx*square_scale
-    err_Qx = np.sqrt(var_Qx)
-    
-    Qy = My*scale
-    var_Qy = var_My*square_scale
-    err_Qy = np.sqrt(var_Qy)
-    
+
+    Qx = Mx * scale
+    var_Qx = var_Mx * square_scale
+
+    Qy = My * scale
+    var_Qy = var_My * square_scale
+
     Qplus = Mplus * square_scale
     var_Qplus = var_Mplus * quart_scale
-    err_Qplus = np.sqrt(var_Qplus)
-    
+
     Qcross = 2. * Mxy * square_scale
     var_Qcross = 4. * var_Mxy * quart_scale
-    err_Qcross = np.sqrt(var_Qcross)
-    
+
     # Get Qsize and its error now
-    Qsize, err_Qsize = get_Qsize_and_err(image=image,
-                                         weight_func=weight_func,
-                                         xc = xc,
-                                         yc = yc,
-                                         x_array = x_array,
-                                         y_array = y_array,
-                                         background_noise = background_noise,
-                                         gain = gain)
-    
+    Qsize, var_Qsize = get_Qsize_and_var(image=image,
+                                         prim_weight_func=prim_weight_func,
+                                         sec_weight_func=prim_weight_func,
+                                         xc=xc,
+                                         yc=yc,
+                                         x_array=x_array,
+                                         y_array=y_array,
+                                         background_noise=background_noise,
+                                         gain=gain)
+
     # Put the Q values into a numpy array
-    Qs = np.array([Qx,Qy,Qplus,Qcross,Qsize])
-    err_Qs = np.array([err_Qx,err_Qy,err_Qplus,err_Qcross,err_Qsize])
-    
-    return m0, err_m0, Qs, err_Qs
+
+    Qs = np.array([Qx, Qy, Qplus, Qcross, Qsize])
+    var_Qs = np.array([var_Qx, var_Qy, var_Qplus, var_Qcross, var_Qsize])
+
+    return m0, var_m0, Qs, var_Qs

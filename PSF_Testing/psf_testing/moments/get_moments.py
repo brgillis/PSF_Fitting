@@ -32,104 +32,138 @@ from psf_testing.moments.estimate_background import get_background_noise
 from psf_testing.moments.make_weight_mask import make_weight_mask
 
 def get_moments_and_variances(image,
-                              weight_func = lambda x,y : np.ones_like(x),
-                              weight_mask = None,
-                              xc = None,
-                              yc = None,
-                              background_noise = None,
-                              gain = mv.gain):
-    
-    m0 = None
-    
-    if((xc is None) or (yc is None)):
+                              prim_weight_func=mv.default_prim_weight_func,
+                              sec_weight_func=mv.default_sec_weight_func,
+                              prim_weight_mask=None,
+                              sec_weight_mask=None,
+                              xc=None,
+                              yc=None,
+                              background_noise=None,
+                              gain=mv.gain):
+
+    nx, ny = np.shape(image)
+
+    if (xc is None) or (yc is None):
         # Don't overwrite weight_mask if it's given; trust the user
-        if(weight_mask is None):
-            xc, yc, x_array, y_array, weight_mask, m0 = centre_image(image, weight_func)
+        if prim_weight_mask is None:
+            xc, yc, x_array, y_array, prim_weight_mask, m0 = centre_image(image, prim_weight_func)
         else:
-            xc, yc, x_array, y_array, _, m0 = centre_image(image, weight_func)
+            xc, yc, x_array, y_array, _, _ = centre_image(image, prim_weight_func)
+
         x2_array = np.square(x_array)
         y2_array = np.square(y_array)
         xy_array = x_array * y_array
     else:
-        nx, ny = np.shape(image)
         x_array, y_array, x2_array, y2_array, xy_array = get_coords_of_array(nx=nx,
                                                ny=ny,
                                                xc=xc,
                                                yc=yc)
-        if(weight_mask is None):
-            weight_mask = make_weight_mask(weight_func=weight_func,
+        if prim_weight_mask is None:
+            prim_weight_mask = make_weight_mask(weight_func=prim_weight_func,
                                            nx=nx,
                                            ny=ny,
                                            xc=xc,
                                            yc=yc,
                                            x_array=x_array,
                                            y_array=y_array)
+    if sec_weight_mask is None:
+        sec_weight_mask = make_weight_mask(weight_func=sec_weight_func,
+                                       nx=nx,
+                                       ny=ny,
+                                       xc=xc,
+                                       yc=yc,
+                                       x_array=x_array,
+                                       y_array=y_array)
     plus_array = x2_array - y2_array
-    
+
+    m0 = np.zeros(2)
+    mx = np.zeros(2)
+    my = np.zeros(2)
+    mxx = np.zeros(2)
+    myy = np.zeros(2)
+    mxy = np.zeros(2)
+    mplus = np.zeros(2)
+
     # Get the unnormalized moments
-    
-    if(m0 is None):
-        m0 = (image*weight_mask).sum()
-    
-    mx = (x_array*image*weight_mask).sum()
-    my = (y_array*image*weight_mask).sum()
-    
-    mxx = (x2_array*image*weight_mask).sum()
-    myy = (y2_array*image*weight_mask).sum()
-    mxy = (xy_array*image*weight_mask).sum()
-    mplus = (plus_array*image*weight_mask).sum()
-    
+
+    for i, weight_mask in zip(range(2), (prim_weight_mask, sec_weight_mask)):
+
+        m0[i] = (image * weight_mask).sum()
+
+        mx[i] = (x_array * image * weight_mask).sum()
+        my[i] = (y_array * image * weight_mask).sum()
+
+        mxx[i] = (x2_array * image * weight_mask).sum()
+        myy[i] = (y2_array * image * weight_mask).sum()
+        mxy[i] = (xy_array * image * weight_mask).sum()
+        mplus[i] = (plus_array * image * weight_mask).sum()
+
     # Normalize the moments and store these values in a tuple of tuples
-    
-    Mx = mx/m0
-    My = my/m0
-    
-    Mxx = mxx/m0
-    Myy = myy/m0
-    Mxy = mxy/m0
-    Mplus = mplus/m0
-    
+
+    Mx = mx / m0
+    My = my / m0
+
+    Mxx = mxx / m0
+    Myy = myy / m0
+    Mxy = mxy / m0
+    Mplus = mplus / m0
+
     moments = ((m0,),
-               (Mx,My),
-               (Mxx,Myy,Mxy,Mplus))
-        
+               (Mx, My),
+               (Mxx, Myy, Mxy, Mplus))
+
     # Now calculate the errors
-    
-    if(background_noise is None):
+
+    if background_noise is None:
         background_noise = get_background_noise(image)
-    
+
     # Store some new arrays we'll use first
-    square_weight_mask = np.square(weight_mask)
-    image_var = np.abs(image)/gain + np.square(background_noise)
+    weight_mask = (prim_weight_mask, sec_weight_mask)
+
+    image_var = np.abs(image) / gain + np.square(background_noise)
     x4_array = np.square(x2_array)
     y4_array = np.square(y2_array)
     x2y2_array = np.square(xy_array)
     plus2_array = np.square(plus_array)
-    
-    var_m0 = (image_var * square_weight_mask).sum()
-    
-    var_mx = (x2_array * image_var * square_weight_mask).sum()
-    var_my = (y2_array * image_var * square_weight_mask).sum()
-    
-    var_mxx = (x4_array * image_var * square_weight_mask).sum()
-    var_myy = (y4_array * image_var * square_weight_mask).sum()
-    var_mxy = (x2y2_array * image_var * square_weight_mask).sum()
-    var_mplus = (plus2_array * image_var * square_weight_mask).sum()
-    
+
+    var_m0 = np.zeros((2, 2))
+    var_mx = np.zeros((2, 2))
+    var_my = np.zeros((2, 2))
+    var_mxx = np.zeros((2, 2))
+    var_myy = np.zeros((2, 2))
+    var_mxy = np.zeros((2, 2))
+    var_mplus = np.zeros((2, 2))
+
+    for i in range(2):
+        for j in range(2):
+
+            weighted_image_var = image_var * weight_mask[i] * weight_mask[j]
+
+            var_m0[i, j] = weighted_image_var.sum()
+
+            var_mx[i, j] = (x2_array * weighted_image_var).sum()
+            var_my[i, j] = (y2_array * weighted_image_var).sum()
+
+            var_mxx[i, j] = (x4_array * weighted_image_var).sum()
+            var_myy[i, j] = (y4_array * weighted_image_var).sum()
+            var_mxy[i, j] = (x2y2_array * weighted_image_var).sum()
+            var_mplus[i, j] = (plus2_array * weighted_image_var).sum()
+
+            square_m0 = m0[i] * m0[j]
+
     # And now get the variances of the normalized moments
-    square_m0 = np.square(m0)
     quart_m0 = np.square(square_m0)
-    
-    var_Mx = var_mx/square_m0 + np.square(mx)*var_m0/quart_m0
-    var_My = var_my/square_m0 + np.square(my)*var_m0/quart_m0
-    
-    var_Mxx = var_mxx/square_m0 + np.square(mxx)*var_m0/quart_m0
-    var_Myy = var_myy/square_m0 + np.square(myy)*var_m0/quart_m0
-    var_Mxy = var_mxy/square_m0 + np.square(mxy)*var_m0/quart_m0
-    var_Mplus = var_mplus/square_m0 + np.square(mplus)*var_m0/quart_m0
-    
+
+    var_Mx = var_mx / square_m0 + np.square(mx) * var_m0 / quart_m0
+    var_My = var_my / square_m0 + np.square(my) * var_m0 / quart_m0
+
+    var_Mxx = var_mxx / square_m0 + np.square(mxx) * var_m0 / quart_m0
+    var_Myy = var_myy / square_m0 + np.square(myy) * var_m0 / quart_m0
+    var_Mxy = var_mxy / square_m0 + np.square(mxy) * var_m0 / quart_m0
+    var_Mplus = var_mplus / square_m0 + np.square(mplus) * var_m0 / quart_m0
+
     variances = ((var_m0,),
-                 (var_Mx,var_My),
-                 (var_Mxx,var_Myy,var_Mxy,var_Mplus))
-    
+                 (var_Mx, var_My),
+                 (var_Mxx, var_Myy, var_Mxy, var_Mplus))
+
     return moments, variances

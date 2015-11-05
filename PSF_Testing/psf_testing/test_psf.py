@@ -22,172 +22,177 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import numpy as np
-from astropy.io import fits
 import os
 
+from astropy.io import fits
+
+import numpy as np
 from psf_testing import magic_values as mv
+from psf_testing.check_updates import make_update_marker
+from psf_testing.extract_stamp import extract_stamp_for_star
+from psf_testing.moments.centre_image import centre_image
+from psf_testing.moments.estimate_background import get_background_level_and_noise
+from psf_testing.moments.get_Qs import get_m0_and_Qs
 from psf_testing.star_selection.image_info import get_chip, get_exp_time, get_gain
 from psf_testing.star_selection.sextractor_utility import get_stars_in_image
 from psf_testing.test_psf_for_focus import test_psf_for_focus
-from psf_testing.moments.centre_image import centre_image
-from psf_testing.extract_stamp import extract_stamp_for_star
-from psf_testing.check_updates import make_update_marker
-from psf_testing.moments.estimate_background import get_background_level_and_noise
-from psf_testing.moments.get_Qs import get_m0_and_Qs
+
 
 def test_psf(image_filename,
-             
-             min_class_star = mv.default_min_class_star,
-             min_star_mag = mv.default_min_star_mag,
-             max_star_mag = mv.default_max_star_mag,
-             min_lowest_separation = mv.default_min_lowest_separation,
-             
-             test_single_focus = False,
-             test_focus = None,
-             min_test_focus = mv.default_min_test_focus,
-             max_test_focus = mv.default_max_test_focus,
-             test_focus_samples = mv.default_focus_samples,
-             test_focus_precision = mv.default_focus_precision,
-             num_grid_points = mv.default_num_grid_points,
-             
-             sex_data_path = mv.default_sex_data_path,
-             cleanup_sex_files = True,
-             
-             tinytim_path = mv.default_tinytim_path,
-             tinytim_data_path = mv.default_tinytim_data_path,
-             cleanup_tinytim_files = False,
-             force_update = False,
+
+             min_class_star=mv.default_min_class_star,
+             min_star_mag=mv.default_min_star_mag,
+             max_star_mag=mv.default_max_star_mag,
+             min_lowest_separation=mv.default_min_lowest_separation,
+
+             test_single_focus=False,
+             test_focus=None,
+             min_test_focus=mv.default_min_test_focus,
+             max_test_focus=mv.default_max_test_focus,
+             test_focus_samples=mv.default_focus_samples,
+             test_focus_precision=mv.default_focus_precision,
+             num_grid_points=mv.default_num_grid_points,
+
+             sex_data_path=mv.default_sex_data_path,
+             cleanup_sex_files=True,
+
+             tinytim_path=mv.default_tinytim_path,
+             tinytim_data_path=mv.default_tinytim_data_path,
+             cleanup_tinytim_files=False,
+             force_update=False,
              **kwargs):
-    
+
     # Mark that we need an update if we're forcing an update
-    if(force_update):
+    if force_update:
         make_update_marker()
-    
+
     # Start by inspecting the image and getting needed details about it
     image = fits.open(image_filename)[0]
-    
+
     chip = get_chip(image)
     exp_time = get_exp_time(image)
     gain = get_gain(image)
-    
+
     # Keep track of a list of files we'll want to cleanup when done
     files_to_cleanup = []
-    
+
     # Get a list of the isolated stars in the image by running SExtractor on it
-    stars = get_stars_in_image(image_filename = image_filename,
-                               exp_time = exp_time,
-                               min_class_star = min_class_star,
-                               min_star_mag = min_star_mag,
-                               max_star_mag = max_star_mag,
-                               min_lowest_separation = min_lowest_separation,
-                               sex_data_path = sex_data_path,
-                               files_to_cleanup = files_to_cleanup,
-                               cleanup_sex_files = cleanup_sex_files,
+    stars = get_stars_in_image(image_filename=image_filename,
+                               exp_time=exp_time,
+                               min_class_star=min_class_star,
+                               min_star_mag=min_star_mag,
+                               max_star_mag=max_star_mag,
+                               min_lowest_separation=min_lowest_separation,
+                               sex_data_path=sex_data_path,
+                               files_to_cleanup=files_to_cleanup,
+                               cleanup_sex_files=cleanup_sex_files,
                                **kwargs)
-    
-    # Set up the weight function we'll use
-    weight_func = mv.default_weight_func
-    
+
+    # Set up the weight functions we'll use
+    prim_weight_func = mv.default_prim_weight_func
+    sec_weight_func = mv.default_sec_weight_func
+
     # Get general data on all stars
     star_m0s = []
-    star_m0_errs = []
+    star_m0_vars = []
     star_Qs = []
-    star_Q_errs = []
+    star_Q_vars = []
     for star in stars:
-        
+
         # Extract the star's postage stamp if possible
         try:
             star.stamp = extract_stamp_for_star(star=star,
                                             image=image)
-        except:
+        except Exception:
             star.valid = False
             continue
-        
+
         background_level, star.background_noise = get_background_level_and_noise(star.stamp)
-        
+
         star.stamp -= background_level
-        
-        star.xc, star.yc, star.x_array, star.y_array, star.weight_mask, star.m0 = \
-            centre_image(image=star.stamp, weight_func=weight_func)
-            
-        star.m0, star.m0_err, star.Qs, star.Q_errs = \
-            get_m0_and_Qs(image = star.stamp,
-                          weight_func = weight_func,
-                          xc = star.xc,
-                          yc = star.yc,
-                          background_noise = star.background_noise,
-                          gain = gain)
-            
+
+        star.xc, star.yc, star.x_array, star.y_array, star.prim_weight_mask, star.m0 = \
+            centre_image(image=star.stamp, weight_func=prim_weight_func)
+
+        star.m0, star.m0_var, star.prim_Qs, star.Q_vars = \
+            get_m0_and_Qs(image=star.stamp,
+                          prim_weight_func=prim_weight_func,
+                          sec_weight_func=sec_weight_func,
+                          xc=star.xc,
+                          yc=star.yc,
+                          background_noise=star.background_noise,
+                          gain=gain)
+
         star.chip = chip
-            
+
         # If the monopole term is negative or zero, mark it as invalid
-        if(star.m0 <= 0):
+        if star.m0[0] <= 0:
             star.valid = False
             continue
-        
+
         # Append m0 and Q data to the storage lists
         star_m0s.append(star.m0)
-        star_m0_errs.append(star.m0_err)
+        star_m0_vars.append(star.m0_var)
         star_Qs.append(star.Qs)
-        star_Q_errs.append(star.Q_errs)
-        
+        star_Q_vars.append(star.Q_vars)
+
     # Convert the star m0 and Q storage lists to numpy arrays
     star_m0s = np.array(star_m0s)
-    star_m0_errs = np.array(star_m0_errs)
+    star_m0_vars = np.array(star_m0_vars)
     star_Qs = np.array(star_Qs)
-    star_Q_errs = np.array(star_Q_errs)
-    
+    star_Q_vars = np.array(star_Q_vars)
+
     # If we're testing a single focus value, do that now
-    if(test_single_focus):
-        test_results = test_psf_for_focus(stars = stars,
-                                          
-                                          star_m0s = star_m0s,
-                                          star_m0_errs = star_m0_errs,
-                                          star_Qs = star_Qs,
-                                          star_Q_errs = star_Q_errs,
-                                          
-                                          image_filename = image_filename,
-                                          chip = chip,
-                                          image = image,
-                                          
-                                          test_focus = test_focus,
-                                          num_grid_points = num_grid_points,
-                                          
-                                          weight_func = weight_func,
-                                          
-                                          tinytim_path = tinytim_path,
-                                          tinytim_data_path = tinytim_data_path,
-                                          cleanup_tinytim_files = cleanup_tinytim_files,
-                                          
-                                          files_to_cleanup = files_to_cleanup,
-                                          
-                                          gain = gain,
-                                          save_models = True)
+    if test_single_focus:
+        test_results = test_psf_for_focus(stars=stars,
+
+                                          star_m0s=star_m0s,
+                                          star_m0_errs=star_m0_vars,
+                                          star_Qs=star_Qs,
+                                          star_Q_errs=star_Q_vars,
+
+                                          image_filename=image_filename,
+                                          chip=chip,
+                                          image=image,
+
+                                          test_focus=test_focus,
+                                          num_grid_points=num_grid_points,
+
+                                          prim_weight_func=prim_weight_func,
+                                          sec_weight_func=sec_weight_func,
+
+                                          tinytim_path=tinytim_path,
+                                          tinytim_data_path=tinytim_data_path,
+                                          cleanup_tinytim_files=cleanup_tinytim_files,
+
+                                          files_to_cleanup=files_to_cleanup,
+
+                                          gain=gain,
+                                          save_models=True)
     # Otherwise, call the fitting function
     else:
         test_results = fit_best_focus_and_test_psf(stars=stars,
-                                                   
+
                                                    min_test_focus=min_test_focus,
                                                    max_test_focus=max_test_focus,
                                                    test_focus_samples=test_focus_samples,
                                                    test_focus_precision=test_focus_precision,
-                                                   
-                                                   num_grid_points = num_grid_points,
-                                          
-                                                   tinytim_data_path = tinytim_data_path,
-                                                   cleanup_tinytim_files = cleanup_tinytim_files,
-                                                   force_tinytim_update = force_tinytim_update,
-                                                  
-                                                   files_to_cleanup = files_to_cleanup,
-                                          
+
+                                                   num_grid_points=num_grid_points,
+
+                                                   tinytim_data_path=tinytim_data_path,
+                                                   cleanup_tinytim_files=cleanup_tinytim_files,
+                                                   force_tinytim_update=force_tinytim_update,
+
+                                                   files_to_cleanup=files_to_cleanup,
+
                                                    **kwargs)
-        
+
     # Do something with the results
-    report_results(test_results,**kwargs)
-    
+    report_results(test_results, **kwargs)
+
     # Remove all files in the cleanup list
     for filename in files_to_cleanup:
         os.remove(filename)
-            
+
     return

@@ -23,46 +23,49 @@
 """
 
 import numpy as np
-
 from psf_testing import magic_values as mv
-from psf_testing.moments.estimate_background import get_background_noise
 from psf_testing.moments.centre_image import centre_image
 from psf_testing.moments.coords import get_coords_of_array
+from psf_testing.moments.estimate_background import get_background_noise
 
-def get_Qsize_and_err(image,
-                      weight_func = lambda x,y : np.ones_like(x),
-                      xc = None,
-                      yc = None,
-                      x_array = None,
-                      y_array = None,
-                      background_noise = None,
-                      gain = mv.gain):
-    
+
+def get_Qsize_and_var(image,
+                      prim_weight_func=mv.default_prim_weight_func,
+                      sec_weight_func=mv.default_sec_weight_func,
+                      xc=None,
+                      yc=None,
+                      x_array=None,
+                      y_array=None,
+                      background_noise=None,
+                      gain=mv.gain):
+
     nx, ny = np.shape(image)
-    dmax = np.max((nx,ny))/2
-    
-    if((xc is None) or (yc is None)):
-        xc, yc, x_array, y_array, _, _ = centre_image(image, weight_func)
+    dmax = np.max((nx, ny)) / 2
+
+    if(xc is None) or (yc is None):
+        xc, yc, x_array, y_array, _, _ = centre_image(image, prim_weight_func)
     else:
-        if((x_array is None) or (y_array is None)):
-            x_array, y_array = get_coords_of_array(nx=nx, ny=ny, xc=xc, yc=yc)
-    
-    if(background_noise is None):
+        if(x_array is None) or (y_array is None):
+            x_array, y_array, _, _, _ = get_coords_of_array(nx=nx, ny=ny, xc=xc, yc=yc)
+
+    if background_noise is None:
         background_noise = get_background_noise(image)
-        
+
     # Get a 1-d version of the weight function
-    def radial_weight_func(r):
-        return weight_func(r,np.zeros_like(r)) # Assuming it's circular
-    
+    def prim_radial_weight_func(r):
+        return prim_weight_func(r, np.zeros_like(r)) # Assuming it's circular
+    def sec_radial_weight_func(r):
+        return sec_weight_func(r, np.zeros_like(r)) # Assuming it's circular
+
     # Initialize things so we can loop through radially
-    
+
     # Get the radial distances of all pixels from the centre
-    r_array = np.sqrt(np.square(x_array)+np.square(y_array))
-    
+    r_array = np.sqrt(np.square(x_array) + np.square(y_array))
+
     # Get raveled arrays for the image and radius
     flattened_image = np.ravel(image)
     flattened_rs = np.ravel(r_array)
-    
+
     # Initialize arrays and quantities we'll sum
     I = []
     N = []
@@ -72,99 +75,121 @@ def get_Qsize_and_err(image,
     var_I_mean = np.zeros(dmax)
     W = np.zeros(dmax)
     var_W = np.zeros(dmax)
-    covar_W = np.zeros((dmax,dmax))
+    covar_W = np.zeros((dmax, dmax))
     for ri in xrange(dmax):
-        
+
         # Start by binning pixels by radial distances
-        I.append(flattened_image[ np.logical_and(flattened_rs <= ri+0.5,
-                                                  flattened_rs >  ri-0.5) ]
+        I.append(flattened_image[ np.logical_and(flattened_rs <= ri + 0.5,
+                                                  flattened_rs > ri - 0.5) ]
                   * radial_weight_func(ri))
         N.append(np.size(I[ri]))
-        
+
         # Get the number of contained pixels
         N_lt.append(0)
         for rj in xrange(ri):
             N_lt[ri] += N[rj]
-        
-        if(N[-1]>0):
+
+        if(N[-1] > 0):
             # If we have any pixels here, get the mean, contained mean, and variances
             I_mean[ri] = np.mean(I[ri])
-            
-            if( N_lt[ri]==0 ):
+
+            if(N_lt[ri] == 0):
                 I_lt_mean[ri] = 0
             else:
                 for rj in xrange(ri):
-                    I_lt_mean[ri] += ( I_mean[rj] * N[rj] ) / N_lt[ri]
-                
-                
-            var_I_mean[ri] = np.sum(np.abs(I[ri])/gain + np.square(background_noise)) \
+                    I_lt_mean[ri] += (I_mean[rj] * N[rj]) / N_lt[ri]
+
+
+            var_I_mean[ri] = np.sum(np.abs(I[ri]) / gain + np.square(background_noise)) \
                                 / (np.square(N[ri]))
-                
+
         # Get W for this bin
-        if(N_lt[ri]>0):
+        if N_lt[ri] > 0:
             W[ri] = I_lt_mean[ri] - I_mean[ri]
-        
+
         # Get the covariance of this bin with itself and every smaller bin
-        
+
         # For the bin with itself, we want the first term to be the variance of the contained mean
         # For this, we need a sum of a function on all lesser bins.
-        if(N_lt[ri]==0):
-            covar_W[ri,ri] = 0.
+        if N_lt[ri] == 0:
+            covar_W[ri, ri] = 0.
         else:
-            covar_W[ri,ri] = np.sum( np.square( N[0:ri] ) * var_I_mean[0:ri] ) \
+            covar_W[ri, ri] = np.sum(np.square(N[0:ri]) * var_I_mean[0:ri]) \
                               / np.square(N_lt[ri]) + var_I_mean[ri]
-                          
-        var_W[ri] = covar_W[ri,ri]
-                         
+
+        var_W[ri] = covar_W[ri, ri]
+
         # Now, the covariance with all smaller bins
         for rj in xrange(ri):
-            if((N_lt[ri]==0) or (N_lt[rj]==0)):
-                covar_W[ri,rj] = 0
+            if (N_lt[ri] == 0) or (N_lt[rj] == 0):
+                covar_W[ri, rj] = 0
             else:
-                covar_W[ri,rj] = np.sum( np.square( N[0:rj] ) * var_I_mean[0:rj] ) \
-                                    / (N_lt[ri]*N_lt[rj]) - \
+                covar_W[ri, rj] = np.sum(np.square(N[0:rj]) * var_I_mean[0:rj]) \
+                                    / (N_lt[ri] * N_lt[rj]) - \
                                  N[rj] * var_I_mean[rj] \
                                     / N_lt[ri]
-            
-            covar_W[rj,ri] = covar_W[ri,rj]
-            
+
+            covar_W[rj, ri] = covar_W[ri, rj]
+
     # Put this into the calculation for Qsize
     ri_array = np.linspace(start=0., stop=dmax, num=dmax, endpoint=False)
-    w_ri_array = radial_weight_func(ri_array)
-    
-    weighted_W = W * w_ri_array
-    
-    Qsize_numerator = (weighted_W * ri_array).sum()
-    square_Qsize_numerator = np.square(Qsize_numerator)
-    
-    Qsize_denominator = weighted_W.sum()
-    square_Qsize_denominator = np.square(Qsize_denominator)
-    cube_Qsize_denominator = Qsize_denominator*square_Qsize_denominator
-    quart_Qsize_denominator = Qsize_denominator*cube_Qsize_denominator
-        
+    prim_w_ri_array = prim_radial_weight_func(ri_array)
+    sec_w_ri_array = sec_radial_weight_func(ri_array)
+
+    prim_weighted_W = W * prim_w_ri_array
+    sec_weighted_W = W * sec_w_ri_array
+
+    prim_Qsize_numerator = (prim_weighted_W * ri_array).sum()
+    prim_square_Qsize_numerator = np.square(prim_Qsize_numerator)
+
+    sec_Qsize_numerator = (sec_weighted_W * ri_array).sum()
+    sec_square_Qsize_numerator = np.square(sec_Qsize_numerator)
+
+    prim_Qsize_denominator = prim_weighted_W.sum()
+    prim_square_Qsize_denominator = np.square(prim_Qsize_denominator)
+    prim_cube_Qsize_denominator = prim_Qsize_denominator * prim_square_Qsize_denominator
+    prim_quart_Qsize_denominator = prim_Qsize_denominator * prim_cube_Qsize_denominator
+
+    sec_Qsize_denominator = sec_weighted_W.sum()
+    sec_square_Qsize_denominator = np.square(sec_Qsize_denominator)
+    sec_cube_Qsize_denominator = sec_Qsize_denominator * sec_square_Qsize_denominator
+    sec_quart_Qsize_denominator = sec_Qsize_denominator * sec_cube_Qsize_denominator
+
     # Get Qsize from this
-    Qsize = Qsize_numerator/Qsize_denominator
-    
+    prim_Qsize = prim_Qsize_numerator / prim_Qsize_denominator
+    sec_Qsize = sec_Qsize_numerator / sec_Qsize_denominator
+
     # Now get the error on Qsize
-    
-    w_ri_ri_array = ri_array*w_ri_array
-    
-    var_Qsize_numerator = (np.outer(w_ri_ri_array,w_ri_ri_array) \
+
+    prim_w_ri_ri_array = ri_array * prim_w_ri_array
+    sec_w_ri_ri_array = ri_array * sec_w_ri_array
+
+    prim_var_Qsize_numerator = (np.outer(prim_w_ri_ri_array, prim_w_ri_ri_array) \
                              * covar_W).sum()
-    var_Qsize_denominator = (np.outer(w_ri_array,w_ri_array) \
+    prim_var_Qsize_denominator = (np.outer(prim_w_ri_array, prim_w_ri_array) \
                              * covar_W).sum()
-    
-    covar_Qsize_num_denom = (np.outer(ri_array*w_ri_array,w_ri_array) \
+    sec_var_Qsize_numerator = (np.outer(sec_w_ri_ri_array, sec_w_ri_ri_array) \
                              * covar_W).sum()
-                   
-    var_Qsize = var_Qsize_numerator/square_Qsize_denominator \
-                 + square_Qsize_numerator*var_Qsize_denominator/quart_Qsize_denominator \
-                 - 2. * Qsize_numerator*covar_Qsize_num_denom / cube_Qsize_denominator
-                 
-    if(var_Qsize<0):
-        err_Qsize = 0.
-    else:      
-        err_Qsize = np.sqrt(var_Qsize)
-    
-    return Qsize*mv.pixel_scale, err_Qsize*mv.pixel_scale
-    
+    sec_var_Qsize_denominator = (np.outer(sec_w_ri_array, sec_w_ri_array) \
+                             * covar_W).sum()
+
+    prim_covar_Qsize_num_denom = (np.outer(ri_array * prim_w_ri_array, prim_w_ri_array) \
+                             * covar_W).sum()
+    sec_covar_Qsize_num_denom = (np.outer(ri_array * sec_w_ri_array, sec_w_ri_array) \
+                             * covar_W).sum()
+
+    prim_var_Qsize = prim_var_Qsize_numerator / prim_square_Qsize_denominator \
+                 + prim_square_Qsize_numerator * prim_var_Qsize_denominator / prim_quart_Qsize_denominator \
+                 - 2. * prim_Qsize_numerator * prim_covar_Qsize_num_denom / prim_cube_Qsize_denominator
+    sec_var_Qsize = sec_var_Qsize_numerator / sec_square_Qsize_denominator \
+                 + sec_square_Qsize_numerator * sec_var_Qsize_denominator / sec_quart_Qsize_denominator \
+                 - 2. * sec_Qsize_numerator * sec_covar_Qsize_num_denom / sec_cube_Qsize_denominator
+
+    covar_Qsize = np.sqrt(prim_var_Qsize) * np.sqrt(sec_var_Qsize)
+    assert False # FIXME
+
+    Qsize = np.array((prim_Qsize, sec_Qsize))
+    var_Qsize = np.array(((prim_var_Qsize, covar_Qsize),
+                         (covar_Qsize, sec_var_Qsize)))
+
+    return Qsize * mv.pixel_scale, var_Qsize * mv.pixel_scale
