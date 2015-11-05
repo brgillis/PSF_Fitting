@@ -163,7 +163,8 @@ def test_psf(image_filename,
                                           tinytim_data_path=tinytim_data_path,
 
                                           gain=gain,
-                                          save_models=True)
+                                          save_models=True,
+                                          files_to_cleanup=files_to_cleanup)
     # Otherwise, call the fitting function
     else:
         test_results = fit_best_focus_and_test_psf(stars=stars,
@@ -188,13 +189,15 @@ def test_psf(image_filename,
                                                     tinytim_data_path=tinytim_data_path,
 
                                                     gain=gain,
-                                                    save_models=True)
+                                                    save_models=True,
+                                                    files_to_cleanup=files_to_cleanup)
 
     # Do something with the results
     report_results(test_results, **kwargs)
 
     # Remove all files in the cleanup list
-    for filename in files_to_cleanup:
-        os.remove(filename)
+    if cleanup_tinytim_files:
+        for filename in files_to_cleanup:
+            os.remove(filename)
 
     return

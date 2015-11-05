@@ -40,7 +40,8 @@ def make_subsampled_psf_model(filename,
                               focus,
                               chip,
                               weight_func=mv.default_prim_weight_func,
-                              tinytim_path=mv.default_tinytim_path):
+                              tinytim_path=mv.default_tinytim_path,
+                              files_to_cleanup=None):
     """ Generates a subsampled psf model for a given image position, focus, and chip.
 
         Requires: filename <string>
@@ -107,6 +108,9 @@ def make_subsampled_psf_model(filename,
 
     # Write the image out to the proper filename
     subsampled_image.writeto(filename, clobber=True)
+
+    if files_to_cleanup is not None:
+        files_to_cleanup.append(filename)
 
     # Remove the old version, plus the .par and .tt3 files
     os.remove(filename_base + mv.subsampled_model_tail)

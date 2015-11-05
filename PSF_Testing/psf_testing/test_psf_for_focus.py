@@ -52,7 +52,9 @@ def test_psf_for_focus(stars,
 
                        outliers_mask=None,
 
-                       fitted_params=0):
+                       fitted_params=0,
+
+                       files_to_cleanup=None):
 
     if outliers_mask is None:
         outliers_mask = []
@@ -90,7 +92,8 @@ def test_psf_for_focus(stars,
                                            scheme=model_scheme,
                                            weight_func=prim_weight_func,
                                            tinytim_path=tinytim_path,
-                                           tinytim_data_path=tinytim_data_path)
+                                           tinytim_data_path=tinytim_data_path,
+                                           files_to_cleanup=files_to_cleanup)
 
         psf_m0, psf_m0_var, psf_Q, psf_Q_var = \
             get_m0_and_Qs(image=model_psf,

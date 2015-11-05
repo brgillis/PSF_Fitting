@@ -43,7 +43,6 @@ def fit_best_focus_and_test_psf(stars,
                                 test_focus_samples=mv.default_focus_samples,
                                 test_focus_precision=mv.default_focus_precision,
 
-                                test_focus=mv.default_test_focus,
                                 num_grid_points=mv.default_num_grid_points,
 
                                 prim_weight_func=mv.default_prim_weight_func,
@@ -53,7 +52,9 @@ def fit_best_focus_and_test_psf(stars,
                                 tinytim_data_path=mv.default_tinytim_data_path,
 
                                 gain=mv.gain,
-                                save_models=True):
+                                save_models=True,
+
+                                files_to_cleanup=None):
 
     # Use a set outliers mask for all tests
     outliers_mask = []
@@ -79,7 +80,9 @@ def fit_best_focus_and_test_psf(stars,
 
                                             gain=gain,
                                             save_models=save_models,
-                                            outliers_mask=outliers_mask)
+                                            outliers_mask=outliers_mask,
+
+                                            files_to_cleanup=files_to_cleanup)
         return get_chi2_of_test_results(test_results)
 
     # Initialize the test
