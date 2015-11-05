@@ -86,6 +86,7 @@ sex_cat_num_cols = 24
 
 # Focus fitting values
 default_test_focus = 0.0
+default_init_test_focus = 1.0
 default_min_test_focus = -6.0
 default_max_test_focus = 6.0
 default_focus_samples = 7

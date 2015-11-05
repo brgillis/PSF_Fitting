@@ -30,6 +30,7 @@ import numpy as np
 from psf_testing import magic_values as mv
 from psf_testing.check_updates import make_update_marker
 from psf_testing.extract_stamp import extract_stamp_for_star
+from psf_testing.fit_focus import fit_best_focus_and_test_psf
 from psf_testing.moments.centre_image import centre_image
 from psf_testing.moments.estimate_background import get_background_level_and_noise
 from psf_testing.moments.get_Qs import get_m0_and_Qs
@@ -150,7 +151,6 @@ def test_psf(image_filename,
                                           star_Qs=star_Qs,
 
                                           image_filename=image_filename,
-                                          chip=chip,
                                           image=image,
 
                                           test_focus=test_focus,
@@ -161,9 +161,6 @@ def test_psf(image_filename,
 
                                           tinytim_path=tinytim_path,
                                           tinytim_data_path=tinytim_data_path,
-                                          cleanup_tinytim_files=cleanup_tinytim_files,
-
-                                          files_to_cleanup=files_to_cleanup,
 
                                           gain=gain,
                                           save_models=True)
@@ -180,11 +177,7 @@ def test_psf(image_filename,
 
                                                    tinytim_data_path=tinytim_data_path,
                                                    cleanup_tinytim_files=cleanup_tinytim_files,
-                                                   force_tinytim_update=force_update,
-
-                                                   files_to_cleanup=files_to_cleanup,
-
-                                                   **kwargs)
+                                                   force_tinytim_update=force_update)
 
     # Do something with the results
     report_results(test_results, **kwargs)
