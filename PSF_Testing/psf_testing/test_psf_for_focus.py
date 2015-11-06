@@ -92,8 +92,7 @@ def test_psf_for_focus(stars,
                                            scheme=model_scheme,
                                            weight_func=prim_weight_func,
                                            tinytim_path=tinytim_path,
-                                           tinytim_data_path=tinytim_data_path,
-                                           files_to_cleanup=files_to_cleanup)
+                                           tinytim_data_path=tinytim_data_path)
 
         psf_m0, psf_m0_var, psf_Q, psf_Q_var = \
             get_m0_and_Qs(image=model_psf,
@@ -230,6 +229,7 @@ def test_psf_for_focus(stars,
             (star_m0s, star_Qs),
             (psf_m0s, psf_Qs),
             (noisy_psf_m0s, noisy_psf_Qs),
+            (np.sqrt(psf_m0_vars), np.sqrt(psf_Q_vars))
             (omask, Q_omask),
             (m0_Zs, Q_Zs),
             )

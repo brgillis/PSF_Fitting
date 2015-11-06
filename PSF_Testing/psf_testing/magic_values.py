@@ -29,6 +29,7 @@ max_loop_iterations = 100
 
 # Filename conventions
 image_extension = ".fits"
+table_extension = ".fits"
 sex_cfg_tail = "_sex.cfg"
 sex_cat_tail = "_objects.cat"
 

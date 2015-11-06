@@ -34,12 +34,16 @@ from psf_testing.fit_focus import fit_best_focus_and_test_psf
 from psf_testing.moments.centre_image import centre_image
 from psf_testing.moments.estimate_background import get_background_level_and_noise
 from psf_testing.moments.get_Qs import get_m0_and_Qs
+from psf_testing.report_results import report_results
+from psf_testing.stacking import make_and_save_stacks
 from psf_testing.star_selection.image_info import get_chip, get_exp_time, get_gain
 from psf_testing.star_selection.sextractor_utility import get_stars_in_image
 from psf_testing.test_psf_for_focus import test_psf_for_focus
 
 
 def test_psf(image_filename,
+
+             results_filename=None,
 
              min_class_star=mv.default_min_class_star,
              min_star_mag=mv.default_min_star_mag,
@@ -61,7 +65,7 @@ def test_psf(image_filename,
              tinytim_data_path=mv.default_tinytim_data_path,
              cleanup_tinytim_files=False,
              force_update=False,
-             **kwargs):
+             save_stacks=True):
 
     # Mark that we need an update if we're forcing an update
     if force_update:
@@ -86,8 +90,7 @@ def test_psf(image_filename,
                                min_lowest_separation=min_lowest_separation,
                                sex_data_path=sex_data_path,
                                files_to_cleanup=files_to_cleanup,
-                               cleanup_sex_files=cleanup_sex_files,
-                               **kwargs)
+                               cleanup_sex_files=cleanup_sex_files)
 
     # Set up the weight functions we'll use
     prim_weight_func = mv.default_prim_weight_func
@@ -192,8 +195,14 @@ def test_psf(image_filename,
                                                     save_models=True,
                                                     files_to_cleanup=files_to_cleanup)
 
-    # Do something with the results
-    report_results(test_results, **kwargs)
+    filename_root = image_filename.replace(mv.image_extension, "")
+
+    # Report the results
+    report_results(test_results=test_results, filename_root=filename_root)
+
+    # Save stacks if desired
+    if save_stacks:
+        make_and_save_stacks(stars=stars, filename_root=filename_root)
 
     # Remove all files in the cleanup list
     if cleanup_tinytim_files:
