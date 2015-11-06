@@ -202,7 +202,7 @@ def test_psf(image_filename,
 
     # Save stacks if desired
     if save_stacks:
-        make_and_save_stacks(stars=stars, filename_root=filename_root)
+        make_and_save_stacks(stars=stars, filename_root=filename_root, stack_size=(2 * mv.default_weight_rmax + 1))
 
     # Remove all files in the cleanup list
     if cleanup_tinytim_files:

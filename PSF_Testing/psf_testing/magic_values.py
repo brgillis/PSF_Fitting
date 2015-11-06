@@ -71,7 +71,7 @@ default_max_star_mag = 27.0
 default_min_lowest_separation = 10.0
 
 # Values for making objects from a catalog line
-min_stamp_size = 20
+min_stamp_size = 10
 sex_cat_xp_col = 1
 sex_cat_yp_col = 2
 sex_cat_ra_col = 3
@@ -99,9 +99,9 @@ default_image_shape = (4096, 2048) # (x,y) in fits ordering, (y,x) in C ordering
 # Default weight function for measuring star/model moments
 default_weight_sigma = 3.0 # Pixels
 if default_min_lowest_separation is not None:
-    default_weight_rmax = default_min_lowest_separation
+    default_weight_rmax = default_min_lowest_separation / 2
 else:
-    default_weight_rmax = 10.0
+    default_weight_rmax = 20.0
 def default_prim_weight_func(x, y):
     r2 = np.square(x) + np.square(y)
     if r2 > np.square(default_weight_rmax):
