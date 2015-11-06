@@ -35,7 +35,7 @@ def make_stacks(stars, stack_size=(2 * mv.default_weight_rmax + 1)):
     stacks = {}
 
     for stack_name, image_name in zip(("star", "model", "noisy_model"),
-                                      ("image", "model_image", "noisy_model_image")):
+                                      ("image", "model_psf", "noisy_model_psf")):
         stack = np.zeros((stack_size, stack_size))
         num_stars = 0
         for star in stars:

@@ -166,7 +166,7 @@ def test_psf(image_filename,
                                           tinytim_data_path=tinytim_data_path,
 
                                           gain=gain,
-                                          save_models=True,
+                                          save_models=save_stacks,
                                           files_to_cleanup=files_to_cleanup)
     # Otherwise, call the fitting function
     else:
@@ -192,7 +192,7 @@ def test_psf(image_filename,
                                                     tinytim_data_path=tinytim_data_path,
 
                                                     gain=gain,
-                                                    save_models=True,
+                                                    save_models=save_stacks,
                                                     files_to_cleanup=files_to_cleanup)
 
     filename_root = image_filename.replace(mv.image_extension, "")

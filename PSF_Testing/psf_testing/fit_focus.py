@@ -79,7 +79,7 @@ def fit_best_focus_and_test_psf(stars,
                                             tinytim_data_path=tinytim_data_path,
 
                                             gain=gain,
-                                            save_models=save_models,
+                                            save_models=False,
                                             outliers_mask=outliers_mask,
 
                                             files_to_cleanup=files_to_cleanup)
@@ -111,7 +111,7 @@ def fit_best_focus_and_test_psf(stars,
                                             tinytim_data_path=tinytim_data_path,
 
                                             gain=gain,
-                                            save_models=True,
+                                            save_models=save_models,
                                             fitted_params=1)
 
     return test_results
