@@ -121,9 +121,6 @@ def test_psf_for_focus(stars,
                           background_noise=star.background_noise,
                           gain=gain)
 
-        if not noisy_psf_m0 > 0:
-            pass
-
         # Append m0 and Q data to the storage lists
         noisy_psf_m0s.append(noisy_psf_m0)
         noisy_psf_m0_vars.append(noisy_psf_m0_var)
@@ -155,22 +152,22 @@ def test_psf_for_focus(stars,
 
     # And then get the Z values. Use the noise-free psf error estimate instead of the stars'
     # error estimates, since it should be less biased
-    Q_signs = [[-1, -1, 1, 1, 1]]
+    Q_signs = np.array([[-1, -1, 1, 1, 1]])
     comb_Q_diffs = (Q_signs * Q_diffs[:, :, 0] + Q_diffs[:, :, 1])
     comb_noisy_Q_diffs = (Q_signs * noisy_Q_diffs[:, :, 0] + noisy_Q_diffs[:, :, 1])
 
     m0_Zs = (m0_diffs[:, 0] + m0_diffs[:, 1]) / np.sqrt(psf_m0_vars[:, 0, 0] +
                                                           psf_m0_vars[:, 1, 1] +
-                                                          2 * psf_m0_vars[:, 1, 0])
+                                                          2.0 * psf_m0_vars[:, 1, 0])
     Q_Zs = comb_Q_diffs / np.sqrt(psf_Q_vars[:, :, 0, 0] +
                                                           psf_Q_vars[:, :, 1, 1] +
-                                                          2 * Q_signs * psf_Q_vars[:, :, 1, 0])
+                                                          2.0 * Q_signs * psf_Q_vars[:, :, 1, 0])
     noisy_m0_Zs = (noisy_m0_diffs[:, 0] + noisy_m0_diffs[:, 1]) / np.sqrt(psf_m0_vars[:, 0, 0] +
                                                           psf_m0_vars[:, 1, 1] +
-                                                          2 * psf_m0_vars[:, 1, 0])
+                                                          2.0 * psf_m0_vars[:, 1, 0])
     noisy_Q_Zs = comb_noisy_Q_diffs / np.sqrt(psf_Q_vars[:, :, 0, 0] +
                                                           psf_Q_vars[:, :, 1, 1] +
-                                                          2 * Q_signs * psf_Q_vars[:, :, 1, 0])
+                                                          2.0 * Q_signs * psf_Q_vars[:, :, 1, 0])
 
     if len(outliers_mask) == 0:
 
@@ -187,14 +184,15 @@ def test_psf_for_focus(stars,
     omask = outliers_mask[0]
 
     # For the Q array, we need to duplicate the mask
+    m0_omask = np.vstack((omask,omask)).transpose()
     Q_omask = np.vstack((omask, omask, omask, omask, omask)).transpose()
 
-    masked_m0_diffs = np.ma.masked_array(m0_diffs, mask=omask)
+    masked_m0_diffs = np.ma.masked_array(m0_diffs, mask=m0_omask)
     masked_Q_diffs = np.ma.masked_array(comb_Q_diffs, mask=Q_omask)
     masked_m0_Zs = np.ma.masked_array(m0_Zs, mask=omask)
     masked_Q_Zs = np.ma.masked_array(Q_Zs, mask=Q_omask)
 
-    masked_noisy_m0_diffs = np.ma.masked_array(noisy_m0_diffs, mask=omask)
+    masked_noisy_m0_diffs = np.ma.masked_array(noisy_m0_diffs, mask=m0_omask)
     masked_noisy_Q_diffs = np.ma.masked_array(comb_noisy_Q_diffs, mask=Q_omask)
     masked_noisy_m0_Zs = np.ma.masked_array(noisy_m0_Zs, mask=omask)
     masked_noisy_Q_Zs = np.ma.masked_array(noisy_Q_Zs, mask=Q_omask)
@@ -203,20 +201,20 @@ def test_psf_for_focus(stars,
     num_unmasked = len(m0_Zs) - num_masked
 
     # Get the mean Zs of the non-outliers
-    mean_m0_diff = np.mean(masked_m0_diffs[~omask])
+    mean_m0_diff = np.mean(masked_m0_diffs[~m0_omask].reshape((num_unmasked, 2)), axis=0)
     mean_Q_diffs = np.mean(masked_Q_diffs[~Q_omask].reshape((num_unmasked, 5)), axis=0)
-    mean_m0_Z = np.mean(masked_m0_Zs[~omask])
+    mean_m0_Z = np.mean(masked_m0_Zs[~omask], axis=0)
     mean_Q_Zs = np.mean(masked_Q_Zs[~Q_omask].reshape((num_unmasked, 5)), axis=0)
-    mean_noisy_m0_diff = np.mean(masked_noisy_m0_diffs[~omask])
+    mean_noisy_m0_diff = np.mean(masked_noisy_m0_diffs[~m0_omask].reshape((num_unmasked, 2)), axis=0)
     mean_noisy_Q_diffs = np.mean(masked_noisy_Q_diffs[~Q_omask].reshape((num_unmasked, 5)), axis=0)
-    mean_noisy_m0_Z = np.mean(masked_noisy_m0_Zs[~omask])
+    mean_noisy_m0_Z = np.mean(masked_noisy_m0_Zs[~omask], axis=0)
     mean_noisy_Q_Zs = np.mean(masked_noisy_Q_Zs[~Q_omask].reshape((num_unmasked, 5)), axis=0)
 
-    Qx_Z2 = np.sum(np.square(Q_Zs[~Q_omask][:, 0]))
-    Qy_Z2 = np.sum(np.square(Q_Zs[~Q_omask][:, 1]))
-    Qplus_Z2 = np.sum(np.square(Q_Zs[~Q_omask][:, 2]))
-    Qcross_Z2 = np.sum(np.square(Q_Zs[~Q_omask][:, 3]))
-    Qsize_Z2 = np.sum(np.square(noisy_Q_Zs[~Q_omask][:, 4]))
+    Qx_Z2 = np.sum(np.square(Q_Zs[~Q_omask].reshape((num_unmasked, 5))[:, 0]), axis=0)
+    Qy_Z2 = np.sum(np.square(Q_Zs[~Q_omask].reshape((num_unmasked, 5))[:, 1]), axis=0)
+    Qplus_Z2 = np.sum(np.square(Q_Zs[~Q_omask].reshape((num_unmasked, 5))[:, 2]), axis=0)
+    Qcross_Z2 = np.sum(np.square(Q_Zs[~Q_omask].reshape((num_unmasked, 5))[:, 3]), axis=0)
+    Qsize_Z2 = np.sum(np.square(noisy_Q_Zs[~Q_omask].reshape((num_unmasked, 5))[:, 4]), axis=0)
 
     chi2 = Qx_Z2 + Qy_Z2 + Qplus_Z2 + Qcross_Z2 + Qsize_Z2
 
@@ -229,7 +227,7 @@ def test_psf_for_focus(stars,
             (star_m0s, star_Qs),
             (psf_m0s, psf_Qs),
             (noisy_psf_m0s, noisy_psf_Qs),
-            (np.sqrt(psf_m0_vars), np.sqrt(psf_Q_vars))
+            (np.sqrt(psf_m0_vars), np.sqrt(psf_Q_vars)),
             (omask, Q_omask),
             (m0_Zs, Q_Zs),
             )

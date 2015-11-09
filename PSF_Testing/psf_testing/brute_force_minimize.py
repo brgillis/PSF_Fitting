@@ -42,7 +42,7 @@ def bf_minimize(func,
     step_size = test_points[1] - test_points[0]
     assert step_size > 0
 
-    vfunc = np.vectorize(func, dtype=[float])
+    vfunc = np.vectorize(func, otypes=[float])
 
     test_outs = vfunc(test_points)
 
@@ -52,7 +52,7 @@ def bf_minimize(func,
 
     test_outs = np.zeros(3)
 
-    while(step_size > precision):
+    while(np.abs(step_size) > precision):
         step_size /= 2
 
         test_points = np.linspace(start=best_point - step_size,

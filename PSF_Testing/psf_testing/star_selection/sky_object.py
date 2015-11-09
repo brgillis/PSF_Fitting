@@ -27,7 +27,7 @@ from scipy.spatial import cKDTree
 
 from psf_testing import magic_values as mv
 
-class sky_object(object):
+class SkyObj(object):
     """
         @TODO: classdocs
     """

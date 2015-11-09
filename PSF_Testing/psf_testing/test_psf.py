@@ -107,7 +107,7 @@ def test_psf(image_filename,
         try:
             star.stamp = extract_stamp_for_star(star=star,
                                             image=image)
-        except Exception:
+        except AssertionError as _e:
             star.valid = False
             continue
 
@@ -115,10 +115,14 @@ def test_psf(image_filename,
 
         star.stamp -= background_level
 
-        star.xc, star.yc, star.x_array, star.y_array, star.prim_weight_mask, star.m0 = \
-            centre_image(image=star.stamp, weight_func=prim_weight_func)
+        try:
+            star.xc, star.yc, star.x_array, star.y_array, star.prim_weight_mask, star.m0 = \
+                centre_image(image=star.stamp, weight_func=prim_weight_func)
+        except AssertionError as _e:
+            star.valid = False
+            continue
 
-        star.m0, star.m0_var, star.prim_Qs, star.Q_vars = \
+        star.m0, star.m0_var, star.Qs, star.Q_vars = \
             get_m0_and_Qs(image=star.stamp,
                           prim_weight_func=prim_weight_func,
                           sec_weight_func=sec_weight_func,

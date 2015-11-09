@@ -22,6 +22,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from __future__ import division
+
 import numpy as np
 from scipy.signal import convolve
 
@@ -36,8 +38,8 @@ def rebin(subsampled_image,
     # Get the size of the final image
     ss_ny, ss_nx = np.shape(subsampled_image)
     
-    rb_ny = int((ss_ny-2*np.abs(y_shift))/subsampling_factor - 0.5)
-    rb_nx = int((ss_nx-2*np.abs(x_shift))/subsampling_factor - 0.5)
+    rb_ny = 2 * (((ss_ny-2*np.abs(y_shift))//subsampling_factor - 1) // 2) + 1 
+    rb_nx = 2 * (((ss_nx-2*np.abs(x_shift))//subsampling_factor - 1) // 2) + 1 
     
     # Shift is in star - model
     

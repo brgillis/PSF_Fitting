@@ -56,6 +56,9 @@ def centre_image(image,
         # Get coordinate arrays
         x_array, y_array = get_x_and_y_of_array(nx, ny, xc, yc)
         
+        if not (xc>=0 or xc<0):
+            pass
+        
         # Make the weight mask
         weight_mask = make_weight_mask(weight_func, nx, ny, xc, yc, x_array, y_array)
         

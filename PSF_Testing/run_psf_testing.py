@@ -119,6 +119,8 @@ def main(argv):
              tinytim_data_path = args.tinytim_data_path,
              cleanup_tinytim_files = args.cleanup_tinytim_files,
              force_update = args.update)
+    
+    print("Execution complete.")
 
 if __name__ == "__main__":
     main(sys.argv)

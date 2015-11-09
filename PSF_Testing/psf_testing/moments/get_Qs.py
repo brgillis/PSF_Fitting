@@ -43,11 +43,12 @@ def get_m0_and_Qs(image,
 
     if background_noise is None:
         background_noise = get_background_noise(image)
+        
+    nx, ny = np.shape(image)
 
     if (xc is None) or (yc is None):
         xc, yc, x_array, y_array, prim_weight_mask, _ = centre_image(image, prim_weight_func)
     else:
-        nx, ny = np.shape(image)
         x_array, y_array = get_x_and_y_of_array(nx=nx, ny=ny, xc=xc, yc=yc)
         prim_weight_mask = make_weight_mask(weight_func=prim_weight_func,
                                        nx=nx,

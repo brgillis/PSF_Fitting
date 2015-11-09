@@ -23,8 +23,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from psf_testing.star_selection.sky_object import sky_object
-from psf_testing.star_selection.star import star
+from psf_testing.star_selection.sky_object import SkyObj
+from psf_testing.star_selection.star import Star
 
 def get_objects_from_cat(sex_cat_filename):
     objects = []
@@ -37,7 +37,7 @@ def get_objects_from_cat(sex_cat_filename):
             if len(object_line) == 0:
                 continue
             if (object_line[0] != '#') and (object_line[0] != '['):
-                objects.append(sky_object(object_line))
+                objects.append(SkyObj(object_line))
 
     return objects
 
@@ -54,7 +54,7 @@ def get_stars(objects, min_class_star, min_star_mag, max_star_mag):
             continue
 
         # If we get here, it passed all tests
-        stars.append(star(obj))
+        stars.append(Star(obj))
 
     return stars
 
@@ -70,13 +70,13 @@ def get_isolated_stars(stars, all_objects, min_lowest_separation):
     # Create a list for isolated stars
     isolated_stars = []
 
-    for my_star in stars:
+    for star in stars:
         # Get the lowest separation for each star
-        if my_star.sky_object.lowest_separation is None:
-            _, object_tree = my_star.sky_object.get_lowest_separation(all_objects, object_tree)
+        if star.SkyObj.lowest_separation is None:
+            _, object_tree = star.SkyObj.get_lowest_separation(all_objects, object_tree)
 
         # Select those stars which have a high enough lowest separation
-        if my_star.sky_object.lowest_separation > min_lowest_separation:
+        if star.SkyObj.lowest_separation > min_lowest_separation:
             isolated_stars.append(star)
 
     return isolated_stars

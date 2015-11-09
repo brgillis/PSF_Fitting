@@ -22,7 +22,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-class star(object):
+class Star(object):
     """
         @TODO classdocs
     """
@@ -34,7 +34,7 @@ class star(object):
         """
 
         # Data on position, etc of the star
-        self.sky_object = sky_obj
+        self.SkyObj = sky_obj
 
         # Extracted postage stamp and background noise estimate of this star
         self.stamp = None
@@ -76,7 +76,9 @@ class star(object):
 
         self.noisy_model_Qs = None
         self.noisy_model_Q_vars = None
+        
+        return
 
 
     def get_position(self):
-        return self.sky_object.get_position()
+        return self.SkyObj.get_position()

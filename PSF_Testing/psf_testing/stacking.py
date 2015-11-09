@@ -35,27 +35,32 @@ def make_stacks(stars, stack_size=(2 * mv.default_weight_rmax + 1)):
     stacks = {}
 
     for stack_name, image_name in zip(("star", "model", "noisy_model"),
-                                      ("image", "model_psf", "noisy_model_psf")):
+                                      ("stamp", "model_psf", "noisy_model_psf")):
         stack = np.zeros((stack_size, stack_size))
         num_stars = 0
         for star in stars:
             if not star.valid or star.outlier:
                 continue
 
-            image = literal_eval("star." + image_name)
+            image = eval("star." + image_name)
             image_shape = np.shape(image)
 
-            dx = image_shape[0] - stack_size / 2
-            dy = image_shape[1] - stack_size / 2
+            dx = (image_shape[0] - stack_size) // 2
+            dy = (image_shape[1] - stack_size) // 2
+            
+            if dx > 0:
+                image = image[dx:-dx,:]
+            if dy > 0:
+                image = image[:,dy:-dy]
 
             if (dx >= 0) and (dy >= 0):
-                stack += image[dx:-dx, dy:-dy]
+                stack += image
             elif (dx < 0) and (dy < 0):
                 stack[-dx:dx, -dy:dy] += image
             elif (dx >= 0) and (dy < 0):
-                stack[:, -dy:dy] += image[dx:-dx, :]
+                stack[:, -dy:dy] += image
             elif (dx < 0) and (dy >= 0):
-                stack[-dx:dx, :] += image[:, dy:-dy]
+                stack[-dx:dx, :] += image
 
             num_stars += 1
 
@@ -73,7 +78,7 @@ def save_stacks(stacks, filename_root):
 
         hdu = fits.PrimaryHDU(stacks[stack_name])
 
-        hdu.writeto(filename)
+        hdu.writeto(filename, clobber=True)
 
     return
 

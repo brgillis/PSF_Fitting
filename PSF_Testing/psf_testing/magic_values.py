@@ -68,7 +68,7 @@ default_sex_data_path = "./data"
 default_min_class_star = 0.95
 default_min_star_mag = 21.0
 default_max_star_mag = 27.0
-default_min_lowest_separation = 10.0
+default_min_lowest_separation = 1.0
 
 # Values for making objects from a catalog line
 min_stamp_size = 10
@@ -90,7 +90,7 @@ default_test_focus = 0.0
 default_init_test_focus = 1.0
 default_min_test_focus = -6.0
 default_max_test_focus = 6.0
-default_focus_samples = 7
+default_focus_samples = 4
 default_focus_precision = 0.05
 default_num_grid_points = (8, 4) # (x,y) in fits ordering, (y,x) in C ordering
 
@@ -99,21 +99,19 @@ default_image_shape = (4096, 2048) # (x,y) in fits ordering, (y,x) in C ordering
 # Default weight function for measuring star/model moments
 default_weight_sigma = 3.0 # Pixels
 if default_min_lowest_separation is not None:
-    default_weight_rmax = default_min_lowest_separation / 2
+    default_weight_rmax = default_min_lowest_separation / (2*pixel_scale)
 else:
-    default_weight_rmax = 20.0
+    default_weight_rmax = 10.0
 def default_prim_weight_func(x, y):
     r2 = np.square(x) + np.square(y)
-    if r2 > np.square(default_weight_rmax):
-        return 0.0
-    else:
-        return np.exp(-r2 / (2. * np.square(default_weight_sigma)))
+    return np.where(r2 > np.square(default_weight_rmax),0.0,
+                    np.exp(-r2 / (2. * np.square(default_weight_sigma))))
 def default_sec_weight_func(x, y):
     r2 = np.square(x) + np.square(y)
-    if r2 > np.square(default_weight_rmax):
-        return 0.0
-    else:
-        return 1.0
+    return np.where(r2 > np.square(default_weight_rmax),0.0,1.0)
+
+if(min_stamp_size<default_weight_rmax):
+    min_stamp_size = default_weight_rmax
 
 # TinyTim values
 default_tinytim_data_path = "/disk2/brg/Data/HST_Fields/PSF_models"

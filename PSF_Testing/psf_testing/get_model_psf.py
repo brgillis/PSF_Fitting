@@ -137,7 +137,7 @@ def get_model_psf_for_star(star,
     """
 
     # Get the position we'll generate the model PSF for
-    psf_position = scheme.get_position_to_use(star.sky_object.x_pix, star.sky_object.y_pix)
+    psf_position = scheme.get_position_to_use(star.SkyObj.x_pix, star.SkyObj.y_pix)
 
     # Determine the name for the subsampled model PSF file
     subsampled_name = os.path.join(tinytim_data_path, "subsampled_psf_x-" + str(psf_position[0]) + \
@@ -207,6 +207,6 @@ def get_model_psf_for_star(star,
     # Get the zeroth-order moment for the rebinned psf
     _, _, _, _, _, rb_model_m0 = centre_image(rebinned_model, weight_func=weight_func)
 
-    scaled_model = rebinned_model * star.m0 / rb_model_m0
+    scaled_model = rebinned_model * star.m0[0] / rb_model_m0
 
     return scaled_model

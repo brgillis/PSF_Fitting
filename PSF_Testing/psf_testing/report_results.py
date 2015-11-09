@@ -32,25 +32,35 @@ def report_results(test_results, filename_root):
 
     # Set up the columns first
     columns = []
+        
+    Q_err_index = 7
 
-    for label, i, err_i in zip(("star_", "model_", "noisy_model_"), (4, 5, 6), (7, None, 7)):
+    for weight_label, k in zip(("core_", "wings_"), (0,1)):
 
-        if err_i is None:
-            get_errs = np.zeros_like
-            err_i = i
-        else:
-            get_errs = lambda x : x
+        for label, i, err_i in zip(("star_", "model_", "noisy_model_"), (4, 5, 6), (Q_err_index, None, Q_err_index)):
+    
+            if err_i is None:
+                get_errs = np.zeros_like
+                err_i = Q_err_index
+            else:
+                get_errs = lambda x : x
+    
+            columns.append(fits.Column(name=weight_label + label + "m0", format='E', array=test_results[i][0][:,k]))
+            columns.append(fits.Column(name=weight_label + label + "m0" + "_err", format='E',
+                                       array=get_errs(test_results[err_i][0][:,k,k])))
+            columns.append(fits.Column(name=weight_label + label + "m0" + "_coerr", format='E',
+                                       array=get_errs(test_results[err_i][0][:,k,1-k])))
+    
+            for Q_label, j in zip(("Qx", "Qy", "Qplus", "Qcross", "Qsize"), range(5)):
+    
+                columns.append(fits.Column(name=weight_label + label + Q_label, format='E', array=test_results[i][1][j][:,k]))
+                columns.append(fits.Column(name=weight_label + label + Q_label + "_err", format='E',
+                                           array=get_errs(test_results[err_i][1][j][:,k,k])))
+                columns.append(fits.Column(name=weight_label + label + Q_label + "_coerr", format='E',
+                                           array=get_errs(test_results[err_i][1][j][:,k,1-k])))
 
-        columns.append(fits.Column(name=label + "m0", format='E', array=test_results[i][0]))
-        columns.append(fits.Column(name=label + "m0" + "_err", format='E', array=get_errs(test_results[err_i][0])))
-
-        for Q_label, j in zip(("Qx", "Qy", "Qplus", "Qcross", "Qsize"), range(5)):
-
-            columns.append(fits.Column(name=label + Q_label, format='E', array=test_results[i][1][j]))
-            columns.append(fits.Column(name=label + Q_label + "_err", format='E',
-                                       array=get_errs(test_results[err_i][1][j])))
-
-    columns.append(fits.Column(name="is_outlier", format='L', array=test_results[8][1]))
+    columns.append(fits.Column(name="is_not_outlier", format='L',
+                               array=np.logical_not(test_results[8][0])))
 
     tbhdu = fits.BinTableHDU.from_columns(columns)
 
@@ -60,23 +70,25 @@ def report_results(test_results, filename_root):
     tbhdu.header["CHI_SQR"] = test_results[1][0]
     tbhdu.header["DOF"] = test_results[1][1]
 
-    tbhdu.header["M0_DIFF"] = test_results[2][0][0]
+    tbhdu.header["M0_CDIFF"] = test_results[2][0][0][0]
+    tbhdu.header["M0_WDIFF"] = test_results[2][0][0][1]
     tbhdu.header["M0_Z"] = test_results[3][0][0]
 
     for Q_label, j in zip(("QX", "QY", "QP", "QC", "QS"), range(5)):
         tbhdu.header[Q_label + "_DIFF"] = test_results[2][0][1][j]
         tbhdu.header[Q_label + "_Z"] = test_results[3][0][1][j]
 
-    tbhdu.header["M0_NDIFF"] = test_results[2][1][0]
-    tbhdu.header["M0_NZ"] = test_results[3][1][0]
+    tbhdu.header["M0NCDIFF"] = test_results[2][1][0][0]
+    tbhdu.header["M0NWDIFF"] = test_results[2][1][0][1]
+    tbhdu.header["M0NZ"] = test_results[3][1][0]
 
     for Q_label, j in zip(("QX", "QY", "QP", "QC", "QS"), range(5)):
-        tbhdu.header[Q_label + "_NDIFF"] = test_results[2][1][1][j]
-        tbhdu.header[Q_label + "_NZ"] = test_results[3][1][1][j]
+        tbhdu.header[Q_label + "NDIFF"] = test_results[2][1][1][j]
+        tbhdu.header[Q_label + "NZ"] = test_results[3][1][1][j]
 
 
     results_filename = filename_root + "_results" + mv.table_extension
 
-    tbhdu.writeto(results_filename)
+    tbhdu.writeto(results_filename,clobber=True)
 
     return

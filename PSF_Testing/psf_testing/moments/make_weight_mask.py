@@ -59,6 +59,8 @@ def make_weight_mask(weight_func,
     
     weight_mask = weight_func(x_array,y_array)
     
+    assert weight_mask.sum() > 0
+    
     # Normalize it
     weight_mask = weight_mask/weight_mask.sum()
     
