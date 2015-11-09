@@ -35,12 +35,18 @@ import subprocess as sbp
 
 
 def make_subsampled_psf_model(filename,
-                              xp,
-                              yp,
-                              focus,
-                              chip,
+                              chip=1,
+                              psf_size=mv.default_model_psf_width,
+                              xp=mv.default_image_shape[0]/2,
+                              yp=mv.default_image_shape[1]/2,
+                              focus=0.0,
+                              detector=mv.default_detector,
+                              filter=mv.default_filter,
+                              spec_type=mv.default_model_psf_spec_type,
+                              subsampling_factor=mv.default_subsampling_factor,
                               weight_func=mv.default_prim_weight_func,
                               tinytim_path=mv.default_tinytim_path,
+                              shape=None,
                               files_to_cleanup=None):
     """ Generates a subsampled psf model for a given image position, focus, and chip.
 
@@ -63,13 +69,13 @@ def make_subsampled_psf_model(filename,
     # Set up the command to call tiny1
     cmd = "export TINYTIM=" + tinytim_path + "\n" + \
           tinytim_path + "/tiny1 " + filename_base + ".par << EOF \n" + \
-          str(mv.default_detector) + "\n" + \
+          str(detector) + "\n" + \
           str(chip) + "\n" + \
           str(xp) + " " + str(yp) + "\n" + \
-          str(mv.default_filter) + "\n" + \
-          str(mv.default_model_psf_spec_type[0]) + "\n" + \
-          str(mv.default_model_psf_spec_type[1]) + "\n" + \
-          mv.default_model_psf_width + "\n" + \
+          str(filter) + "\n" + \
+          str(spec_type[0]) + "\n" + \
+          str(spec_type[1]) + "\n" + \
+          str(psf_size) + "\n" + \
           str(focus) + "\n" + \
           filename_base + "\nEOF"
     # Run the command to call tiny1
@@ -84,7 +90,7 @@ def make_subsampled_psf_model(filename,
     # Set up the command to call tiny3
     cmd = "export TINYTIM=" + tinytim_path + "\n" + \
           tinytim_path + "/tiny3 " + filename_base + ".par SUB=" + \
-        str(mv.default_subsampling_factor)
+        str(subsampling_factor)
     # Run the command to call tiny3
     sbp.call(cmd, shell=True)
 
@@ -96,7 +102,7 @@ def make_subsampled_psf_model(filename,
 
     # Define a modified weight function to work on subsampled pixels
     def ss_weight_func(x, y):
-        return weight_func(mv.default_subsampling_factor * x, mv.default_subsampling_factor * y)
+        return weight_func(x/subsampling_factor, y/subsampling_factor)
 
     # Get the centre of this image
     ss_xc, ss_yc, _ss_x_array, _ss_y_array, _ss_weight_mask, ss_m0 = \
@@ -105,6 +111,20 @@ def make_subsampled_psf_model(filename,
     subsampled_image[0].header[mv.ss_model_xc_label] = ss_xc
     subsampled_image[0].header[mv.ss_model_yc_label] = ss_yc
     subsampled_image[0].header[mv.ss_model_m0_label] = ss_m0
+    
+    if shape is not None:
+        full_shape = np.shape(subsampled_image[0].data)
+        dx, dy = np.subtract(full_shape,shape)
+        
+        if dx > 0 and dy > 0:
+            subsampled_image[0].data = subsampled_image[0].data[dx:-dx,dy:-dy]
+        elif dx > 0:
+            subsampled_image[0].data = subsampled_image[0].data[dx:-dx,:]
+        elif dy > 0:
+            subsampled_image[0].data = subsampled_image[0].data[:,dy:-dy]
+            
+    # Normalize the image
+    subsampled_image[0].data /= subsampled_image[0].data.sum()
 
     # Write the image out to the proper filename
     subsampled_image.writeto(filename, clobber=True)
