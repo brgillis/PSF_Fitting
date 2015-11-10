@@ -28,7 +28,91 @@ import numpy as np
 
 from psf_testing import magic_values as mv
 
-def report_results(test_results, filename_root):
+def save_fitting_record(fitting_record,
+                        filename_root):
+    focii = []
+    chi_squareds = []
+    emp_chi_squareds = []
+    
+    m0_core_diffs = []
+    m0_wings_diffs = []
+    m0_Zs = []
+    m0_emp_Zs = []
+
+    m0_noisy_core_diffs = []
+    m0_noisy_wings_diffs = []
+    m0_noisy_Zs = []
+    m0_noisy_emp_Zs = []
+    
+    Qs = {}
+
+    for Q_label in ("QX", "QY", "QP", "QC", "QS"):
+        Qs[Q_label + "_DIFF"] = []
+        Qs[Q_label + "_Z2"] = []
+        Qs[Q_label + "_EZ2"] = []
+        Qs[Q_label + "NDIFF"] = []
+        Qs[Q_label + "NZ2"] = []
+        Qs[Q_label + "NEZ2"] = []
+        
+    for test_results in fitting_record:
+        focii.append(test_results[0])
+        chi_squareds.append(test_results[1][0][0])
+        emp_chi_squareds.append(test_results[1][0][1])
+    
+        m0_core_diffs.append(test_results[2][0][0][0])
+        m0_wings_diffs.append(test_results[2][0][0][1])
+        m0_Zs.append(test_results[3][0][0])
+        m0_emp_Zs.append(test_results[4][0][0])
+    
+        m0_noisy_core_diffs.append(test_results[2][1][0][0])
+        m0_noisy_wings_diffs.append(test_results[2][1][0][1])
+        m0_noisy_Zs.append(test_results[3][1][0])
+        m0_noisy_emp_Zs.append(test_results[4][1][0])
+    
+        for Q_label, j in zip(("QX", "QY", "QP", "QC", "QS"), range(5)):
+            Qs[Q_label + "_DIFF"].append(test_results[2][0][1][j])
+            Qs[Q_label + "_Z2"].append(test_results[3][0][1][j])
+            Qs[Q_label + "_EZ2"].append(test_results[4][0][1][j])
+            Qs[Q_label + "NDIFF"].append(test_results[2][1][1][j])
+            Qs[Q_label + "NZ2"].append(test_results[3][1][1][j])
+            Qs[Q_label + "NEZ2"].append(test_results[4][1][1][j])
+    
+    columns = [fits.Column(name="focus", format='E', array=focii),
+               fits.Column(name="chi_squared", format='E', array=chi_squareds),
+               fits.Column(name="m0_core_diff", format='E', array=m0_core_diffs),
+               fits.Column(name="m0_wings_diff", format='E', array=m0_wings_diffs),
+               fits.Column(name="m0_Z2", format='E', array=m0_Zs),
+               fits.Column(name="m0_emp_Z2", format='E', array=m0_emp_Zs)]
+    
+    for Q_label, colname in zip(("QX", "QY", "QP", "QC", "QS"), 
+                                ("Qx", "Qy", "Qplus", "Qcross", "Qsize")):
+        columns.append(fits.Column(name=colname + "_diff", format='E', array=Qs[Q_label + "_DIFF"]))
+        columns.append(fits.Column(name=colname + "_Z2", format='E', array=Qs[Q_label + "_Z2"]))
+        columns.append(fits.Column(name=colname + "_emp_Z2", format='E', array=Qs[Q_label + "_EZ2"]))
+        
+    columns += [fits.Column(name="m0_noisy_core_diff", format='E', array=m0_noisy_core_diffs),
+                fits.Column(name="m0_noisy_wings_diff", format='E', array=m0_noisy_wings_diffs),
+                fits.Column(name="m0_noisy_Z2", format='E', array=m0_noisy_Zs),
+                fits.Column(name="m0_noisy_emp_Z2", format='E', array=m0_noisy_emp_Zs)]
+    
+    for Q_label, colname in zip(("QX", "QY", "QP", "QC", "QS"), 
+                                ("Qx", "Qy", "Qplus", "Qcross", "Qsize")):
+        columns.append(fits.Column(name=colname + "_noisy_diff", format='E', array=Qs[Q_label + "NDIFF"]))
+        columns.append(fits.Column(name=colname + "_noisy_Z2", format='E', array=Qs[Q_label + "NZ2"]))
+        columns.append(fits.Column(name=colname + "_noisy_emp_Z2", format='E', array=Qs[Q_label + "NEZ2"]))
+
+    tbhdu = fits.BinTableHDU.from_columns(columns)
+    
+    tbhdu.header["DOF"] = test_results[1][1][0]
+    tbhdu.header["EDOF"] = test_results[1][1][1]
+
+    fitting_record_filename = filename_root + "_fitting_record" + mv.table_extension
+
+    tbhdu.writeto(fitting_record_filename,clobber=True)
+
+def report_results(test_results,
+                   filename_root,
+                   fitting_record=None):
 
     # Set up the columns first
     columns = []
@@ -67,24 +151,29 @@ def report_results(test_results, filename_root):
     # Add metadata to the header
 
     tbhdu.header["FOCUS"] = test_results[0]
-    tbhdu.header["CHI_SQR"] = test_results[1][0]
-    tbhdu.header["DOF"] = test_results[1][1]
+    tbhdu.header["CHI_SQR"] = test_results[1][0][0]
+    tbhdu.header["ECHI_SQR"] = test_results[1][0][1]
+    tbhdu.header["DOF"] = test_results[1][1][0]
+    tbhdu.header["EDOF"] = test_results[1][1][1]
 
     tbhdu.header["M0_CDIFF"] = test_results[2][0][0][0]
     tbhdu.header["M0_WDIFF"] = test_results[2][0][0][1]
-    tbhdu.header["M0_Z"] = test_results[3][0][0]
+    tbhdu.header["M0_Z2"] = test_results[3][0][0]
+    tbhdu.header["M0_EZ2"] = test_results[4][0][0]
 
     for Q_label, j in zip(("QX", "QY", "QP", "QC", "QS"), range(5)):
         tbhdu.header[Q_label + "_DIFF"] = test_results[2][0][1][j]
-        tbhdu.header[Q_label + "_Z"] = test_results[3][0][1][j]
+        tbhdu.header[Q_label + "_Z2"] = test_results[3][0][1][j]
+        tbhdu.header[Q_label + "_EZ2"] = test_results[4][0][1][j]
 
     tbhdu.header["M0NCDIFF"] = test_results[2][1][0][0]
     tbhdu.header["M0NWDIFF"] = test_results[2][1][0][1]
-    tbhdu.header["M0NZ"] = test_results[3][1][0]
+    tbhdu.header["M0NZ2"] = test_results[3][1][0]
 
     for Q_label, j in zip(("QX", "QY", "QP", "QC", "QS"), range(5)):
         tbhdu.header[Q_label + "NDIFF"] = test_results[2][1][1][j]
-        tbhdu.header[Q_label + "NZ"] = test_results[3][1][1][j]
+        tbhdu.header[Q_label + "NZ2"] = test_results[3][1][1][j]
+        tbhdu.header[Q_label + "NEZ2"] = test_results[4][1][1][j]
 
 
     results_filename = filename_root + "_results" + mv.table_extension
@@ -93,6 +182,12 @@ def report_results(test_results, filename_root):
     
     # Print summary
     print("Chi-squared for focus " + str(tbhdu.header["FOCUS"]) +
-          " = " + str(tbhdu.header["CHI_SQR"]) + ".")
+          " = " + str(tbhdu.header["CHI_SQR"]) + ", for " + str(tbhdu.header["DOF"]) +
+          " degrees of freedom.")
+    print("Empirical Chi-squared of: " + str(tbhdu.header["ECHI_SQR"]) + ", for "
+          + str(tbhdu.header["EDOF"]) + " degrees of freedom.")
+    
+    if fitting_record is not None:
+        save_fitting_record(fitting_record,filename_root)
 
     return

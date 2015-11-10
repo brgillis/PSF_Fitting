@@ -25,10 +25,11 @@
 from psf_testing import magic_values as mv
 from psf_testing.brute_force_minimize import bf_minimize
 from psf_testing.test_psf_for_focus import test_psf_for_focus
+from psf_testing.memoize import memoize
 
 
 def get_chi2_of_test_results(test_results):
-    return test_results[1][0]
+    return test_results[1][0][1]
 
 def fit_best_focus_and_test_psf(stars,
 
@@ -57,9 +58,13 @@ def fit_best_focus_and_test_psf(stars,
                                 files_to_cleanup=None):
 
     # Use a set outliers mask for all tests
-    outliers_mask = []
+    outliers_mask = None
+    
+    # Keep a record of the results for all tests
+    fitting_record = []
 
     # Define a function that we can use for fitting the focus
+    @memoize
     def get_chi2_for_focus(test_focus):
         test_results = test_psf_for_focus(stars=stars,
 
@@ -82,8 +87,14 @@ def fit_best_focus_and_test_psf(stars,
                                             save_models=False,
                                             outliers_mask=outliers_mask,
 
-                                            files_to_cleanup=files_to_cleanup)
+                                            files_to_cleanup=files_to_cleanup,
+                                            
+                                            fitting_record=fitting_record)
         return get_chi2_of_test_results(test_results)
+    
+    # Calculate (and cache) the value for focus 0 first, so we'll always use the
+    # outliers list for that
+    get_chi2_for_focus(0.0)
 
     # Initialize the test
 
@@ -112,6 +123,12 @@ def fit_best_focus_and_test_psf(stars,
 
                                             gain=gain,
                                             save_models=save_models,
-                                            fitted_params=1)
+                                            outliers_mask=outliers_mask,
 
-    return test_results
+                                            files_to_cleanup=files_to_cleanup,
+                                            
+                                            fitted_params=1,
+                                            
+                                            fitting_record=None)
+
+    return test_results, fitting_record

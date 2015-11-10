@@ -172,9 +172,10 @@ def test_psf(image_filename,
                                           gain=gain,
                                           save_models=save_stacks,
                                           files_to_cleanup=files_to_cleanup)
+        fitting_record = None
     # Otherwise, call the fitting function
     else:
-        test_results = fit_best_focus_and_test_psf(stars=stars,
+        test_results, fitting_record = fit_best_focus_and_test_psf(stars=stars,
 
                                                     star_m0s=star_m0s,
                                                     star_Qs=star_Qs,
@@ -202,11 +203,15 @@ def test_psf(image_filename,
     filename_root = image_filename.replace(mv.image_extension, "")
 
     # Report the results
-    report_results(test_results=test_results, filename_root=filename_root)
+    report_results(test_results=test_results,
+                   fitting_record=fitting_record,
+                   filename_root=filename_root)
 
     # Save stacks if desired
     if save_stacks:
-        make_and_save_stacks(stars=stars, filename_root=filename_root, stack_size=(2 * mv.default_weight_rmax + 1))
+        make_and_save_stacks(stars=stars,
+                             filename_root=filename_root,
+                             stack_size=(2 * mv.default_weight_rmax + 1))
 
     # Remove all files in the cleanup list
     if cleanup_tinytim_files:
