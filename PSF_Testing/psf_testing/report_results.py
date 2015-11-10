@@ -90,5 +90,9 @@ def report_results(test_results, filename_root):
     results_filename = filename_root + "_results" + mv.table_extension
 
     tbhdu.writeto(results_filename,clobber=True)
+    
+    # Print summary
+    print("Chi-squared for focus " + str(tbhdu.header["FOCUS"]) +
+          " = " + str(tbhdu.header["CHI_SQR"]) + ".")
 
     return

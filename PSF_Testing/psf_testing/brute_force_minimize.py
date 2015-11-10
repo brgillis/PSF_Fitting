@@ -28,32 +28,47 @@ import numpy as np
 from psf_testing import magic_values as mv
 
 def bf_minimize(func,
+                args=[],
+                kwargs={},
                 min_input=mv.default_min_test_focus,
                 max_input=mv.default_max_test_focus,
                 test_points=mv.default_focus_samples,
-                precision=mv.default_focus_precision):
+                precision=mv.default_focus_precision,
+                max_iter=100):
 
     assert precision > 0
+    assert max_input > min_input
+    assert test_points > 0
 
+    # Set up test points
     test_points = np.linspace(start=min_input,
                               stop=max_input,
                               num=test_points)
 
     step_size = test_points[1] - test_points[0]
-    assert step_size > 0
 
-    vfunc = np.vectorize(func, otypes=[float])
+    # Define a function with the args and kwargs passed to it
+    def afunc(x):
+        return func(x,*args,**kwargs)
+    
+    # Define a vectorized version of the function
+    vfunc = np.vectorize(afunc, otypes=[float])
 
+    # Get the best point in the initial set
     test_outs = vfunc(test_points)
 
     best_i = np.argmin(test_outs)
     best_out = test_outs[best_i]
     best_point = test_points[best_i]
 
-    test_outs = np.zeros(3)
+    # Now zoom in, looking on either side of this best point and repeating
 
-    while(np.abs(step_size) > precision):
+    test_outs = np.zeros(3)
+    i = 0
+
+    while(np.abs(step_size) > precision and i<max_iter):
         step_size /= 2
+        i += 1
 
         test_points = np.linspace(start=best_point - step_size,
                                   stop=best_point + step_size,
