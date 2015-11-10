@@ -26,9 +26,12 @@ from astropy.io import fits
 
 import numpy as np
 from psf_testing import magic_values as mv
+from psf_testing.moments.centre_image import centre_image
+from psf_testing.moments.estimate_background import get_background_level
 
 
-def make_stacks(stars, stack_size=(2 * mv.default_weight_rmax + 1)):
+def make_stacks(stars, stack_size=(2 * mv.default_weight_rmax + 1),
+                weight_func=mv.default_prim_weight_func):
 
     stacks = {}
 
@@ -65,9 +68,19 @@ def make_stacks(stars, stack_size=(2 * mv.default_weight_rmax + 1)):
             num_stars += 1
 
         assert num_stars > 0
-        stack /= num_stars
+        
+        # Subtract off any lingering background
+        stack -= get_background_level(image)
+        
+        # Normalize the stack by its m0
+        m0 = centre_image(image=image,weight_func=weight_func)[5]
+        stack /= m0
 
         stacks[stack_name] = stack
+        
+    # Add residual and noisy residual stacks
+    stacks["residual"] = stacks["star"] - stacks["model"]
+    stacks["noisy_residual"] = stacks["star"] - stacks["noisy_model"]
 
     return stacks
 
@@ -88,4 +101,4 @@ def make_and_save_stacks(stars, filename_root, stack_size=(2 * mv.default_weight
 
     save_stacks(stacks, filename_root)
 
-    return
+    return stacks
