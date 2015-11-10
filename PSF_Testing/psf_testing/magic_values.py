@@ -91,7 +91,7 @@ default_init_test_focus = 1.0
 default_min_test_focus = -6.0
 default_max_test_focus = 6.0
 default_focus_samples = 4
-default_focus_precision = 0.05
+default_focus_precision = 0.1
 default_num_grid_points = (8, 4) # (x,y) in fits ordering, (y,x) in C ordering
 
 default_image_shape = (4096, 2048) # (x,y) in fits ordering, (y,x) in C ordering
@@ -120,7 +120,7 @@ default_model_psf_width = 2.0
 default_model_psf_spec_type = (1, 15) # K-type star
 default_detector = 15 # WFC
 default_filter = "f606w"
-default_subsampling_factor = 5
+default_subsampling_factor = 6
 
 undistorted_model_tail = "00_psf.fits"
 subsampled_model_tail = "00.fits"

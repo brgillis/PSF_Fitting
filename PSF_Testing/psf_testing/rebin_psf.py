@@ -36,20 +36,24 @@ def rebin(subsampled_image,
           subsampling_factor = mv.default_subsampling_factor):
     
     # Get the size of the final image
-    ss_ny, ss_nx = np.shape(subsampled_image)
+    ss_nx, ss_ny = np.shape(subsampled_image)
     
-    rb_ny = 2 * (((ss_ny-2*np.abs(y_shift))//subsampling_factor - 1) // 2) + 1 
-    rb_nx = 2 * (((ss_nx-2*np.abs(x_shift))//subsampling_factor - 1) // 2) + 1 
+    rb_nx = 2 * (((ss_nx-np.abs(x_shift))//subsampling_factor - 1) // 2) + 1 
+    rb_ny = 2 * (((ss_ny-np.abs(y_shift))//subsampling_factor - 1) // 2) + 1 
+    
+    x_offset = (ss_nx - rb_nx*subsampling_factor)//2 - x_shift
+    y_offset = (ss_ny - rb_ny*subsampling_factor)//2 - y_shift
     
     # Shift is in star - model
     
     # Make the rebinned array
-    rebinned_array = np.zeros((rb_ny,rb_nx))
-    for yi in xrange(rb_ny):
-        for xi in xrange(rb_nx):
-            ym = subsampling_factor*(yi+1) + y_shift - subsampling_factor/2
-            xm = subsampling_factor*(xi+1) + x_shift - subsampling_factor/2
-            rebinned_array[yi,xi] = subsampled_image[ym:ym+subsampling_factor, xm:xm+subsampling_factor ].sum()
+    rebinned_array = np.zeros((rb_nx,rb_ny))
+    for xi in xrange(rb_nx):
+        for yi in xrange(rb_ny):
+            xm = x_offset + subsampling_factor*(xi+1) - int(subsampling_factor/2)
+            ym = y_offset + subsampling_factor*(yi+1) - int(subsampling_factor/2)
+            rebinned_array[xi,yi] = subsampled_image[xm:xm+subsampling_factor,
+                                                     ym:ym+subsampling_factor ].sum()
     
     # Convolve it with the charge diffusion kernel
     rebinned_diffused_array = convolve(rebinned_array, cdf, mode="same")

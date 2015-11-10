@@ -114,7 +114,7 @@ def make_subsampled_psf_model(filename,
     
     if shape is not None:
         full_shape = np.shape(subsampled_image[0].data)
-        dx, dy = np.subtract(full_shape,shape)
+        dx, dy = np.subtract(full_shape,shape) // 2
         
         if dx > 0 and dy > 0:
             subsampled_image[0].data = subsampled_image[0].data[dx:-dx,dy:-dy]
@@ -122,6 +122,12 @@ def make_subsampled_psf_model(filename,
             subsampled_image[0].data = subsampled_image[0].data[dx:-dx,:]
         elif dy > 0:
             subsampled_image[0].data = subsampled_image[0].data[:,dy:-dy]
+            
+        full_shape = np.shape(subsampled_image[0].data)
+        if full_shape[0] > shape[0]:
+            subsampled_image[0].data = subsampled_image[0].data[1:,:]
+        if full_shape[1] > shape[1]:
+            subsampled_image[0].data = subsampled_image[0].data[:,1:]
             
     # Normalize the image
     subsampled_image[0].data /= subsampled_image[0].data.sum()
@@ -214,8 +220,8 @@ def get_model_psf_for_star(star,
     star_d_yc = star.yc - (star_ny - 1.) / 2
 
     # Determine how many subsampled pixels we'll have to shift the subsampled psf by
-    x_shift = int(mv.default_subsampling_factor * star_d_xc - ss_model_d_xc + 0.5)
-    y_shift = int(mv.default_subsampling_factor * star_d_yc - ss_model_d_yc + 0.5)
+    x_shift = int(round(mv.default_subsampling_factor * (star_d_xc+0.5) - ss_model_d_xc - 0.5,0))
+    y_shift = int(round(mv.default_subsampling_factor * (star_d_yc+0.5) - ss_model_d_yc - 0.5,0))
 
     # Get the rebinned PSF model
     rebinned_model = rebin(subsampled_model.data,
@@ -225,7 +231,7 @@ def get_model_psf_for_star(star,
                            subsampling_factor=mv.default_subsampling_factor)
 
     # Get the zeroth-order moment for the rebinned psf
-    _, _, _, _, _, rb_model_m0 = centre_image(rebinned_model, weight_func=weight_func)
+    _xc, _yc, _, _, _, rb_model_m0 = centre_image(rebinned_model, weight_func=weight_func)
 
     scaled_model = rebinned_model * star.m0[0] / rb_model_m0
 

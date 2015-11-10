@@ -22,8 +22,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from ast import literal_eval
-
 from astropy.io import fits
 
 import numpy as np
@@ -52,6 +50,8 @@ def make_stacks(stars, stack_size=(2 * mv.default_weight_rmax + 1)):
                 image = image[dx:-dx,:]
             if dy > 0:
                 image = image[:,dy:-dy]
+                
+            image = image/star.m0[0]
 
             if (dx >= 0) and (dy >= 0):
                 stack += image

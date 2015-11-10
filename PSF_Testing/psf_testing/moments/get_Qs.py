@@ -102,7 +102,7 @@ def get_m0_and_Qs(image,
     # Get Qsize and its error now
     Qsize, var_Qsize = get_Qsize_and_var(image=image,
                                          prim_weight_func=prim_weight_func,
-                                         sec_weight_func=prim_weight_func,
+                                         sec_weight_func=sec_weight_func,
                                          xc=xc,
                                          yc=yc,
                                          x_array=x_array,

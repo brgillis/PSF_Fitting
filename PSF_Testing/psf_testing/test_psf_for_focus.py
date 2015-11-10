@@ -156,18 +156,18 @@ def test_psf_for_focus(stars,
     comb_Q_diffs = (Q_signs * Q_diffs[:, :, 0] + Q_diffs[:, :, 1])
     comb_noisy_Q_diffs = (Q_signs * noisy_Q_diffs[:, :, 0] + noisy_Q_diffs[:, :, 1])
 
-    m0_Zs = (m0_diffs[:, 0] + m0_diffs[:, 1]) / np.sqrt(psf_m0_vars[:, 0, 0] +
+    m0_Zs = (m0_diffs[:, 0] + m0_diffs[:, 1]) / np.sqrt(np.abs(psf_m0_vars[:, 0, 0] +
                                                           psf_m0_vars[:, 1, 1] +
-                                                          2.0 * psf_m0_vars[:, 1, 0])
-    Q_Zs = comb_Q_diffs / np.sqrt(psf_Q_vars[:, :, 0, 0] +
+                                                          2.0 * psf_m0_vars[:, 1, 0]))
+    Q_Zs = comb_Q_diffs / np.sqrt(np.abs(psf_Q_vars[:, :, 0, 0] +
                                                           psf_Q_vars[:, :, 1, 1] +
-                                                          2.0 * Q_signs * psf_Q_vars[:, :, 1, 0])
-    noisy_m0_Zs = (noisy_m0_diffs[:, 0] + noisy_m0_diffs[:, 1]) / np.sqrt(psf_m0_vars[:, 0, 0] +
+                                                          2.0 * Q_signs * psf_Q_vars[:, :, 1, 0]))
+    noisy_m0_Zs = (noisy_m0_diffs[:, 0] + noisy_m0_diffs[:, 1]) / np.sqrt(np.abs(psf_m0_vars[:, 0, 0] +
                                                           psf_m0_vars[:, 1, 1] +
-                                                          2.0 * psf_m0_vars[:, 1, 0])
-    noisy_Q_Zs = comb_noisy_Q_diffs / np.sqrt(psf_Q_vars[:, :, 0, 0] +
+                                                          2.0 * psf_m0_vars[:, 1, 0]))
+    noisy_Q_Zs = comb_noisy_Q_diffs / np.sqrt(np.abs(psf_Q_vars[:, :, 0, 0] +
                                                           psf_Q_vars[:, :, 1, 1] +
-                                                          2.0 * Q_signs * psf_Q_vars[:, :, 1, 0])
+                                                          2.0 * Q_signs * psf_Q_vars[:, :, 1, 0]))
 
     if len(outliers_mask) == 0:
 
@@ -227,7 +227,7 @@ def test_psf_for_focus(stars,
             (star_m0s, star_Qs),
             (psf_m0s, psf_Qs),
             (noisy_psf_m0s, noisy_psf_Qs),
-            (np.sqrt(psf_m0_vars), np.sqrt(psf_Q_vars)),
+            (np.sqrt(np.abs(psf_m0_vars)), np.sqrt(np.abs(psf_Q_vars))),
             (omask, Q_omask),
             (m0_Zs, Q_Zs),
             )
