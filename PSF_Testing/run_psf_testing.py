@@ -26,6 +26,8 @@
 
 import sys
 import argparse
+from os.path import join
+from psf_testing.parmap import parmap
 
 from psf_testing import magic_values as mv
 from psf_testing.test_psf import test_psf
@@ -36,8 +38,12 @@ def main(argv):
     parser = argparse.ArgumentParser()
     
     # Image filename
-    parser.add_argument("image_filename",type=str,
+    parser.add_argument("--image_filename",type=str, default=None,
                         help="The filename of the image to test the PSF model on.")
+    parser.add_argument("--image_list_filename",type=str, default=None,
+                        help="The filename which contains a list of images to test.")
+    parser.add_argument("--image_dir",type=str, default=None,
+                        help="The directory where images can be found.")
     
     # Star selection
     parser.add_argument("--min_class_star", type=float, default=mv.default_min_class_star,
@@ -96,29 +102,66 @@ def main(argv):
         test_single_focus = False
     
     # Pass the cline-args to the test_psf function, which carries out the testing
-    test_psf(image_filename = args.image_filename,
-             
-             min_class_star = args.min_class_star,
-             min_star_mag = args.min_mag,
-             max_star_mag = args.max_mag,
-             min_lowest_separation = args.min_lowest_separation,
-             
-             test_single_focus = test_single_focus,
-             test_focus = args.focus,
-             min_test_focus = args.min_focus,
-             max_test_focus = args.max_focus,
-             test_focus_samples = args.focus_samples,
-             test_focus_precision = args.focus_precision,
-             num_grid_points = (args.focus_sample_x_points,
-                                args.focus_sample_y_points),
-             
-             sex_data_path = args.sex_data_path,
-             cleanup_sex_files = args.cleanup_sex_files,
-             
-             tinytim_path = args.tinytim_path,
-             tinytim_data_path = args.tinytim_data_path,
-             cleanup_tinytim_files = args.cleanup_tinytim_files,
-             force_update = args.update)
+    
+    if args.image_filename is not None:
+        test_psf(image_filename = args.image_filename,
+                 
+                 min_class_star = args.min_class_star,
+                 min_star_mag = args.min_mag,
+                 max_star_mag = args.max_mag,
+                 min_lowest_separation = args.min_lowest_separation,
+                 
+                 test_single_focus = test_single_focus,
+                 test_focus = args.focus,
+                 min_test_focus = args.min_focus,
+                 max_test_focus = args.max_focus,
+                 test_focus_samples = args.focus_samples,
+                 test_focus_precision = args.focus_precision,
+                 num_grid_points = (args.focus_sample_x_points,
+                                    args.focus_sample_y_points),
+                 
+                 sex_data_path = args.sex_data_path,
+                 cleanup_sex_files = args.cleanup_sex_files,
+                 
+                 tinytim_path = args.tinytim_path,
+                 tinytim_data_path = args.tinytim_data_path,
+                 cleanup_tinytim_files = args.cleanup_tinytim_files,
+                 force_update = args.update)
+    else:
+        # We'll test a list of images
+        image_filenames = []
+        with open(args.image_list_filename) as fi:
+            for line in fi:
+                for word in line.split():
+                    image_filename = join(args.image_dir, word)
+                    image_filenames.append(image_filename)
+                    
+        def test_psf_for_image(image_filename):
+            test_psf(image_filename = image_filename,
+                     
+                     min_class_star = args.min_class_star,
+                     min_star_mag = args.min_mag,
+                     max_star_mag = args.max_mag,
+                     min_lowest_separation = args.min_lowest_separation,
+                     
+                     test_single_focus = test_single_focus,
+                     test_focus = args.focus,
+                     min_test_focus = args.min_focus,
+                     max_test_focus = args.max_focus,
+                     test_focus_samples = args.focus_samples,
+                     test_focus_precision = args.focus_precision,
+                     num_grid_points = (args.focus_sample_x_points,
+                                        args.focus_sample_y_points),
+                     
+                     sex_data_path = args.sex_data_path,
+                     cleanup_sex_files = args.cleanup_sex_files,
+                     
+                     tinytim_path = args.tinytim_path,
+                     tinytim_data_path = args.tinytim_data_path,
+                     cleanup_tinytim_files = args.cleanup_tinytim_files,
+                     force_update = args.update)
+            
+        parmap(test_psf_for_image,image_filenames)
     
     print("Execution complete.")
 

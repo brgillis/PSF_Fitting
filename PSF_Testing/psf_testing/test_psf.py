@@ -217,5 +217,7 @@ def test_psf(image_filename,
     if cleanup_tinytim_files:
         for filename in files_to_cleanup:
             os.remove(filename)
+        
+    print("Finished analysing " + image_filename + ".")
 
     return

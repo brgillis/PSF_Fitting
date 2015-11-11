@@ -109,12 +109,6 @@ def test_psf_for_focus(stars,
                           background_noise=star.background_noise,
                           gain=gain)
 
-        # Append m0 and Q data to the storage lists
-        psf_m0s.append(psf_m0)
-        psf_m0_vars.append(psf_m0_var)
-        psf_Qs.append(psf_Q)
-        psf_Q_vars.append(psf_Q_var)
-
         # Now, get a noisy psf and test it (so we can test for noise bias)
         model_psf_noise = np.sqrt(model_psf / gain + np.square(star.background_noise))
 
@@ -124,14 +118,22 @@ def test_psf_for_focus(stars,
         np.random.seed(seed_factor*num_stars + i)
         noisy_model_psf = model_psf + model_psf_noise * np.random.randn(ny, nx)
 
-        noisy_psf_m0, noisy_psf_m0_var, noisy_psf_Q, noisy_psf_Q_var = \
-            get_m0_and_Qs(image=noisy_model_psf,
-                          prim_weight_func=prim_weight_func,
-                          sec_weight_func=sec_weight_func,
-                          background_noise=star.background_noise,
-                          gain=gain)
+        try:
+            noisy_psf_m0, noisy_psf_m0_var, noisy_psf_Q, noisy_psf_Q_var = \
+                get_m0_and_Qs(image=noisy_model_psf,
+                              prim_weight_func=prim_weight_func,
+                              sec_weight_func=sec_weight_func,
+                              background_noise=star.background_noise,
+                              gain=gain)
+        except AssertionError as _e:
+            noisy_psf_m0, noisy_psf_m0_var, noisy_psf_Q, noisy_psf_Q_var = \
+                psf_m0, psf_m0_var, psf_Q, psf_Q_var
 
         # Append m0 and Q data to the storage lists
+        psf_m0s.append(psf_m0)
+        psf_m0_vars.append(psf_m0_var)
+        psf_Qs.append(psf_Q)
+        psf_Q_vars.append(psf_Q_var)
         noisy_psf_m0s.append(noisy_psf_m0)
         noisy_psf_m0_vars.append(noisy_psf_m0_var)
         noisy_psf_Qs.append(noisy_psf_Q)
@@ -213,19 +215,23 @@ def test_psf_for_focus(stars,
     # Get the mean Zs of the non-outliers
     m0_diffs = masked_m0_diffs[~m0_omask].reshape((num_unmasked, 2))
     m0_diff_diffs = m0_diffs[:,1]-m0_diffs[:,0]
-    mean_m0_diff = np.mean(m0_diff_diffs, axis=0)
+    mean_m0_diff = np.mean(m0_diffs, axis=0)
+    mean_m0_diff_diff = np.mean(m0_diff_diffs, axis=0)
     mean_Q_diffs = np.mean(masked_Q_diffs[~Q_omask].reshape((num_unmasked, 5)), axis=0)
-    mean_noisy_m0_diff = np.mean(masked_noisy_m0_diffs[~m0_omask].reshape((num_unmasked, 2)), axis=0)
+    noisy_m0_diffs = masked_noisy_m0_diffs[~m0_omask].reshape((num_unmasked, 2))
+    noisy_m0_diff_diffs = noisy_m0_diffs[:,1]-noisy_m0_diffs[:,0]
+    mean_noisy_m0_diff = np.mean(noisy_m0_diffs, axis=0)
+    mean_noisy_m0_diff_diff = np.mean(noisy_m0_diff_diffs, axis=0)
     mean_noisy_Q_diffs = np.mean(masked_noisy_Q_diffs[~Q_omask].reshape((num_unmasked, 5)), axis=0)
     
-    m0_diff_stddev = np.std(m0_diff_diffs, axis=0)
+    m0_diff_diff_stddev = np.std(m0_diff_diffs, axis=0)
     Q_diff_stddevs = np.std(masked_Q_diffs[~Q_omask].reshape((num_unmasked, 5)), axis=0)
-    noisy_m0_diff_stddev = np.std(masked_noisy_m0_diffs[~m0_omask].reshape((num_unmasked, 2)), axis=0)
+    noisy_m0_diff_diff_stddev = np.std(noisy_m0_diff_diffs, axis=0)
     noisy_Q_diff_stddevs = np.std(masked_noisy_Q_diffs[~Q_omask].reshape((num_unmasked, 5)), axis=0)
 
-    m0_emp_Z2 = np.square(mean_m0_diff/m0_diff_stddev)*(num_unmasked-1)
+    m0_emp_Z2 = np.square(mean_m0_diff_diff/m0_diff_diff_stddev)*(num_unmasked-1)
     Q_emp_Z2s = np.square(mean_Q_diffs/Q_diff_stddevs)*(num_unmasked-1)
-    noisy_m0_emp_Z2 = np.square(mean_noisy_m0_diff/noisy_m0_diff_stddev)*(num_unmasked-1)
+    noisy_m0_emp_Z2 = np.square(mean_noisy_m0_diff_diff/noisy_m0_diff_diff_stddev)*(num_unmasked-1)
     noisy_Q_emp_Z2s = np.square(mean_noisy_Q_diffs/noisy_Q_diff_stddevs)*(num_unmasked-1)
 
     m0_Z2 = np.sum(np.square(masked_m0_Zs[~omask]), axis=0)

@@ -117,11 +117,11 @@ def report_results(test_results,
     # Set up the columns first
     columns = []
         
-    Q_err_index = 7
+    Q_err_index = 8
 
     for weight_label, k in zip(("core_", "wings_"), (0,1)):
 
-        for label, i, err_i in zip(("star_", "model_", "noisy_model_"), (4, 5, 6), (Q_err_index, None, Q_err_index)):
+        for label, i, err_i in zip(("star_", "model_", "noisy_model_"), (5, 6, 7), (Q_err_index, None, Q_err_index)):
     
             if err_i is None:
                 get_errs = np.zeros_like
@@ -144,7 +144,7 @@ def report_results(test_results,
                                            array=get_errs(test_results[err_i][1][j][:,k,1-k])))
 
     columns.append(fits.Column(name="is_not_outlier", format='L',
-                               array=np.logical_not(test_results[8][0])))
+                               array=np.logical_not(test_results[9][0])))
 
     tbhdu = fits.BinTableHDU.from_columns(columns)
 
@@ -184,7 +184,7 @@ def report_results(test_results,
     print("Chi-squared for focus " + str(tbhdu.header["FOCUS"]) +
           " = " + str(tbhdu.header["CHI_SQR"]) + ", for " + str(tbhdu.header["DOF"]) +
           " degrees of freedom.")
-    print("Empirical Chi-squared of: " + str(tbhdu.header["ECHI_SQR"]) + ", for "
+    print("Empirical Chi-squared of " + str(tbhdu.header["ECHI_SQR"]) + ", for "
           + str(tbhdu.header["EDOF"]) + " degrees of freedom.")
     
     if fitting_record is not None:

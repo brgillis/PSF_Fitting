@@ -37,8 +37,8 @@ import subprocess as sbp
 def make_subsampled_psf_model(filename,
                               chip=1,
                               psf_size=mv.default_model_psf_width,
-                              xp=mv.default_image_shape[0]/2,
-                              yp=mv.default_image_shape[1]/2,
+                              xp=mv.default_image_shape[0]//2,
+                              yp=mv.default_image_shape[1]//2,
                               focus=0.0,
                               detector=mv.default_detector,
                               filter=mv.default_filter,
@@ -95,7 +95,10 @@ def make_subsampled_psf_model(filename,
     sbp.call(cmd, shell=True)
 
     # Remove the unnecessary undistorted model
-    os.remove(filename_base + mv.undistorted_model_tail)
+    try:
+        os.remove(filename_base + mv.undistorted_model_tail)
+    except OSError as _e:
+        pass
 
     # Open the subsampled model image
     subsampled_image = fits.open(filename_base + mv.subsampled_model_tail)
@@ -139,9 +142,18 @@ def make_subsampled_psf_model(filename,
         files_to_cleanup.append(filename)
 
     # Remove the old version, plus the .par and .tt3 files
-    os.remove(filename_base + mv.subsampled_model_tail)
-    os.remove(filename_base + ".par")
-    os.remove(filename_base + ".tt3")
+    try:
+        os.remove(filename_base + mv.subsampled_model_tail)
+    except OSError as _e:
+        pass
+    try:
+        os.remove(filename_base + ".par")
+    except OSError as _e:
+        pass
+    try:
+        os.remove(filename_base + ".tt3")
+    except OSError as _e:
+        pass
 
     return subsampled_image[0]
 
