@@ -24,7 +24,7 @@
 import pytest
 
 from psf_testing import magic_values as mv
-from psf_testing.star_selection.sky_object import sky_object
+from psf_testing.star_selection.sky_object import SkyObj
 
 @pytest.fixture(scope="session")
 def test_x_pix():
@@ -101,7 +101,7 @@ def test_cat_line(test_x_pix, test_y_pix, test_mag, test_class_star,
 
 @pytest.fixture(scope="session")
 def make_sky_obj(pos=(0.,0.),mag=25.,class_star=0.995):
-    obj=sky_object()
+    obj=SkyObj()
     
     obj.x_pix = pos[0]
     obj.y_pix = pos[1]

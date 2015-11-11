@@ -23,13 +23,13 @@
 """
 
 from psf_testing import magic_values as mv
-from psf_testing.star_selection.sky_object import sky_object
-from psf_testing.star_selection.star import star
+from psf_testing.star_selection.sky_object import SkyObj
+from psf_testing.star_selection.star import Star
 from psf_testing.star_selection.star_selection import get_isolated_stars
 
 def test_initialize_sky_obj(test_cat_line,test_x_pix,test_y_pix,test_mag,test_class_star,
                             test_x_size,test_y_size):
-    sky_obj = sky_object(test_cat_line)
+    sky_obj = SkyObj(test_cat_line)
     
     assert(sky_obj.x_pix==test_x_pix)
     assert(sky_obj.y_pix==test_y_pix)
@@ -40,12 +40,12 @@ def test_initialize_sky_obj(test_cat_line,test_x_pix,test_y_pix,test_mag,test_cl
 
 def test_convert_sky_obj_to_star(make_sky_obj):
     
-    my_star = star(make_sky_obj)
+    my_star = Star(make_sky_obj)
     
-    assert(my_star.sky_object.x_pix == make_sky_obj.x_pix)
-    assert(my_star.sky_object.y_pix == make_sky_obj.y_pix)
-    assert(my_star.sky_object.mag == make_sky_obj.mag)
-    assert(my_star.sky_object.class_star == make_sky_obj.class_star)
+    assert(my_star.SkyObj.x_pix == make_sky_obj.x_pix)
+    assert(my_star.SkyObj.y_pix == make_sky_obj.y_pix)
+    assert(my_star.SkyObj.mag == make_sky_obj.mag)
+    assert(my_star.SkyObj.class_star == make_sky_obj.class_star)
     
 def test_get_lowest_separations(get_default_sky_objs_list):
     
@@ -65,7 +65,7 @@ def test_get_isolated_stars(get_default_sky_objs_list):
     stars = []
     
     for obj in get_default_sky_objs_list:
-        stars.append(star(obj))
+        stars.append(Star(obj))
         
     actual_min_sep = 1.*mv.pixel_scale
     

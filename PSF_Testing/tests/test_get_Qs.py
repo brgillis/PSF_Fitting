@@ -41,13 +41,6 @@ test_shear = 0.2
 seed = 151357
 
 @pytest.fixture(scope="module")
-def test_weight_func():
-    def func(x,y):
-        r = np.sqrt(np.square(x)+np.square(y))
-        return np.exp(-np.square(r) / (2. * np.square(weight_sigma)))
-    return func
-
-@pytest.fixture(scope="module")
 def noiseless_circ_Gaussian():
     unnormed_Gaussian = np.outer(signal.gaussian(nx, image_sigma), signal.gaussian(ny, image_sigma))
     return unnormed_Gaussian/unnormed_Gaussian.sum()
@@ -90,41 +83,37 @@ def horiz_Gaussian_image(noiseless_horiz_Gaussian):
     
     return Gaussian_image
 
-def test_circular_Gaussian(noiseless_circ_Gaussian,circ_Gaussian_image,test_weight_func):
+def test_circular_Gaussian(noiseless_circ_Gaussian,circ_Gaussian_image):
     
     tolerance = 2.0
     
-    _m0, _err_m0, model_Qs, _err_model_Qs = get_m0_and_Qs(noiseless_circ_Gaussian,
-                                                          weight_func=test_weight_func)
-    _m0, _err_m0, image_Qs, err_image_Qs = get_m0_and_Qs(circ_Gaussian_image,
-                                                         weight_func=test_weight_func)
+    _m0, _err_m0, model_Qs, _err_model_Qs = get_m0_and_Qs(noiseless_circ_Gaussian)
+    _m0, _err_m0, image_Qs, err_image_Qs = get_m0_and_Qs(circ_Gaussian_image)
     
-    Zs = (image_Qs-model_Qs)/err_image_Qs
+    Zs = (image_Qs-model_Qs)/np.array((err_image_Qs[:,0,0],err_image_Qs[:,1,1])).transpose()
     
-    assert(np.abs(Zs[0]) < tolerance)
-    assert(np.abs(Zs[1]) < tolerance)
-    assert(np.abs(Zs[2]) < tolerance)
-    assert(np.abs(Zs[3]) < tolerance)
-    assert(np.abs(Zs[4]) < tolerance)
+    assert(np.all(np.abs(Zs[0]) < tolerance))
+    assert(np.all(np.abs(Zs[1]) < tolerance))
+    assert(np.all(np.abs(Zs[2]) < tolerance))
+    assert(np.all(np.abs(Zs[3]) < tolerance))
+    assert(np.all(np.abs(Zs[4]) < tolerance))
 
-def test_horiz_Gaussian(noiseless_horiz_Gaussian,horiz_Gaussian_image,test_weight_func):
+def test_horiz_Gaussian(noiseless_horiz_Gaussian,horiz_Gaussian_image):
     
     tolerance = 2.0
     
-    _m0, _err_m0, model_Qs, _err_model_Qs = get_m0_and_Qs(noiseless_horiz_Gaussian,
-                                                          weight_func=test_weight_func)
-    _m0, _err_m0, image_Qs, err_image_Qs = get_m0_and_Qs(horiz_Gaussian_image,
-                                                         weight_func=test_weight_func)
+    _m0, _err_m0, model_Qs, _err_model_Qs = get_m0_and_Qs(noiseless_horiz_Gaussian)
+    _m0, _err_m0, image_Qs, err_image_Qs = get_m0_and_Qs(horiz_Gaussian_image,)
     
-    Zs = (image_Qs-model_Qs)/err_image_Qs
+    Zs = (image_Qs-model_Qs)/np.array((err_image_Qs[:,0,0],err_image_Qs[:,1,1])).transpose()
     
-    assert(np.abs(Zs[0]) < tolerance)
-    assert(np.abs(Zs[1]) < tolerance)
-    assert(np.abs(Zs[2]) < tolerance)
-    assert(np.abs(Zs[3]) < tolerance)
-    assert(np.abs(Zs[4]) < tolerance)
+    assert(np.all(np.abs(Zs[0]) < tolerance))
+    assert(np.all(np.abs(Zs[1]) < tolerance))
+    assert(np.all(np.abs(Zs[2]) < tolerance))
+    assert(np.all(np.abs(Zs[3]) < tolerance))
+    assert(np.all(np.abs(Zs[4]) < tolerance))
     
-def test_err_calcs(noiseless_circ_Gaussian,test_weight_func):
+def test_err_calcs(noiseless_circ_Gaussian):
     
     tolerance = 0.2
     
@@ -142,7 +131,6 @@ def test_err_calcs(noiseless_circ_Gaussian,test_weight_func):
         
         Gaussian_image = scaled_Gaussian + noise_per_pixel * np.random.randn(nx,ny)
         _m0, _err_m0, Qs, _err_Qs = get_m0_and_Qs(Gaussian_image,
-                                                 weight_func=test_weight_func,
                                                  xc = (nx-1)/2.,
                                                  yc = (ny-1)/2.,
                                                  background_noise=background_noise,
@@ -151,24 +139,25 @@ def test_err_calcs(noiseless_circ_Gaussian,test_weight_func):
         all_Qs.append(Qs)
         
     _m0, _err_m0, _Qs, mean_err_Qs = get_m0_and_Qs(scaled_Gaussian,
-                                             weight_func=test_weight_func,
                                              xc = (nx-1)/2.,
                                              yc = (ny-1)/2.,
                                              background_noise=background_noise,
                                              gain=gain)
+    
+    mean_err_Qs = np.array((mean_err_Qs[:,0,0],mean_err_Qs[:,1,1])).transpose()
         
     std_Qs = np.std(all_Qs,axis=0)
     
-    assert(np.abs(mean_err_Qs[0]-std_Qs[0])/std_Qs[0] < tolerance)
-    assert(np.abs(mean_err_Qs[1]-std_Qs[1])/std_Qs[1] < tolerance)
-    assert(np.abs(mean_err_Qs[2]-std_Qs[2])/std_Qs[2] < tolerance)
-    assert(np.abs(mean_err_Qs[3]-std_Qs[3])/std_Qs[3] < tolerance)
-    assert(np.abs(mean_err_Qs[4]-std_Qs[4])/std_Qs[4] < tolerance)
+    assert(np.all(np.abs(mean_err_Qs[0]-std_Qs[0])/std_Qs[0] < tolerance))
+    assert(np.all(np.abs(mean_err_Qs[1]-std_Qs[1])/std_Qs[1] < tolerance))
+    assert(np.all(np.abs(mean_err_Qs[2]-std_Qs[2])/std_Qs[2] < tolerance))
+    assert(np.all(np.abs(mean_err_Qs[3]-std_Qs[3])/std_Qs[3] < tolerance))
+    assert(np.all(np.abs(mean_err_Qs[4]-std_Qs[4])/std_Qs[4] < tolerance))
     
     pass
 
 def test_Qsize_scaling(noiseless_circ_Gaussian,noiseless_2x_circ_Gaussian,
-                       noiseless_4x_circ_Gaussian,test_weight_func):
+                       noiseless_4x_circ_Gaussian):
     
     # Get size measurement for 1x size Gaussian
     _m0, _err_m0, Qs_1x, _err_Qs = get_m0_and_Qs(flux*noiseless_circ_Gaussian,
@@ -194,7 +183,7 @@ def test_Qsize_scaling(noiseless_circ_Gaussian,noiseless_2x_circ_Gaussian,
                                              gain=gain)
     Qsize_4x = Qs_4x[4]
     
-    assert((Qsize_4x > Qsize_2x) and (Qsize_2x>Qsize_1x), "Qsize doesn't scale with size of " +
+    assert(np.all(Qsize_4x > Qsize_2x) and np.all(Qsize_2x>Qsize_1x), "Qsize doesn't scale with size of " +
            "input Gaussian.")
     
     pass
