@@ -27,6 +27,7 @@ from astropy.io import fits
 import numpy as np
 
 from psf_testing import magic_values as mv
+from psf_testing.smart_logging import getLogger
 
 def save_fitting_record(fitting_record,
                         filename_root):
@@ -181,10 +182,11 @@ def report_results(test_results,
     tbhdu.writeto(results_filename,clobber=True)
     
     # Print summary
-    print("Chi-squared for focus " + str(tbhdu.header["FOCUS"]) +
+    logger = getLogger()
+    logger.info("Chi-squared for focus " + str(tbhdu.header["FOCUS"]) +
           " = " + str(tbhdu.header["CHI_SQR"]) + ", for " + str(tbhdu.header["DOF"]) +
           " degrees of freedom.")
-    print("Empirical Chi-squared of " + str(tbhdu.header["ECHI_SQR"]) + ", for "
+    logger.info("Empirical Chi-squared of " + str(tbhdu.header["ECHI_SQR"]) + ", for "
           + str(tbhdu.header["EDOF"]) + " degrees of freedom.")
     
     if fitting_record is not None:

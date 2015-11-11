@@ -31,6 +31,7 @@ from psf_testing import magic_values as mv
 from psf_testing.check_updates import make_update_marker
 from psf_testing.extract_stamp import extract_stamp_for_star
 from psf_testing.fit_focus import fit_best_focus_and_test_psf
+from psf_testing.smart_logging import getLogger
 from psf_testing.moments.centre_image import centre_image
 from psf_testing.moments.estimate_background import get_background_level_and_noise
 from psf_testing.moments.get_Qs import get_m0_and_Qs
@@ -218,6 +219,8 @@ def test_psf(image_filename,
         for filename in files_to_cleanup:
             os.remove(filename)
         
-    print("Finished analysing " + image_filename + ".")
+    logger = getLogger()
+        
+    logger.info("Finished analysing " + image_filename + ".")
 
     return

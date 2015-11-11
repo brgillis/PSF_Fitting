@@ -31,6 +31,7 @@ from psf_testing.parmap import parmap
 
 from psf_testing import magic_values as mv
 from psf_testing.test_psf import test_psf
+from psf_testing.smart_logging import set_up_default_logger
 
 def main(argv):
     """ @TODO main docstring
@@ -100,10 +101,13 @@ def main(argv):
         test_single_focus = True
     else:
         test_single_focus = False
+        
+    logger = set_up_default_logger()
     
     # Pass the cline-args to the test_psf function, which carries out the testing
     
     if args.image_filename is not None:
+        logger.info("Testing " + args.image_filename + ".")
         test_psf(image_filename = args.image_filename,
                  
                  min_class_star = args.min_class_star,
@@ -137,33 +141,38 @@ def main(argv):
                     image_filenames.append(image_filename)
                     
         def test_psf_for_image(image_filename):
-            test_psf(image_filename = image_filename,
-                     
-                     min_class_star = args.min_class_star,
-                     min_star_mag = args.min_mag,
-                     max_star_mag = args.max_mag,
-                     min_lowest_separation = args.min_lowest_separation,
-                     
-                     test_single_focus = test_single_focus,
-                     test_focus = args.focus,
-                     min_test_focus = args.min_focus,
-                     max_test_focus = args.max_focus,
-                     test_focus_samples = args.focus_samples,
-                     test_focus_precision = args.focus_precision,
-                     num_grid_points = (args.focus_sample_x_points,
-                                        args.focus_sample_y_points),
-                     
-                     sex_data_path = args.sex_data_path,
-                     cleanup_sex_files = args.cleanup_sex_files,
-                     
-                     tinytim_path = args.tinytim_path,
-                     tinytim_data_path = args.tinytim_data_path,
-                     cleanup_tinytim_files = args.cleanup_tinytim_files,
-                     force_update = args.update)
+            try:
+                logger.info("Testing " + image_filename + ".")
+                
+                test_psf(image_filename = image_filename,
+                         
+                         min_class_star = args.min_class_star,
+                         min_star_mag = args.min_mag,
+                         max_star_mag = args.max_mag,
+                         min_lowest_separation = args.min_lowest_separation,
+                         
+                         test_single_focus = test_single_focus,
+                         test_focus = args.focus,
+                         min_test_focus = args.min_focus,
+                         max_test_focus = args.max_focus,
+                         test_focus_samples = args.focus_samples,
+                         test_focus_precision = args.focus_precision,
+                         num_grid_points = (args.focus_sample_x_points,
+                                            args.focus_sample_y_points),
+                         
+                         sex_data_path = args.sex_data_path,
+                         cleanup_sex_files = args.cleanup_sex_files,
+                         
+                         tinytim_path = args.tinytim_path,
+                         tinytim_data_path = args.tinytim_data_path,
+                         cleanup_tinytim_files = args.cleanup_tinytim_files,
+                         force_update = args.update)
+            except Exception as _e:
+                logger.exception("Exception in processing image " + image_filename + ".")
             
         parmap(test_psf_for_image,image_filenames)
     
-    print("Execution complete.")
+    logger.info("Execution complete.")
 
 if __name__ == "__main__":
     main(sys.argv)
