@@ -133,6 +133,8 @@ def get_moments_and_variances(image,
     var_myy = np.zeros((2, 2))
     var_mxy = np.zeros((2, 2))
     var_mplus = np.zeros((2, 2))
+    
+    square_m0 = np.zeros((2, 2))
 
     for i in range(2):
         for j in range(2):
@@ -149,7 +151,7 @@ def get_moments_and_variances(image,
             var_mxy[i, j] = (x2y2_array * weighted_image_var).sum()
             var_mplus[i, j] = (plus2_array * weighted_image_var).sum()
 
-            square_m0 = m0[i] * m0[j]
+            square_m0[i, j] = m0[i] * m0[j]
 
     # And now get the variances of the normalized moments
     quart_m0 = np.square(square_m0)
