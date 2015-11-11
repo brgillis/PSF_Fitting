@@ -39,18 +39,20 @@ def getLogger(name=None):
 def get_logger(name=None):
     return log.getLogger(name)
 
-def set_up_default_logger(name=None):
+def get_default_logger(name=None):
     logger = getLogger(name)
     logger.setLevel(log.INFO)
     
-    handler = log.StreamHandler()
-    handler.setLevel(log.INFO)
-
-    formatter = log.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    if len(logger.handlers)==0:
     
-    handler.setFormatter(formatter)
+        handler = log.StreamHandler()
+        handler.setLevel(log.INFO)
     
-    logger.addHandler(handler)
+        formatter = log.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        
+        handler.setFormatter(formatter)
+        
+        logger.addHandler(handler)
     
     return logger
     

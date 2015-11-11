@@ -31,7 +31,7 @@ from psf_testing.parmap import parmap
 
 from psf_testing import magic_values as mv
 from psf_testing.test_psf import test_psf
-from psf_testing.smart_logging import set_up_default_logger
+from psf_testing.smart_logging import get_default_logger
 
 def main(argv):
     """ @TODO main docstring
@@ -102,7 +102,7 @@ def main(argv):
     else:
         test_single_focus = False
         
-    logger = set_up_default_logger()
+    logger = get_default_logger()
     
     # Pass the cline-args to the test_psf function, which carries out the testing
     

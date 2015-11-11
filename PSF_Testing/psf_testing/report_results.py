@@ -130,7 +130,8 @@ def report_results(test_results,
             else:
                 get_errs = lambda x : x
     
-            columns.append(fits.Column(name=weight_label + label + "m0", format='E', array=test_results[i][0][:,k]))
+            columns.append(fits.Column(name=weight_label + label + "m0", format='E',
+                                       array=test_results[i][0][:,k]))
             columns.append(fits.Column(name=weight_label + label + "m0" + "_err", format='E',
                                        array=get_errs(test_results[err_i][0][:,k,k])))
             columns.append(fits.Column(name=weight_label + label + "m0" + "_coerr", format='E',
@@ -138,11 +139,12 @@ def report_results(test_results,
     
             for Q_label, j in zip(("Qx", "Qy", "Qplus", "Qcross", "Qsize"), range(5)):
     
-                columns.append(fits.Column(name=weight_label + label + Q_label, format='E', array=test_results[i][1][j][:,k]))
+                columns.append(fits.Column(name=weight_label + label + Q_label, format='E',
+                                           array=test_results[i][1][:,j,k]))
                 columns.append(fits.Column(name=weight_label + label + Q_label + "_err", format='E',
-                                           array=get_errs(test_results[err_i][1][j][:,k,k])))
+                                           array=get_errs(test_results[err_i][1][:,j,k,k])))
                 columns.append(fits.Column(name=weight_label + label + Q_label + "_coerr", format='E',
-                                           array=get_errs(test_results[err_i][1][j][:,k,1-k])))
+                                           array=get_errs(test_results[err_i][1][:,j,k,1-k])))
 
     columns.append(fits.Column(name="is_not_outlier", format='L',
                                array=np.logical_not(test_results[9][0])))
@@ -170,6 +172,7 @@ def report_results(test_results,
     tbhdu.header["M0NCDIFF"] = test_results[2][1][0][0]
     tbhdu.header["M0NWDIFF"] = test_results[2][1][0][1]
     tbhdu.header["M0NZ2"] = test_results[3][1][0]
+    tbhdu.header["M0NEZ2"] = test_results[4][1][0]
 
     for Q_label, j in zip(("QX", "QY", "QP", "QC", "QS"), range(5)):
         tbhdu.header[Q_label + "NDIFF"] = test_results[2][1][1][j]
@@ -177,7 +180,7 @@ def report_results(test_results,
         tbhdu.header[Q_label + "NEZ2"] = test_results[4][1][1][j]
 
 
-    results_filename = filename_root + "_results" + mv.table_extension
+    results_filename = filename_root + mv.results_tail
 
     tbhdu.writeto(results_filename,clobber=True)
     

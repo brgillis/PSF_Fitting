@@ -33,6 +33,8 @@ table_extension = ".fits"
 sex_cfg_tail = "_sex.cfg"
 sex_cat_tail = "_objects.cat"
 
+results_tail = "_results" + table_extension
+
 # Specific filenames
 update_marker_filename = ".PSF_Testing_update_marker"
 

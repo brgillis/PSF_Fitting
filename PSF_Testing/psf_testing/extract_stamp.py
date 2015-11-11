@@ -25,13 +25,13 @@ def extract_stamp_for_star(star, image):
     stamp_size = 2*star.SkyObj.stamp_size + 1
     
     # Swap x/y due to fits ordering
-    x1=star.SkyObj.y_pix-np.floor_divide(stamp_size-1, 2)
-    y1=star.SkyObj.x_pix-np.floor_divide(stamp_size-1, 2)
+    x1=star.SkyObj.y_pix-star.SkyObj.stamp_size
+    y1=star.SkyObj.x_pix-star.SkyObj.stamp_size
     
     image_nx, image_ny = np.shape(image.data)
     
     # Check that the stamp isn't too close to an edge
-    assert((x1>0) and (y1>0) and (x1+stamp_size-1<image_nx) and (y1+stamp_size-1<image_ny))
+    assert((x1>1) and (y1>1) and (x1+stamp_size-1<image_nx) and (y1+stamp_size-1<image_ny))
 
     # Create the stamp data
     stamp = image.data[x1-1:x1+stamp_size-1,
