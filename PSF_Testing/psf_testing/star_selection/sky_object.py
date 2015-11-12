@@ -50,6 +50,8 @@ class SkyObj(object):
             self.mag = None
             self.flux = None
             
+            self.snr = None
+            
             self.stamp_size = mv.min_stamp_size
             
         else:
@@ -65,7 +67,9 @@ class SkyObj(object):
             self.class_star = float(properties[16])
             
             self.mag = float(properties[17])
-            self.flux = float(properties[14])
+            self.flux = float(properties[19])
+            
+            self.snr = self.flux/float(properties[20])
             
             xp_size = float(properties[7]) - float(properties[5])
             yp_size = float(properties[8]) - float(properties[6])

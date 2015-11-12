@@ -26,6 +26,8 @@
 from psf_testing.star_selection.sky_object import SkyObj
 from psf_testing.star_selection.star import Star
 
+from psf_testing import magic_values as mv
+
 def get_objects_from_cat(sex_cat_filename):
     objects = []
 
@@ -41,7 +43,11 @@ def get_objects_from_cat(sex_cat_filename):
 
     return objects
 
-def get_stars(objects, min_class_star, min_star_mag, max_star_mag):
+def get_stars(objects,
+              min_class_star=mv.default_min_class_star,
+              min_star_mag=mv.default_min_star_mag,
+              max_star_mag=mv.default_max_star_mag,
+              min_star_snr=mv.default_min_star_snr):
     stars = []
 
     for obj in objects:
@@ -51,6 +57,8 @@ def get_stars(objects, min_class_star, min_star_mag, max_star_mag):
         if obj.mag > max_star_mag:
             continue
         if obj.mag < min_star_mag:
+            continue
+        if obj.snr < min_star_snr:
             continue
 
         # If we get here, it passed all tests

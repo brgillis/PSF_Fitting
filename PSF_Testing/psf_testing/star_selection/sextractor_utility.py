@@ -116,6 +116,7 @@ def get_stars_in_image(image_filename,
                        min_star_mag=mv.default_min_star_mag,
                        max_star_mag=mv.default_max_star_mag,
                        min_lowest_separation=None,
+                       min_star_snr=mv.default_min_star_snr,
                        sex_data_path=mv.default_sex_data_path,
                        files_to_cleanup=None,
                        cleanup_sex_files=False):
@@ -156,7 +157,7 @@ def get_stars_in_image(image_filename,
     objects_in_image = get_objects_from_cat(sex_cat_filename)
     
     # Get a list of those which are stars in the right magnitude range
-    stars = get_stars(objects_in_image,min_class_star,min_star_mag,max_star_mag)
+    stars = get_stars(objects_in_image,min_class_star,min_star_mag,max_star_mag,min_star_snr)
     
     # Get only isolated stars
     isolated_stars = get_isolated_stars(stars,objects_in_image,min_lowest_separation)

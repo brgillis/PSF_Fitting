@@ -80,6 +80,7 @@ def save_fitting_record(fitting_record,
     
     columns = [fits.Column(name="focus", format='E', array=focii),
                fits.Column(name="chi_squared", format='E', array=chi_squareds),
+               fits.Column(name="emp_chi_squared", format='E', array=emp_chi_squareds),
                fits.Column(name="m0_core_diff", format='E', array=m0_core_diffs),
                fits.Column(name="m0_wings_diff", format='E', array=m0_wings_diffs),
                fits.Column(name="m0_Z2", format='E', array=m0_Zs),
@@ -113,6 +114,7 @@ def save_fitting_record(fitting_record,
 
 def report_results(test_results,
                    filename_root,
+                   chip,
                    fitting_record=None):
 
     # Set up the columns first
@@ -153,6 +155,7 @@ def report_results(test_results,
 
     # Add metadata to the header
 
+    tbhdu.header["CCDCHIP"] = chip
     tbhdu.header["FOCUS"] = test_results[0]
     tbhdu.header["CHI_SQR"] = test_results[1][0][0]
     tbhdu.header["ECHI_SQR"] = test_results[1][0][1]

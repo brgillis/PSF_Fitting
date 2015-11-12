@@ -55,7 +55,9 @@ def fit_best_focus_and_test_psf(stars,
                                 gain=mv.gain,
                                 save_models=True,
 
-                                files_to_cleanup=None):
+                                files_to_cleanup=None,
+                                
+                                parallelize=False):
 
     # Use a set outliers mask for all tests
     outliers_mask = None
@@ -89,7 +91,9 @@ def fit_best_focus_and_test_psf(stars,
 
                                             files_to_cleanup=files_to_cleanup,
                                             
-                                            fitting_record=fitting_record)
+                                            fitting_record=fitting_record,
+                                            
+                                            parallelize=parallelize)
         return get_chi2_of_test_results(test_results)
     
     # Calculate (and cache) the value for focus 0 first, so we'll always use the
@@ -129,6 +133,8 @@ def fit_best_focus_and_test_psf(stars,
                                             
                                             fitted_params=1,
                                             
-                                            fitting_record=None)
+                                            fitting_record=None,
+                                            
+                                            parallelize=parallelize)
 
     return test_results, fitting_record

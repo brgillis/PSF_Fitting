@@ -71,6 +71,7 @@ default_min_class_star = 0.95
 default_min_star_mag = 21.0
 default_max_star_mag = 27.0
 default_min_lowest_separation = 1.0
+default_min_star_snr = 50.0
 
 # Values for making objects from a catalog line
 min_stamp_size = 10

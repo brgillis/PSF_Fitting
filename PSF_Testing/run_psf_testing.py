@@ -55,6 +55,8 @@ def main(argv):
                         help="The minimum magnitude for stars to be tested.")
     parser.add_argument("--min_lowest_separation", type=float, default=None,
                         help="The minimum required separation of a star from any other object in arcsec.")
+    parser.add_argument("--min_snr", type=float, default=mv.default_min_star_snr,
+                        help="The minimum signal-to-noise ratio for this star to be tested")
     
     # Focus fitting
     parser.add_argument("--focus", type=float, default=None,
@@ -130,7 +132,8 @@ def main(argv):
                  tinytim_path = args.tinytim_path,
                  tinytim_data_path = args.tinytim_data_path,
                  cleanup_tinytim_files = args.cleanup_tinytim_files,
-                 force_update = args.update)
+                 force_update = args.update,
+                 parallelize=True)
     else:
         # We'll test a list of images
         image_filenames = []
@@ -166,7 +169,8 @@ def main(argv):
                          tinytim_path = args.tinytim_path,
                          tinytim_data_path = args.tinytim_data_path,
                          cleanup_tinytim_files = args.cleanup_tinytim_files,
-                         force_update = args.update)
+                         force_update = args.update,
+                         parallelize=False)
             except Exception as _e:
                 logger.exception("Exception in processing image " + image_filename + ".")
             

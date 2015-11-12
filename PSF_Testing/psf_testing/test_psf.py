@@ -50,6 +50,7 @@ def test_psf(image_filename,
              min_star_mag=mv.default_min_star_mag,
              max_star_mag=mv.default_max_star_mag,
              min_lowest_separation=mv.default_min_lowest_separation,
+             min_star_snr=mv.default_min_star_snr,
 
              test_single_focus=False,
              test_focus=None,
@@ -66,7 +67,9 @@ def test_psf(image_filename,
              tinytim_data_path=mv.default_tinytim_data_path,
              cleanup_tinytim_files=False,
              force_update=False,
-             save_stacks=True):
+             save_stacks=True,
+             
+             parallelize=False):
 
     # Mark that we need an update if we're forcing an update
     if force_update:
@@ -89,6 +92,7 @@ def test_psf(image_filename,
                                min_star_mag=min_star_mag,
                                max_star_mag=max_star_mag,
                                min_lowest_separation=min_lowest_separation,
+                               min_star_snr=min_star_snr,
                                sex_data_path=sex_data_path,
                                files_to_cleanup=files_to_cleanup,
                                cleanup_sex_files=cleanup_sex_files)
@@ -172,7 +176,9 @@ def test_psf(image_filename,
 
                                           gain=gain,
                                           save_models=save_stacks,
-                                          files_to_cleanup=files_to_cleanup)
+                                          files_to_cleanup=files_to_cleanup,
+                                          
+                                          parallelize=parallelize)
         fitting_record = None
     # Otherwise, call the fitting function
     else:
@@ -199,13 +205,16 @@ def test_psf(image_filename,
 
                                                     gain=gain,
                                                     save_models=save_stacks,
-                                                    files_to_cleanup=files_to_cleanup)
+                                                    files_to_cleanup=files_to_cleanup,
+                                          
+                                                    parallelize=parallelize)
 
     filename_root = image_filename.replace(mv.image_extension, "")
 
     # Report the results
     report_results(test_results=test_results,
                    fitting_record=fitting_record,
+                   chip=chip,
                    filename_root=filename_root)
 
     # Save stacks if desired

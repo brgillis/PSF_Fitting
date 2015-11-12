@@ -28,6 +28,7 @@ import numpy as np
 from scipy import signal
 
 from psf_testing.moments.get_Qs import get_m0_and_Qs
+from psf_testing import magic_values as mv
 
 nx = ny = 41
 image_sigma = 3.0
@@ -88,9 +89,9 @@ def test_circular_Gaussian(noiseless_circ_Gaussian,circ_Gaussian_image):
     tolerance = 2.0
     
     _m0, _err_m0, model_Qs, _err_model_Qs = get_m0_and_Qs(noiseless_circ_Gaussian)
-    _m0, _err_m0, image_Qs, err_image_Qs = get_m0_and_Qs(circ_Gaussian_image)
+    _m0, _err_m0, image_Qs, var_image_Qs = get_m0_and_Qs(circ_Gaussian_image)
     
-    Zs = (image_Qs-model_Qs)/np.array((err_image_Qs[:,0,0],err_image_Qs[:,1,1])).transpose()
+    Zs = (image_Qs-model_Qs)/np.sqrt(np.array((var_image_Qs[:,0,0],var_image_Qs[:,1,1])).transpose())
     
     assert(np.all(np.abs(Zs[0]) < tolerance))
     assert(np.all(np.abs(Zs[1]) < tolerance))
@@ -103,9 +104,9 @@ def test_horiz_Gaussian(noiseless_horiz_Gaussian,horiz_Gaussian_image):
     tolerance = 2.0
     
     _m0, _err_m0, model_Qs, _err_model_Qs = get_m0_and_Qs(noiseless_horiz_Gaussian)
-    _m0, _err_m0, image_Qs, err_image_Qs = get_m0_and_Qs(horiz_Gaussian_image,)
+    _m0, _err_m0, image_Qs, var_image_Qs = get_m0_and_Qs(horiz_Gaussian_image,)
     
-    Zs = (image_Qs-model_Qs)/np.array((err_image_Qs[:,0,0],err_image_Qs[:,1,1])).transpose()
+    Zs = (image_Qs-model_Qs)/np.sqrt(np.array((var_image_Qs[:,0,0],var_image_Qs[:,1,1])).transpose())
     
     assert(np.all(np.abs(Zs[0]) < tolerance))
     assert(np.all(np.abs(Zs[1]) < tolerance))
@@ -131,6 +132,8 @@ def test_err_calcs(noiseless_circ_Gaussian):
         
         Gaussian_image = scaled_Gaussian + noise_per_pixel * np.random.randn(nx,ny)
         _m0, _err_m0, Qs, _err_Qs = get_m0_and_Qs(Gaussian_image,
+                                                  prim_weight_func=mv.default_prim_weight_func,
+                                                  sec_weight_func=mv.default_sec_weight_func,
                                                  xc = (nx-1)/2.,
                                                  yc = (ny-1)/2.,
                                                  background_noise=background_noise,
@@ -138,13 +141,15 @@ def test_err_calcs(noiseless_circ_Gaussian):
         
         all_Qs.append(Qs)
         
-    _m0, _err_m0, _Qs, mean_err_Qs = get_m0_and_Qs(scaled_Gaussian,
+    _m0, _err_m0, _Qs, mean_var_Qs = get_m0_and_Qs(scaled_Gaussian,
+                                                  prim_weight_func=mv.default_prim_weight_func,
+                                                  sec_weight_func=mv.default_sec_weight_func,
                                              xc = (nx-1)/2.,
                                              yc = (ny-1)/2.,
                                              background_noise=background_noise,
                                              gain=gain)
     
-    mean_err_Qs = np.array((mean_err_Qs[:,0,0],mean_err_Qs[:,1,1])).transpose()
+    mean_err_Qs = np.sqrt(np.array((mean_var_Qs[:,0,0],mean_var_Qs[:,1,1])).transpose())
         
     std_Qs = np.std(all_Qs,axis=0)
     

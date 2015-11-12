@@ -29,6 +29,7 @@ def make_results_summary(results_filenames,
                          summary_filename):
     
     image_filenames = []
+    chips = []
     focii = []
     chi_squareds = []
     emp_chi_squareds = []
@@ -47,6 +48,8 @@ def make_results_summary(results_filenames,
     m0_noisy_emp_Zs = []
     
     Qs = {}
+    
+    logger = smart_logging.get_default_logger()
 
     for Q_label in ("QX", "QY", "QP", "QC", "QS"):
         Qs[Q_label + "_DIFF"] = []
@@ -57,11 +60,17 @@ def make_results_summary(results_filenames,
         Qs[Q_label + "NEZ2"] = []
     
     for results_filename in results_filename:
-        results_file = fits.open(results_filename)
+        try:
+            results_file = fits.open(results_filename)
+        except IOError as _e:
+            logger.warn("File " + results_filename + " cannot be opened and will be skipped.")
+            
         header = results_file[1].header
         
         image_filenames.append(results_filename.split('/')[-1])
         
+        chips.append(header['CCDCHIP'])
+
         focii.append(header["FOCUS"])
         
         chi_squareds.append(header["CHI_SQR"])
@@ -89,6 +98,7 @@ def make_results_summary(results_filenames,
             Qs[Q_label + "NEZ2"].append(header[Q_label + "NEZ2"])
     
     columns = [fits.Column(name="filename", format='30A', array=image_filenames),
+               fits.Column(name="CHIP", format='B', array=chips),
                fits.Column(name="focus", format='E', array=focii),
                fits.Column(name="chi_squared", format='E', array=chi_squareds),
                fits.Column(name="dofs", format='E', array=dofs),
@@ -119,8 +129,6 @@ def make_results_summary(results_filenames,
     tbhdu = fits.BinTableHDU.from_columns(columns)
 
     tbhdu.writeto(summary_filename,clobber=True)
-    
-    logger = smart_logging.get_default_logger()
     
     logger.info("Results summary output to " + summary_filename + ".")
     

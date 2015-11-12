@@ -34,8 +34,6 @@ def get_Qsize_and_var(image,
                       sec_weight_func=mv.default_sec_weight_func,
                       xc=None,
                       yc=None,
-                      x_array=None,
-                      y_array=None,
                       background_noise=None,
                       gain=mv.gain):
 
@@ -43,10 +41,12 @@ def get_Qsize_and_var(image,
     dmax = np.max((nx, ny)) / 2
 
     if(xc is None) or (yc is None):
-        xc, yc, x_array, y_array, _, _ = centre_image(image, prim_weight_func)
-    else:
-        if(x_array is None) or (y_array is None):
-            x_array, y_array, _, _, _ = get_coords_of_array(nx=nx, ny=ny, xc=xc, yc=yc)
+        xc, yc, _, _, _, _ = centre_image(image, prim_weight_func)
+        
+    xc = np.round(xc,0)
+    yc = np.round(yc,0)
+        
+    x_array, y_array, _, _, _ = get_coords_of_array(nx=nx, ny=ny, xc=xc, yc=yc)
 
     if background_noise is None:
         background_noise = get_background_noise(image)
@@ -101,6 +101,8 @@ def get_Qsize_and_var(image,
 
             var_I_mean[ri] = np.sum(np.abs(I[ri]) / gain + np.square(background_noise)) \
                                 / (np.square(N[ri]))
+        else:
+            pass
 
         # Get W for this bin
         if N_lt[ri] > 0:

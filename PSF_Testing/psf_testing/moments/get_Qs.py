@@ -105,8 +105,6 @@ def get_m0_and_Qs(image,
                                          sec_weight_func=sec_weight_func,
                                          xc=xc,
                                          yc=yc,
-                                         x_array=x_array,
-                                         y_array=y_array,
                                          background_noise=background_noise,
                                          gain=gain)
 

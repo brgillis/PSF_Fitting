@@ -28,7 +28,7 @@ from psf_testing.get_model_psf import get_model_psf_for_star
 from psf_testing.moments.get_Qs import get_m0_and_Qs
 from psf_testing.psf_model_scheme import psf_model_scheme
 from psf_testing.remove_outliers import remove_outliers
-
+from psf_testing.parmap import parmap
 
 def test_psf_for_focus(stars,
 
@@ -48,18 +48,16 @@ def test_psf_for_focus(stars,
                        tinytim_data_path=mv.default_tinytim_data_path,
                        
                        seed_factor=0,
-
                        gain=mv.gain,
+                       fitted_params=0,
                        
                        save_models=False,
+                       fitting_record=None,
 
                        outliers_mask=None,
-
-                       fitted_params=0,
-
                        files_to_cleanup=None,
                        
-                       fitting_record=None):
+                       parallelize=False):
 
     if outliers_mask is None:
         outliers_mask = []
@@ -69,14 +67,14 @@ def test_psf_for_focus(stars,
         image = fits.open(image_filename)[0]
 
     # Initialize arrays for results per star tested
-    psf_m0s = []
-    psf_m0_vars = []
-    psf_Qs = []
-    psf_Q_vars = []
-    noisy_psf_m0s = []
-    noisy_psf_m0_vars = []
-    noisy_psf_Qs = []
-    noisy_psf_Q_vars = []
+    model_m0s = []
+    model_m0_vars = []
+    model_Qs = []
+    model_Q_vars = []
+    noisy_model_m0s = []
+    noisy_model_m0_vars = []
+    noisy_model_Qs = []
+    noisy_model_Q_vars = []
 
     # Get the image shape, and reverse its ordering to x,y in fits ordering
     image_shape = np.shape(image)
@@ -87,14 +85,15 @@ def test_psf_for_focus(stars,
                                     num_grid_points=num_grid_points,
                                     image_shape=image_shape)
 
-    # Loop through stars and get results for each
+    # Get results for each star
     num_stars = len(stars)
-    for i in range(num_stars):
+    
+    def test_star_with_index(i):
 
         star = stars[i]
 
         if not star.valid:
-            continue
+            return star
 
         model_psf = get_model_psf_for_star(star=star,
                                            scheme=model_scheme,
@@ -102,7 +101,7 @@ def test_psf_for_focus(stars,
                                            tinytim_path=tinytim_path,
                                            tinytim_data_path=tinytim_data_path)
 
-        psf_m0, psf_m0_var, psf_Q, psf_Q_var = \
+        star.model_m0, star.model_m0_var, star.model_Qs, star.model_Q_vars = \
             get_m0_and_Qs(image=model_psf,
                           prim_weight_func=prim_weight_func,
                           sec_weight_func=sec_weight_func,
@@ -119,48 +118,67 @@ def test_psf_for_focus(stars,
         noisy_model_psf = model_psf + model_psf_noise * np.random.randn(ny, nx)
 
         try:
-            noisy_psf_m0, noisy_psf_m0_var, noisy_psf_Q, noisy_psf_Q_var = \
+            star.noisy_model_m0, star.noisy_model_m0_var, star.noisy_model_Qs, star.noisy_model_Q_vars = \
                 get_m0_and_Qs(image=noisy_model_psf,
                               prim_weight_func=prim_weight_func,
                               sec_weight_func=sec_weight_func,
                               background_noise=star.background_noise,
                               gain=gain)
         except AssertionError as _e:
-            noisy_psf_m0, noisy_psf_m0_var, noisy_psf_Q, noisy_psf_Q_var = \
-                psf_m0, psf_m0_var, psf_Q, psf_Q_var
-
-        # Append m0 and Q data to the storage lists
-        psf_m0s.append(psf_m0)
-        psf_m0_vars.append(psf_m0_var)
-        psf_Qs.append(psf_Q)
-        psf_Q_vars.append(psf_Q_var)
-        noisy_psf_m0s.append(noisy_psf_m0)
-        noisy_psf_m0_vars.append(noisy_psf_m0_var)
-        noisy_psf_Qs.append(noisy_psf_Q)
-        noisy_psf_Q_vars.append(noisy_psf_Q_var)
+            star.noisy_model_m0, star.noisy_model_m0_var, star.noisy_model_Qs, star.noisy_model_Q_vars = \
+                star.model_m0, star.model_m0_var, star.model_Qs, star.model_Q_vars
 
         # Save the models if desired
         if save_models:
             star.model_psf = model_psf
             star.noisy_model_psf = noisy_model_psf
+            
+        return star
+            
+    if not parallelize:
+        for i in range(num_stars):
+            test_star_with_index(i)
+    else:
+        new_stars = parmap(test_star_with_index,range(num_stars))
+        for i in range(num_stars):
+            stars[i] = new_stars[i]
+        del(new_stars)
+        
+    for i in range(num_stars):
+            
+        star = stars[i]
+        
+        if not star.valid:
+            continue
+        
+        # Append m0 and Q data to the storage lists
+        model_m0s.append(star.model_m0)
+        model_m0_vars.append(star.model_m0_var)
+        model_Qs.append(star.model_Qs)
+        model_Q_vars.append(star.model_Q_vars)
+        noisy_model_m0s.append(star.noisy_model_m0)
+        noisy_model_m0_vars.append(star.noisy_model_m0_var)
+        noisy_model_Qs.append(star.noisy_model_Qs)
+        noisy_model_Q_vars.append(star.noisy_model_Q_vars)
+        
 
     # Convert the psf m0 and Q storage lists to numpy arrays
-    psf_m0s = np.array(psf_m0s)
-    psf_m0_vars = np.array(psf_m0_vars)
-    psf_Qs = np.array(psf_Qs)
-    psf_Q_vars = np.array(psf_Q_vars)
-    noisy_psf_m0s = np.array(noisy_psf_m0s)
-    noisy_psf_m0_vars = np.array(noisy_psf_m0_vars)
-    noisy_psf_Qs = np.array(noisy_psf_Qs)
-    noisy_psf_Q_vars = np.array(noisy_psf_Q_vars)
+    model_m0s = np.array(model_m0s)
+    model_m0_vars = np.array(model_m0_vars)
+    model_Qs = np.array(model_Qs)
+    model_Q_vars = np.array(model_Q_vars)
+    noisy_model_m0s = np.array(noisy_model_m0s)
+    noisy_model_m0_vars = np.array(noisy_model_m0_vars)
+    noisy_model_Qs = np.array(noisy_model_Qs)
+    noisy_model_Q_vars = np.array(noisy_model_Q_vars)
 
     # Now get the comparison Z values for both the psf and noisy psf
 
     # Get the differences first
-    m0_diffs = star_m0s - psf_m0s
-    Q_diffs = star_Qs - psf_Qs
-    noisy_m0_diffs = star_m0s - noisy_psf_m0s
-    noisy_Q_diffs = star_Qs - noisy_psf_Qs
+    m0_diffs = star_m0s - model_m0s
+    Q_diffs = star_Qs - model_Qs
+    noisy_m0_diffs = star_m0s - noisy_model_m0s
+    noisy_Q_diffs = star_Qs - noisy_model_Qs
 
     # And then get the Z values. Use the noise-free psf error estimate instead of the stars'
     # error estimates, since it should be less biased
@@ -168,18 +186,18 @@ def test_psf_for_focus(stars,
     comb_Q_diffs = (Q_signs * Q_diffs[:, :, 0] + Q_diffs[:, :, 1])
     comb_noisy_Q_diffs = (Q_signs * noisy_Q_diffs[:, :, 0] + noisy_Q_diffs[:, :, 1])
 
-    m0_Zs = (-m0_diffs[:, 0] + m0_diffs[:, 1]) / np.sqrt(np.abs(psf_m0_vars[:, 0, 0] +
-                                                          psf_m0_vars[:, 1, 1] +
-                                                          -2.0 * psf_m0_vars[:, 1, 0]))
-    Q_Zs = comb_Q_diffs / np.sqrt(np.abs(psf_Q_vars[:, :, 0, 0] +
-                                                          psf_Q_vars[:, :, 1, 1] +
-                                                          2.0 * Q_signs * psf_Q_vars[:, :, 1, 0]))
-    noisy_m0_Zs = (-noisy_m0_diffs[:, 0] + noisy_m0_diffs[:, 1]) / np.sqrt(2.0 * np.abs(psf_m0_vars[:, 0, 0] +
-                                                          psf_m0_vars[:, 1, 1] +
-                                                          -2.0 * psf_m0_vars[:, 1, 0]))
-    noisy_Q_Zs = comb_noisy_Q_diffs / np.sqrt(2.0 * np.abs(psf_Q_vars[:, :, 0, 0] +
-                                                          psf_Q_vars[:, :, 1, 1] +
-                                                          2.0 * Q_signs * psf_Q_vars[:, :, 1, 0]))
+    m0_Zs = (-m0_diffs[:, 0] + m0_diffs[:, 1]) / np.sqrt(np.abs(model_m0_vars[:, 0, 0] +
+                                                          model_m0_vars[:, 1, 1] +
+                                                          -2.0 * model_m0_vars[:, 1, 0]))
+    Q_Zs = comb_Q_diffs / np.sqrt(np.abs(model_Q_vars[:, :, 0, 0] +
+                                                          model_Q_vars[:, :, 1, 1] +
+                                                          2.0 * Q_signs * model_Q_vars[:, :, 1, 0]))
+    noisy_m0_Zs = (-noisy_m0_diffs[:, 0] + noisy_m0_diffs[:, 1]) / np.sqrt(2.0 * np.abs(model_m0_vars[:, 0, 0] +
+                                                          model_m0_vars[:, 1, 1] +
+                                                          -2.0 * model_m0_vars[:, 1, 0]))
+    noisy_Q_Zs = comb_noisy_Q_diffs / np.sqrt(2.0 * np.abs(model_Q_vars[:, :, 0, 0] +
+                                                          model_Q_vars[:, :, 1, 1] +
+                                                          2.0 * Q_signs * model_Q_vars[:, :, 1, 0]))
 
     if len(outliers_mask) == 0:
 
@@ -262,9 +280,9 @@ def test_psf_for_focus(stars,
              (noisy_m0_Z2, (noisy_Qx_Z2, noisy_Qy_Z2, noisy_Qplus_Z2, noisy_Qcross_Z2, noisy_Qsize_Z2))),
             ((m0_emp_Z2, Q_emp_Z2s), (noisy_m0_emp_Z2, noisy_Q_emp_Z2s)),
             (star_m0s, star_Qs),
-            (psf_m0s, psf_Qs),
-            (noisy_psf_m0s, noisy_psf_Qs),
-            (np.sqrt(np.abs(psf_m0_vars)), np.sqrt(np.abs(psf_Q_vars))),
+            (model_m0s, model_Qs),
+            (noisy_model_m0s, noisy_model_Qs),
+            (np.sqrt(np.abs(model_m0_vars)), np.sqrt(np.abs(model_Q_vars))),
             (omask, Q_omask),
             (m0_Zs, Q_Zs),
             )

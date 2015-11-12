@@ -40,7 +40,7 @@ def make_stacks(stars, stack_size=(2 * mv.default_weight_rmax + 1),
         stack = np.zeros((stack_size, stack_size))
         num_stars = 0
         for star in stars:
-            if not star.valid or star.outlier:
+            if (not star.valid) or star.outlier:
                 continue
 
             image = eval("star." + image_name)
