@@ -28,35 +28,27 @@ from psf_testing.moments.centre_image import centre_image
 from psf_testing.moments.coords import get_coords_of_array
 from psf_testing.moments.estimate_background import get_background_noise
 
-
-def get_Qsize_and_var(image,
-                      prim_weight_func=mv.default_prim_weight_func,
-                      sec_weight_func=mv.default_sec_weight_func,
-                      xc=None,
-                      yc=None,
-                      background_noise=None,
-                      gain=mv.gain):
-
-    nx, ny = np.shape(image)
-    dmax = np.max((nx, ny)) / 2
-
-    if(xc is None) or (yc is None):
-        xc, yc, _, _, _, _ = centre_image(image, prim_weight_func)
+def get_light_distribution(image,
+                           prim_weight_func=mv.default_prim_weight_func,
+                           xc=None,
+                           yc=None,
+                           x_array=None,
+                           y_array=None,
+                           background_noise=None,
+                           gain=mv.gain):
+    
+    dmax = np.max(np.shape(image)) // 2
+    
+    if x_array is None or y_array is None:
+        if(xc is None) or (yc is None):
+            xc, yc, _, _, _, _ = centre_image(image, prim_weight_func)
         
-    xc = np.round(xc,0)
-    yc = np.round(yc,0)
+        nx, ny = np.shape(image)
+        x_array, y_array, _, _, _ = get_coords_of_array(nx=nx, ny=ny, xc=xc, yc=yc)
         
-    x_array, y_array, _, _, _ = get_coords_of_array(nx=nx, ny=ny, xc=xc, yc=yc)
-
     if background_noise is None:
         background_noise = get_background_noise(image)
-
-    # Get a 1-d version of the weight function
-    def prim_radial_weight_func(r):
-        return prim_weight_func(r, np.zeros_like(r)) # Assuming it's circular
-    def sec_radial_weight_func(r):
-        return sec_weight_func(r, np.zeros_like(r)) # Assuming it's circular
-
+    
     # Initialize things so we can loop through radially
 
     # Get the radial distances of all pixels from the centre
@@ -65,7 +57,7 @@ def get_Qsize_and_var(image,
     # Get raveled arrays for the image and radius
     flattened_image = np.ravel(image)
     flattened_rs = np.ravel(r_array)
-
+    
     # Initialize arrays and quantities we'll sum
     I = []
     N = []
@@ -101,8 +93,6 @@ def get_Qsize_and_var(image,
 
             var_I_mean[ri] = np.sum(np.abs(I[ri]) / gain + np.square(background_noise)) \
                                 / (np.square(N[ri]))
-        else:
-            pass
 
         # Get W for this bin
         if N_lt[ri] > 0:
@@ -132,6 +122,44 @@ def get_Qsize_and_var(image,
 
             covar_W[rj, ri] = covar_W[ri, rj]
 
+    return N, I_mean, W, covar_W
+    
+
+def get_Qsize_and_var(image,
+                      prim_weight_func=mv.default_prim_weight_func,
+                      sec_weight_func=mv.default_sec_weight_func,
+                      xc=None,
+                      yc=None,
+                      background_noise=None,
+                      gain=mv.gain):
+
+    nx, ny = np.shape(image)
+    dmax = np.max((nx, ny)) // 2
+
+    if(xc is None) or (yc is None):
+        xc, yc, _, _, _, _ = centre_image(image, prim_weight_func)
+        
+    xc = np.round(xc,0)
+    yc = np.round(yc,0)
+        
+    x_array, y_array, _, _, _ = get_coords_of_array(nx=nx, ny=ny, xc=xc, yc=yc)
+
+    if background_noise is None:
+        background_noise = get_background_noise(image)
+
+    # Get a 1-d version of the weight function
+    def prim_radial_weight_func(r):
+        return prim_weight_func(r, np.zeros_like(r)) # Assuming it's circular
+    def sec_radial_weight_func(r):
+        return sec_weight_func(r, np.zeros_like(r)) # Assuming it's circular
+    
+    N, _I_mean, W, covar_W = get_light_distribution(image=image,
+                                prim_weight_func=prim_weight_func,
+                                x_array=x_array,
+                                y_array=y_array,
+                                background_noise=background_noise,
+                                gain=gain)
+
     # Put this into the calculation for Qsize
     ri_array = np.linspace(start=0., stop=dmax, num=dmax, endpoint=False)
 
@@ -140,7 +168,7 @@ def get_Qsize_and_var(image,
 
     for i, weight_func in zip(range(2), (prim_radial_weight_func, sec_radial_weight_func)):
 
-        w_ri_array = weight_func(ri_array)
+        w_ri_array = weight_func(ri_array)*N
 
         weighted_W = W * w_ri_array
 
@@ -161,7 +189,7 @@ def get_Qsize_and_var(image,
 
         for j, weight_func in zip(range(2), (prim_radial_weight_func, sec_radial_weight_func)):
 
-            other_w_ri_array = weight_func(ri_array)
+            other_w_ri_array = weight_func(ri_array)*N
             other_w_ri_ri_array = ri_array * other_w_ri_array
 
             var_Qsize_numerator = (np.outer(w_ri_ri_array, other_w_ri_ri_array) \
