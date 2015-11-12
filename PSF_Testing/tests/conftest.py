@@ -67,7 +67,8 @@ def test_class_star():
     return 0.997
 
 def make_cat_line(xp=0, yp=0, mag=0, class_star=0,
-                  xp_max=0, xp_min=0, yp_max=0, yp_min=0):    
+                  xp_max=0, xp_min=0, yp_max=0, yp_min=0,
+                  flux=500., flux_err=5.):    
     
     items = []
     for _ in range(mv.sex_cat_num_cols):
@@ -83,6 +84,9 @@ def make_cat_line(xp=0, yp=0, mag=0, class_star=0,
     items[mv.sex_cat_xp_min_col] = str(xp_min)
     items[mv.sex_cat_yp_max_col] = str(yp_max)
     items[mv.sex_cat_yp_min_col] = str(yp_min)
+    
+    items[mv.sex_cat_flux_col] = str(flux)
+    items[mv.sex_cat_flux_err_col] = str(flux_err)
     
     line = ""
     

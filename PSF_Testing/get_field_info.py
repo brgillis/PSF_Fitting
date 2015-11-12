@@ -25,7 +25,7 @@
 """
 
 import click
-import logging
+from psf_testing.smart_logging import get_default_logger
 from astropy.io import ascii
 from astropy.io import fits
 from os.path import join
@@ -42,9 +42,9 @@ def main(**kwargs):
     """ @TODO main docstring
     """
     
-    logger = logging.getLogger()
+    logger = get_default_logger()
     
-    logger.info("Entering get_field_info main function.")
+    logger.debug("Entering get_field_info main function.")
     
     # Get the fields we want to look at
     fields_list = []

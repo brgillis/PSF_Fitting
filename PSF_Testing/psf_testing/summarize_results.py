@@ -24,6 +24,7 @@
 
 from astropy.io import fits
 from psf_testing import smart_logging
+from psf_testing import magic_values as mv
 
 def make_results_summary(results_filenames,
                          summary_filename):
@@ -59,15 +60,17 @@ def make_results_summary(results_filenames,
         Qs[Q_label + "NZ2"] = []
         Qs[Q_label + "NEZ2"] = []
     
-    for results_filename in results_filename:
+    for results_filename in results_filenames:
         try:
             results_file = fits.open(results_filename)
         except IOError as _e:
             logger.warn("File " + results_filename + " cannot be opened and will be skipped.")
+            continue
             
         header = results_file[1].header
         
-        image_filenames.append(results_filename.split('/')[-1])
+        image_filenames.append(results_filename.split('/')[-1].replace(mv.results_tail,
+                                                                       mv.image_extension))
         
         chips.append(header['CCDCHIP'])
 
@@ -98,7 +101,7 @@ def make_results_summary(results_filenames,
             Qs[Q_label + "NEZ2"].append(header[Q_label + "NEZ2"])
     
     columns = [fits.Column(name="filename", format='30A', array=image_filenames),
-               fits.Column(name="CHIP", format='B', array=chips),
+               fits.Column(name="chip", format='B', array=chips),
                fits.Column(name="focus", format='E', array=focii),
                fits.Column(name="chi_squared", format='E', array=chi_squareds),
                fits.Column(name="dofs", format='E', array=dofs),
