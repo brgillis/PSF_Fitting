@@ -22,6 +22,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from time import mktime
+
 from psf_testing import magic_values as mv
 
 def get_chip(image):
@@ -33,8 +35,12 @@ def get_exp_time(image):
 def get_gain(image):
     return image.header[mv.header_gain_keyword]
 
-def get_obs_date(image):
-    return image.header[mv.header_obs_date_keyword]
-
 def get_obs_time(image):
-    return image.header[mv.header_obs_time_keyword]
+    date_string = image.header[mv.header_obs_date_keyword]
+    time_string = image.header[mv.header_obs_time_keyword]
+    
+    time_sec = mktime((int(date_string[0:4]),int(date_string[5:7]),int(date_string[8:10]), # Year, month, day
+                       int(time_string[0:2]),int(time_string[3:5]),int(time_string[6:8]), # Hour, minute, second
+                       0,1,-1))
+    
+    return time_sec

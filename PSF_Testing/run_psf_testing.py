@@ -146,7 +146,6 @@ def main(argv):
         def test_psf_for_image(image_filename):
             try:
                 logger.info("Testing " + image_filename + ".")
-                
                 test_psf(image_filename = image_filename,
                          
                          min_class_star = args.min_class_star,

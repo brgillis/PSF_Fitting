@@ -43,26 +43,27 @@ class psf_model_scheme(object):
         
         self.focus = focus
         
-        if(num_grid_points is None):
-            self.use_grid = False
+        if num_grid_points is None:
+            self.grid_stepx = 0
+            self.grid_stepy = 0
         else:
-            self.use_grid = True
             
-            grid_nx = num_grid_points[0]
-            grid_ny = num_grid_points[1]
-            image_nx = image_shape[0]
-            image_ny = image_shape[1]
+            if num_grid_points[0] == 0:
+                self.grid_stepx = 1
+            else:
+                grid_nx = num_grid_points[0]
+                image_nx = image_shape[0]
+                self.grid_stepx = float(image_nx)/grid_nx
             
-            self.grid_stepx = float(image_nx)/grid_nx
-            self.grid_stepy = float(image_ny)/grid_ny
+            if num_grid_points[1] == 0:
+                self.grid_stepy = 1
+            else:
+                grid_ny = num_grid_points[1]
+                image_ny = image_shape[1]
+                self.grid_stepy = float(image_ny)/grid_ny
             
     def get_position_to_use(self, xp, yp):
         
-        if not self.use_grid:
-            # If we're not using a grid, round to nearest int
-            return ( int(xp+0.5), int(yp+0.5) )
-        
-        # Otherwise, determine the nearest grid point
         gx = int(float(xp)/self.grid_stepx)
         gy = int(float(yp)/self.grid_stepy)
         

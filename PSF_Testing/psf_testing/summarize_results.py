@@ -31,6 +31,7 @@ def make_results_summary(results_filenames,
     
     image_filenames = []
     chips = []
+    obs_times = []
     focii = []
     chi_squareds = []
     emp_chi_squareds = []
@@ -38,13 +39,11 @@ def make_results_summary(results_filenames,
     dofs = []
     edofs = []
     
-    m0_core_diffs = []
-    m0_wings_diffs = []
+    m0_diff_diffs = []
     m0_Zs = []
     m0_emp_Zs = []
 
-    m0_noisy_core_diffs = []
-    m0_noisy_wings_diffs = []
+    m0_noisy_diff_diffs = []
     m0_noisy_Zs = []
     m0_noisy_emp_Zs = []
     
@@ -52,11 +51,11 @@ def make_results_summary(results_filenames,
     
     logger = smart_logging.get_default_logger()
 
-    for Q_label in ("QX", "QY", "QP", "QC", "QS"):
-        Qs[Q_label + "_DIFF"] = []
+    for Q_label in ("QXD", "QYD", "QPS", "QCS", "QSS", "QPD", "QCD", "QSD"):
+        Qs[Q_label + "_DIF"] = []
         Qs[Q_label + "_Z2"] = []
         Qs[Q_label + "_EZ2"] = []
-        Qs[Q_label + "NDIFF"] = []
+        Qs[Q_label + "NDIF"] = []
         Qs[Q_label + "NZ2"] = []
         Qs[Q_label + "NEZ2"] = []
     
@@ -73,6 +72,7 @@ def make_results_summary(results_filenames,
                                                                        mv.image_extension))
         
         chips.append(header['CCDCHIP'])
+        obs_times.append(header['OBS_TIME'])
 
         focii.append(header["FOCUS"])
         
@@ -81,51 +81,52 @@ def make_results_summary(results_filenames,
         
         dofs.append(header["DOF"])
         edofs.append(header["EDOF"])
+        
+        m0_diff_diffs.append(header["M0D_DIF"])
+        m0_Zs.append(header["M0D_Z2"])
+        m0_emp_Zs.append(header["M0D_EZ2"])
     
-        m0_core_diffs.append(header["M0_CDIFF"])
-        m0_wings_diffs.append(header["M0_WDIFF"])
-        m0_Zs.append(header["M0_Z2"])
-        m0_emp_Zs.append(header["M0_EZ2"])
+        m0_noisy_diff_diffs.append(header["M0DNDIF"])
+        m0_noisy_Zs.append(header["M0DNZ2"])
+        m0_noisy_emp_Zs.append(header["M0DNEZ2"])
     
-        m0_noisy_core_diffs.append(header["M0NCDIFF"])
-        m0_noisy_wings_diffs.append(header["M0NWDIFF"])
-        m0_noisy_Zs.append(header["M0NZ2"])
-        m0_noisy_emp_Zs.append(header["M0NEZ2"])
-    
-        for Q_label in ("QX", "QY", "QP", "QC", "QS"):
-            Qs[Q_label + "_DIFF"].append(header[Q_label + "_DIFF"])
+        for Q_label in ("QXD", "QYD", "QPS", "QCS", "QSS", "QPD", "QCD", "QSD"):
+            Qs[Q_label + "_DIF"].append(header[Q_label + "_DIF"])
             Qs[Q_label + "_Z2"].append(header[Q_label + "_Z2"])
             Qs[Q_label + "_EZ2"].append(header[Q_label + "_EZ2"])
-            Qs[Q_label + "NDIFF"].append(header[Q_label + "NDIFF"])
+            Qs[Q_label + "NDIF"].append(header[Q_label + "NDIF"])
             Qs[Q_label + "NZ2"].append(header[Q_label + "NZ2"])
             Qs[Q_label + "NEZ2"].append(header[Q_label + "NEZ2"])
     
     columns = [fits.Column(name="filename", format='30A', array=image_filenames),
                fits.Column(name="chip", format='B', array=chips),
+               fits.Column(name="obs_time", format='E', array=obs_times),
                fits.Column(name="focus", format='E', array=focii),
                fits.Column(name="chi_squared", format='E', array=chi_squareds),
                fits.Column(name="dofs", format='E', array=dofs),
                fits.Column(name="emp_chi_squared", format='E', array=emp_chi_squareds),
                fits.Column(name="emp_dofs", format='E', array=edofs),
-               fits.Column(name="m0_core_diff", format='E', array=m0_core_diffs),
-               fits.Column(name="m0_wings_diff", format='E', array=m0_wings_diffs),
+               fits.Column(name="m0_diff_diff", format='E', array=m0_diff_diffs),
                fits.Column(name="m0_Z2", format='E', array=m0_Zs),
                fits.Column(name="m0_emp_Z2", format='E', array=m0_emp_Zs)]
     
-    for Q_label, colname in zip(("QX", "QY", "QP", "QC", "QS"), 
-                                ("Qx", "Qy", "Qplus", "Qcross", "Qsize")):
-        columns.append(fits.Column(name=colname + "_diff", format='E', array=Qs[Q_label + "_DIFF"]))
+    for Q_label, colname in zip(("QXD", "QYD", "QPS", "QCS", "QSS", "QPD", "QCD", "QSD"), 
+                                ("Qx_diff", "Qy_diff",
+                                 "Qplus_sum", "Qcross_sum", "Qsize_sum",
+                                 "Qplus_diff", "Qcross_diff", "Qsize_diff")):
+        columns.append(fits.Column(name=colname + "_diff", format='E', array=Qs[Q_label + "_DIF"]))
         columns.append(fits.Column(name=colname + "_Z2", format='E', array=Qs[Q_label + "_Z2"]))
         columns.append(fits.Column(name=colname + "_emp_Z2", format='E', array=Qs[Q_label + "_EZ2"]))
         
-    columns += [fits.Column(name="m0_noisy_core_diff", format='E', array=m0_noisy_core_diffs),
-                fits.Column(name="m0_noisy_wings_diff", format='E', array=m0_noisy_wings_diffs),
+    columns += [fits.Column(name="m0_noisy_diff_diff", format='E', array=m0_noisy_diff_diffs),
                 fits.Column(name="m0_noisy_Z2", format='E', array=m0_noisy_Zs),
                 fits.Column(name="m0_noisy_emp_Z2", format='E', array=m0_noisy_emp_Zs)]
     
-    for Q_label, colname in zip(("QX", "QY", "QP", "QC", "QS"), 
-                                ("Qx", "Qy", "Qplus", "Qcross", "Qsize")):
-        columns.append(fits.Column(name=colname + "_noisy_diff", format='E', array=Qs[Q_label + "NDIFF"]))
+    for Q_label, colname in zip(("QXD", "QYD", "QPS", "QCS", "QSS", "QPD", "QCD", "QSD"), 
+                                ("Qx_diff", "Qy_diff",
+                                 "Qplus_sum", "Qcross_sum", "Qsize_sum",
+                                 "Qplus_diff", "Qcross_diff", "Qsize_diff")):
+        columns.append(fits.Column(name=colname + "_noisy_diff", format='E', array=Qs[Q_label + "NDIF"]))
         columns.append(fits.Column(name=colname + "_noisy_Z2", format='E', array=Qs[Q_label + "NZ2"]))
         columns.append(fits.Column(name=colname + "_noisy_emp_Z2", format='E', array=Qs[Q_label + "NEZ2"]))
 

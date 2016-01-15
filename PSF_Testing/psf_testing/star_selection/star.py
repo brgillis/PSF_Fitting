@@ -35,6 +35,13 @@ class Star(object):
 
         # Data on position, etc of the star
         self.SkyObj = sky_obj
+        
+        if sky_obj is not None:
+            self.x_pix = sky_obj.x_pix
+            self.y_pix = sky_obj.y_pix
+        else:
+            self.x_pix = None
+            self.y_pix = None
 
         # Extracted postage stamp and background noise estimate of this star
         self.stamp = None
@@ -52,9 +59,15 @@ class Star(object):
 
         self.m0 = None
         self.m0_err = None
+        self.m0_covar = None
 
-        self.Qs = None
-        self.Q_vars = None
+        self.Qxy = None
+        self.Qxy_err = None
+        self.Qxy_covar = None
+
+        self.Qpcs = None
+        self.Qpcs_err = None
+        self.Qpcs_covar = None
 
         self.valid = True
         self.outlier = False
@@ -63,19 +76,31 @@ class Star(object):
         self.model_psf = None
 
         self.model_m0 = None
-        self.model_m0_var = None
+        self.model_m0_err = None
+        self.model_m0_covar = None
 
-        self.model_Qs = None
-        self.model_Q_vars = None
+        self.model_Qxy = None
+        self.model_Qxy_err = None
+        self.model_Qxy_covar = None
+
+        self.model_Qpcs = None
+        self.model_Qpcs_err = None
+        self.model_Qpcs_covar = None
 
         # Data for the corresponding noisy model PSF
         self.noisy_model_psf = None
 
         self.noisy_m0 = None
-        self.noisy_m0_var = None
+        self.noisy_m0_err = None
+        self.noisy_m0_covar = None
 
-        self.noisy_model_Qs = None
-        self.noisy_model_Q_vars = None
+        self.noisy_model_Qxy = None
+        self.noisy_model_Qxy_err = None
+        self.noisy_model_Qxy_covar = None
+
+        self.noisy_model_Qpcs = None
+        self.noisy_model_Qpcs_err = None
+        self.noisy_model_Qpcs_covar = None
         
         return
 

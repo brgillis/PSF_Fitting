@@ -26,7 +26,6 @@ import os
 
 from astropy.io import fits
 
-import numpy as np
 from psf_testing import magic_values as mv
 from psf_testing.check_updates import make_update_marker
 from psf_testing.extract_stamp import extract_stamp_for_star
@@ -37,7 +36,7 @@ from psf_testing.moments.estimate_background import get_background_level_and_noi
 from psf_testing.moments.get_Qs import get_m0_and_Qs
 from psf_testing.report_results import report_results
 from psf_testing.stacking import make_and_save_stacks
-from psf_testing.star_selection.image_info import get_chip, get_exp_time, get_gain
+from psf_testing.star_selection.image_info import get_chip, get_exp_time, get_gain, get_obs_time
 from psf_testing.star_selection.sextractor_utility import get_stars_in_image
 from psf_testing.test_psf_for_focus import test_psf_for_focus
 
@@ -81,7 +80,8 @@ def test_psf(image_filename,
     chip = get_chip(image)
     exp_time = get_exp_time(image)
     gain = get_gain(image)
-
+    obs_time = get_obs_time(image)
+    
     # Keep track of a list of files we'll want to cleanup when done
     files_to_cleanup = []
 
@@ -102,10 +102,6 @@ def test_psf(image_filename,
     sec_weight_func = mv.default_sec_weight_func
 
     # Get general data on all stars
-    star_m0s = []
-    star_m0_vars = []
-    star_Qs = []
-    star_Q_vars = []
     for star in stars:
 
         # Extract the star's postage stamp if possible
@@ -127,7 +123,9 @@ def test_psf(image_filename,
             star.valid = False
             continue
 
-        star.m0, star.m0_var, star.Qs, star.Q_vars = \
+        (star.m0, star.m0_err, star.m0_covar,
+         star.Qxy, star.Qx_err, star.Qxy_covar,
+         star.Qpcs, star.Qpcs_err, star.Qpcs_covar) = \
             get_m0_and_Qs(image=star.stamp,
                           prim_weight_func=prim_weight_func,
                           sec_weight_func=sec_weight_func,
@@ -143,24 +141,9 @@ def test_psf(image_filename,
             star.valid = False
             continue
 
-        # Append m0 and Q data to the storage lists
-        star_m0s.append(star.m0)
-        star_m0_vars.append(star.m0_var)
-        star_Qs.append(star.Qs)
-        star_Q_vars.append(star.Q_vars)
-
-    # Convert the star m0 and Q storage lists to numpy arrays
-    star_m0s = np.array(star_m0s)
-    star_m0_vars = np.array(star_m0_vars)
-    star_Qs = np.array(star_Qs)
-    star_Q_vars = np.array(star_Q_vars)
-
     # If we're testing a single focus value, do that now
     if test_single_focus:
         test_results = test_psf_for_focus(stars=stars,
-
-                                          star_m0s=star_m0s,
-                                          star_Qs=star_Qs,
 
                                           image_filename=image_filename,
                                           image=image,
@@ -183,9 +166,6 @@ def test_psf(image_filename,
     # Otherwise, call the fitting function
     else:
         test_results, fitting_record = fit_best_focus_and_test_psf(stars=stars,
-
-                                                    star_m0s=star_m0s,
-                                                    star_Qs=star_Qs,
 
                                                     image_filename=image_filename,
                                                     image=image,
@@ -215,6 +195,7 @@ def test_psf(image_filename,
     report_results(test_results=test_results,
                    fitting_record=fitting_record,
                    chip=chip,
+                   obs_time=obs_time,
                    filename_root=filename_root)
 
     # Save stacks if desired

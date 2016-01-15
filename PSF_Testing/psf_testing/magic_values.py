@@ -121,7 +121,7 @@ if(min_stamp_size<default_weight_rmax):
 default_tinytim_data_path = "/disk2/brg/Data/HST_Fields/PSF_models"
 default_tinytim_path = "/home/brg/Program_Files/tinytim-7.5"
 default_model_psf_width = 2.0
-default_model_psf_spec_type = (1, 15) # K-type star
+default_model_psf_spec_type = (1, 15) # K-type star 15
 default_detector = 15 # WFC
 default_filter = "f606w"
 default_subsampling_factor = 6

@@ -78,29 +78,35 @@ def get_m0_and_Qs(image,
 
     ((m0,), (Mx, My), (_Mxx, _Myy, Mxy, Mplus)) = \
         moments_and_variances[0]
-    ((var_m0,), (var_Mx, var_My),
-     (_var_Mxx, _var_Myy, var_Mxy, var_Mplus)) = moments_and_variances[1]
+    ((covar_m0,), (covar_Mx, covar_My),
+     (_covar_Mxx, _covar_Myy, covar_Mxy, covar_Mplus)) = moments_and_variances[1]
 
     # Get the Q values from the moments, plus errors from the variances
 
     scale = mv.pixel_scale
     square_scale = np.square(scale)
     quart_scale = np.square(square_scale)
+    
+    err_m0 = np.sqrt(np.diag(covar_m0))
 
     Qx = Mx * scale
-    var_Qx = var_Mx * square_scale
+    covar_Qx = covar_Mx * square_scale
+    err_Qx = np.sqrt(np.diag(covar_Qx))
 
     Qy = My * scale
-    var_Qy = var_My * square_scale
+    covar_Qy = covar_My * square_scale
+    err_Qy = np.sqrt(np.diag(covar_Qy))
 
     Qplus = Mplus * square_scale
-    var_Qplus = var_Mplus * quart_scale
+    covar_Qplus = covar_Mplus * quart_scale
+    err_Qplus = np.sqrt(np.diag(covar_Qplus))
 
     Qcross = 2. * Mxy * square_scale
-    var_Qcross = 4. * var_Mxy * quart_scale
+    covar_Qcross = 4. * covar_Mxy * quart_scale
+    err_Qcross = np.sqrt(np.diag(covar_Qcross))
 
     # Get Qsize and its error now
-    Qsize, var_Qsize = get_Qsize_and_var(image=image,
+    Qsize, err_Qsize, covar_Qsize = get_Qsize_and_var(image=image,
                                          prim_weight_func=prim_weight_func,
                                          sec_weight_func=sec_weight_func,
                                          xc=xc,
@@ -108,9 +114,13 @@ def get_m0_and_Qs(image,
                                          background_noise=background_noise,
                                          gain=gain)
 
-    # Put the Q values into a numpy array
+    # Put the Q values into numpy arrays
+    Qxy = np.array([Qx, Qy])
+    err_Qxy = np.array([err_Qx, err_Qy])
+    covar_Qxy = np.array([covar_Qx, covar_Qy])
+    
+    Qpcs = np.array([Qplus, Qcross, Qsize])
+    err_Qpcs = np.array([err_Qplus, err_Qcross, err_Qsize])
+    covar_Qpcs = np.array([covar_Qplus, covar_Qcross, covar_Qsize])
 
-    Qs = np.array([Qx, Qy, Qplus, Qcross, Qsize])
-    var_Qs = np.array([var_Qx, var_Qy, var_Qplus, var_Qcross, var_Qsize])
-
-    return m0, var_m0, Qs, var_Qs
+    return m0, err_m0, covar_m0, Qxy, err_Qxy, covar_Qxy, Qpcs, err_Qpcs, covar_Qpcs

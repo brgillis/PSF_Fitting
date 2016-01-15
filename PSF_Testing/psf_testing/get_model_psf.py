@@ -22,6 +22,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import time
 import os
 
 from astropy.io import fits
@@ -65,6 +66,27 @@ def make_subsampled_psf_model(filename,
     """
 
     filename_base = filename.replace(mv.image_extension, "")
+    
+    # Check for a lock file on this, to make sure its safe to create
+    lock_filename = filename_base + ".lock"
+    if os.path.isfile(lock_filename):
+        time_start = time.time()
+        while (not os.path.isfile(filename)) and (time.time() - time_start < 120):
+            time.sleep(1)
+        
+        # Give the file a chance to be fully written
+        time.sleep(1)
+        
+        if os.path.isfile(filename):
+            try:
+                return fits.open(filename)[0]
+            except IOError as _e:
+                open(lock_filename, 'a').close()
+        else:
+            # Looks like a rogue lock, so go ahead and use it ourselves
+            open(lock_filename, 'a').close()
+    else:
+        open(lock_filename, 'a').close()
 
     # Set up the command to call tiny1
     cmd = "export TINYTIM=" + tinytim_path + "\n" + \
@@ -154,6 +176,11 @@ def make_subsampled_psf_model(filename,
         os.remove(filename_base + ".tt3")
     except OSError as _e:
         pass
+    
+    try:
+        os.remove(lock_filename)
+    except OSError as _e:
+        pass
 
     return subsampled_image[0]
 
@@ -175,7 +202,7 @@ def get_model_psf_for_star(star,
     """
 
     # Get the position we'll generate the model PSF for
-    psf_position = scheme.get_position_to_use(star.SkyObj.x_pix, star.SkyObj.y_pix)
+    psf_position = scheme.get_position_to_use(star.x_pix, star.y_pix)
 
     # Determine the name for the subsampled model PSF file
     subsampled_name = os.path.join(tinytim_data_path, "subsampled_psf_x-" + str(psf_position[0]) + \
@@ -197,27 +224,41 @@ def get_model_psf_for_star(star,
     else:
 
         # It doesn't need an update, so open up the old image
-        subsampled_model = fits.open(subsampled_name)[0]
+        try:
+            subsampled_model = fits.open(subsampled_name)[0]
+        except IOError as _e:
+            # File is corrupt, so we'll regenerate it
+            subsampled_model = make_subsampled_psf_model(filename=subsampled_name,
+                                      xp=psf_position[0],
+                                      yp=psf_position[1],
+                                      focus=scheme.focus,
+                                      chip=star.chip,
+                                      weight_func=weight_func,
+                                      tinytim_path=tinytim_path)
+            
 
     # Get the charge diffusion kernel from the FITS comments
 
-    fits_comments = subsampled_model.header['COMMENT']
+    if(mv.default_subsampling_factor > 1):
+        fits_comments = subsampled_model.header['COMMENT']
+    
+        for test_i, s in enumerate(fits_comments):
+            if 'following kernel' in s:
+                i = test_i
+                break
+        if i == -1:
+            raise Exception("Cannot find charge-diffusion kernel in fits file passed to " +
+                            "read_kernel_from_fits")
 
-    for test_i, s in enumerate(fits_comments):
-        if 'following kernel' in s:
-            i = test_i
-            break
-    if i == -1:
-        raise Exception("Cannot find charge-diffusion kernel in fits file passed to " +
-                        "read_kernel_from_fits")
-
-    # kernel parameters are located in the three lines following to that index
-    kernel = []
-    for j in fits_comments[i + 1:i + 4]:
-        kernel.append([float(x) for x in j.split()])
-
-    # Convert to an ndarray
-    kernel = np.asarray(kernel)
+        # kernel parameters are located in the three lines following to that index
+        kernel = []
+        for j in fits_comments[i + 1:i + 4]:
+            kernel.append([float(x) for x in j.split()])
+    
+        # Convert to an ndarray
+        kernel = np.asarray(kernel)
+    else:
+        kernel = np.array([[0.,0.,0.],[0.,1.,0.],[0.,0.,0.]])
 
     # Determine how far off the centre of the subsampled image is from the centre
     ss_ny, ss_nx = np.shape(subsampled_model.data)

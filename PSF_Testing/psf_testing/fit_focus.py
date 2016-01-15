@@ -33,9 +33,6 @@ def get_chi2_of_test_results(test_results):
 
 def fit_best_focus_and_test_psf(stars,
 
-                                star_m0s,
-                                star_Qs,
-
                                 image_filename,
                                 image=None,
 
@@ -59,8 +56,8 @@ def fit_best_focus_and_test_psf(stars,
                                 
                                 parallelize=False):
 
-    # Use a set outliers mask for all tests
-    outliers_mask = None
+    # Use a set outliers mask for all tests?
+    outliers_mask = []
     
     # Keep a record of the results for all tests
     fitting_record = []
@@ -69,9 +66,6 @@ def fit_best_focus_and_test_psf(stars,
     @memoize
     def get_chi2_for_focus(test_focus):
         test_results = test_psf_for_focus(stars=stars,
-
-                                            star_m0s=star_m0s,
-                                            star_Qs=star_Qs,
 
                                             image_filename=image_filename,
                                             image=image,
@@ -96,8 +90,8 @@ def fit_best_focus_and_test_psf(stars,
                                             parallelize=parallelize)
         return get_chi2_of_test_results(test_results)
     
-    # Calculate (and cache) the value for focus 0 first, so we'll always use the
-    # outliers list for that
+#     # Calculate (and cache) the value for focus 0 first, so we'll always use the
+#     # outliers list for that
     get_chi2_for_focus(0.0)
 
     # Initialize the test
@@ -109,9 +103,6 @@ def fit_best_focus_and_test_psf(stars,
                 precision=test_focus_precision)
 
     test_results = test_psf_for_focus(stars=stars,
-
-                                            star_m0s=star_m0s,
-                                            star_Qs=star_Qs,
 
                                             image_filename=image_filename,
                                             image=image,

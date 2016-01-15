@@ -164,7 +164,7 @@ def get_Qsize_and_var(image,
     ri_array = np.linspace(start=0., stop=dmax, num=dmax, endpoint=False)
 
     Qsize = np.zeros(2)
-    var_Qsize = np.zeros((2, 2))
+    covar_Qsize = np.zeros((2, 2))
 
     for i, weight_func in zip(range(2), (prim_radial_weight_func, sec_radial_weight_func)):
 
@@ -200,8 +200,12 @@ def get_Qsize_and_var(image,
             covar_Qsize_num_denom = (np.outer(w_ri_ri_array, other_w_ri_array) \
                                      * covar_W).sum()
 
-            var_Qsize[i, j] = var_Qsize_numerator / square_Qsize_denominator \
+            covar_Qsize[i, j] = var_Qsize_numerator / square_Qsize_denominator \
                          + square_Qsize_numerator * var_Qsize_denominator / quart_Qsize_denominator \
                          - 2. * Qsize_numerator * covar_Qsize_num_denom / cube_Qsize_denominator
+                         
+    err_Qsize = np.sqrt(np.diag(covar_Qsize))
 
-    return Qsize * mv.pixel_scale, var_Qsize * np.square(mv.pixel_scale)
+    return (Qsize * mv.pixel_scale,
+            err_Qsize * mv.pixel_scale,
+            covar_Qsize * np.square(mv.pixel_scale))
