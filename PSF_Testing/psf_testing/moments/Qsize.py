@@ -26,16 +26,13 @@ import numpy as np
 from psf_testing import magic_values as mv
 from psf_testing.moments.centre_image import centre_image
 from psf_testing.moments.coords import get_coords_of_array
-from psf_testing.moments.estimate_background import get_background_noise
 
 def get_light_distribution(image,
                            prim_weight_func=mv.default_prim_weight_func,
                            xc=None,
                            yc=None,
                            x_array=None,
-                           y_array=None,
-                           background_noise=None,
-                           gain=mv.gain):
+                           y_array=None):
     
     dmax = np.max(np.shape(image)) // 2
     
@@ -45,9 +42,6 @@ def get_light_distribution(image,
         
         nx, ny = np.shape(image)
         x_array, y_array, _, _, _ = get_coords_of_array(nx=nx, ny=ny, xc=xc, yc=yc)
-        
-    if background_noise is None:
-        background_noise = get_background_noise(image)
     
     # Initialize things so we can loop through radially
 
@@ -64,10 +58,7 @@ def get_light_distribution(image,
     N_lt = []
     I_mean = np.zeros(dmax)
     I_lt_mean = np.zeros(dmax)
-    var_I_mean = np.zeros(dmax)
     W = np.zeros(dmax)
-    var_W = np.zeros(dmax)
-    covar_W = np.zeros((dmax, dmax))
     for ri in xrange(dmax):
 
         # Start by binning pixels by radial distances
@@ -91,47 +82,18 @@ def get_light_distribution(image,
                     I_lt_mean[ri] += (I_mean[rj] * N[rj]) / N_lt[ri]
 
 
-            var_I_mean[ri] = np.sum(np.abs(I[ri]) / gain + np.square(background_noise)) \
-                                / (np.square(N[ri]))
-
         # Get W for this bin
         if N_lt[ri] > 0:
             W[ri] = I_lt_mean[ri] - I_mean[ri]
 
-        # Get the covariance of this bin with itself and every smaller bin
-
-        # For the bin with itself, we want the first term to be the variance of the contained mean
-        # For this, we need a sum of a function on all lesser bins.
-        if N_lt[ri] == 0:
-            covar_W[ri, ri] = 0.
-        else:
-            covar_W[ri, ri] = np.sum(np.square(N[0:ri]) * var_I_mean[0:ri]) \
-                              / np.square(N_lt[ri]) + var_I_mean[ri]
-
-        var_W[ri] = covar_W[ri, ri]
-
-        # Now, the covariance with all smaller bins
-        for rj in xrange(ri):
-            if (N_lt[ri] == 0) or (N_lt[rj] == 0):
-                covar_W[ri, rj] = 0
-            else:
-                covar_W[ri, rj] = np.sum(np.square(N[0:rj]) * var_I_mean[0:rj]) \
-                                    / (N_lt[ri] * N_lt[rj]) - \
-                                 N[rj] * var_I_mean[rj] \
-                                    / N_lt[ri]
-
-            covar_W[rj, ri] = covar_W[ri, rj]
-
-    return N, I_mean, W, covar_W
+    return N, I_mean, W
     
 
-def get_Qsize_and_var(image,
+def get_Qsize(image,
                       prim_weight_func=mv.default_prim_weight_func,
                       sec_weight_func=mv.default_sec_weight_func,
                       xc=None,
-                      yc=None,
-                      background_noise=None,
-                      gain=mv.gain):
+                      yc=None):
 
     nx, ny = np.shape(image)
     dmax = np.max((nx, ny)) // 2
@@ -144,27 +106,21 @@ def get_Qsize_and_var(image,
         
     x_array, y_array, _, _, _ = get_coords_of_array(nx=nx, ny=ny, xc=xc, yc=yc)
 
-    if background_noise is None:
-        background_noise = get_background_noise(image)
-
     # Get a 1-d version of the weight function
     def prim_radial_weight_func(r):
         return prim_weight_func(r, np.zeros_like(r)) # Assuming it's circular
     def sec_radial_weight_func(r):
         return sec_weight_func(r, np.zeros_like(r)) # Assuming it's circular
     
-    N, _I_mean, W, covar_W = get_light_distribution(image=image,
+    N, _I_mean, W = get_light_distribution(image=image,
                                 prim_weight_func=prim_weight_func,
                                 x_array=x_array,
-                                y_array=y_array,
-                                background_noise=background_noise,
-                                gain=gain)
+                                y_array=y_array)
 
     # Put this into the calculation for Qsize
     ri_array = np.linspace(start=0., stop=dmax, num=dmax, endpoint=False)
 
     Qsize = np.zeros(2)
-    covar_Qsize = np.zeros((2, 2))
 
     for i, weight_func in zip(range(2), (prim_radial_weight_func, sec_radial_weight_func)):
 
@@ -172,40 +128,7 @@ def get_Qsize_and_var(image,
 
         weighted_W = W * w_ri_array
 
-        Qsize_numerator = (weighted_W * ri_array).sum()
-        square_Qsize_numerator = np.square(Qsize_numerator)
-
-        Qsize_denominator = weighted_W.sum()
-        square_Qsize_denominator = np.square(Qsize_denominator)
-        cube_Qsize_denominator = Qsize_denominator * square_Qsize_denominator
-        quart_Qsize_denominator = Qsize_denominator * cube_Qsize_denominator
-
         # Get Qsize from this
-        Qsize[i] = Qsize_numerator / Qsize_denominator
+        Qsize[i] = (weighted_W * ri_array).sum() / weighted_W.sum()
 
-        # Now get the variance on Qsize
-
-        w_ri_ri_array = ri_array * w_ri_array
-
-        for j, weight_func in zip(range(2), (prim_radial_weight_func, sec_radial_weight_func)):
-
-            other_w_ri_array = weight_func(ri_array)*N
-            other_w_ri_ri_array = ri_array * other_w_ri_array
-
-            var_Qsize_numerator = (np.outer(w_ri_ri_array, other_w_ri_ri_array) \
-                                     * covar_W).sum()
-            var_Qsize_denominator = (np.outer(w_ri_array, other_w_ri_array) \
-                                     * covar_W).sum()
-
-            covar_Qsize_num_denom = (np.outer(w_ri_ri_array, other_w_ri_array) \
-                                     * covar_W).sum()
-
-            covar_Qsize[i, j] = var_Qsize_numerator / square_Qsize_denominator \
-                         + square_Qsize_numerator * var_Qsize_denominator / quart_Qsize_denominator \
-                         - 2. * Qsize_numerator * covar_Qsize_num_denom / cube_Qsize_denominator
-                         
-    err_Qsize = np.sqrt(np.diag(covar_Qsize))
-
-    return (Qsize * mv.pixel_scale,
-            err_Qsize * mv.pixel_scale,
-            covar_Qsize * np.square(mv.pixel_scale))
+    return Qsize * mv.pixel_scale

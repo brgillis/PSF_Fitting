@@ -43,8 +43,9 @@ class Star(object):
             self.x_pix = None
             self.y_pix = None
 
-        # Extracted postage stamp and background noise estimate of this star
+        # Extracted postage stamp of this star
         self.stamp = None
+        
         self.background_noise = None
 
         # Data determined from testing this star
@@ -58,49 +59,25 @@ class Star(object):
         self.sec_weight_mask = None
 
         self.m0 = None
-        self.m0_err = None
-        self.m0_covar = None
-
         self.Qxy = None
-        self.Qxy_err = None
-        self.Qxy_covar = None
-
         self.Qpcs = None
-        self.Qpcs_err = None
-        self.Qpcs_covar = None
 
         self.valid = True
         self.outlier = False
 
         # Data for the model PSF corresponding to this star's position
         self.model_psf = None
-
+        
         self.model_m0 = None
-        self.model_m0_err = None
-        self.model_m0_covar = None
-
         self.model_Qxy = None
-        self.model_Qxy_err = None
-        self.model_Qxy_covar = None
-
         self.model_Qpcs = None
-        self.model_Qpcs_err = None
-        self.model_Qpcs_covar = None
 
         # Data for the corresponding noisy model PSF
         self.noisy_model_psf = None
 
         self.noisy_m0 = None
-        self.noisy_m0_err = None
-        self.noisy_m0_covar = None
-
         self.noisy_model_Qxy = None
-        self.noisy_model_Qxy_err = None
-        self.noisy_model_Qxy_covar = None
-
         self.noisy_model_Qpcs = None
-        self.noisy_model_Qpcs_err = None
-        self.noisy_model_Qpcs_covar = None
         
         return
 

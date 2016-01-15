@@ -28,18 +28,15 @@ from psf_testing import magic_values as mv
 
 from psf_testing.moments.centre_image import centre_image
 from psf_testing.moments.coords import get_coords_of_array
-from psf_testing.moments.estimate_background import get_background_noise
 from psf_testing.moments.make_weight_mask import make_weight_mask
 
-def get_moments_and_variances(image,
+def get_moments(image,
                               prim_weight_func=mv.default_prim_weight_func,
                               sec_weight_func=mv.default_sec_weight_func,
                               prim_weight_mask=None,
                               sec_weight_mask=None,
                               xc=None,
-                              yc=None,
-                              background_noise=None,
-                              gain=mv.gain):
+                              yc=None):
 
     nx, ny = np.shape(image)
 
@@ -112,60 +109,4 @@ def get_moments_and_variances(image,
                (Mx, My),
                (Mxx, Myy, Mxy, Mplus))
 
-    # Now calculate the errors
-
-    if background_noise is None:
-        background_noise = get_background_noise(image)
-
-    # Store some new arrays we'll use first
-    weight_mask = (prim_weight_mask, sec_weight_mask)
-
-    image_var = np.abs(image) / gain + np.square(background_noise)
-    x4_array = np.square(x2_array)
-    y4_array = np.square(y2_array)
-    x2y2_array = np.square(xy_array)
-    plus2_array = np.square(plus_array)
-
-    var_m0 = np.zeros((2, 2))
-    var_mx = np.zeros((2, 2))
-    var_my = np.zeros((2, 2))
-    var_mxx = np.zeros((2, 2))
-    var_myy = np.zeros((2, 2))
-    var_mxy = np.zeros((2, 2))
-    var_mplus = np.zeros((2, 2))
-    
-    square_m0 = np.zeros((2, 2))
-
-    for i in range(2):
-        for j in range(2):
-
-            weighted_image_var = image_var * weight_mask[i] * weight_mask[j]
-
-            var_m0[i, j] = weighted_image_var.sum()
-
-            var_mx[i, j] = (x2_array * weighted_image_var).sum()
-            var_my[i, j] = (y2_array * weighted_image_var).sum()
-
-            var_mxx[i, j] = (x4_array * weighted_image_var).sum()
-            var_myy[i, j] = (y4_array * weighted_image_var).sum()
-            var_mxy[i, j] = (x2y2_array * weighted_image_var).sum()
-            var_mplus[i, j] = (plus2_array * weighted_image_var).sum()
-
-            square_m0[i, j] = m0[i] * m0[j]
-
-    # And now get the variances of the normalized moments
-    quart_m0 = np.square(square_m0)
-
-    var_Mx = var_mx / square_m0 + np.square(mx) * var_m0 / quart_m0
-    var_My = var_my / square_m0 + np.square(my) * var_m0 / quart_m0
-
-    var_Mxx = var_mxx / square_m0 + np.square(mxx) * var_m0 / quart_m0
-    var_Myy = var_myy / square_m0 + np.square(myy) * var_m0 / quart_m0
-    var_Mxy = var_mxy / square_m0 + np.square(mxy) * var_m0 / quart_m0
-    var_Mplus = var_mplus / square_m0 + np.square(mplus) * var_m0 / quart_m0
-
-    variances = ((var_m0,),
-                 (var_Mx, var_My),
-                 (var_Mxx, var_Myy, var_Mxy, var_Mplus))
-
-    return moments, variances
+    return moments

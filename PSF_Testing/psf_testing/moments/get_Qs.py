@@ -25,11 +25,10 @@
 
 import numpy as np
 from psf_testing import magic_values as mv
-from psf_testing.moments.Qsize import get_Qsize_and_var
+from psf_testing.moments.Qsize import get_Qsize
 from psf_testing.moments.centre_image import centre_image
 from psf_testing.moments.coords import get_x_and_y_of_array
-from psf_testing.moments.estimate_background import get_background_noise
-from psf_testing.moments.get_moments import get_moments_and_variances
+from psf_testing.moments.get_moments import get_moments
 from psf_testing.moments.make_weight_mask import make_weight_mask
 
 
@@ -37,12 +36,7 @@ def get_m0_and_Qs(image,
                   prim_weight_func=mv.default_prim_weight_func,
                   sec_weight_func=mv.default_sec_weight_func,
                   xc=None,
-                  yc=None,
-                  background_noise=None,
-                  gain=mv.gain):
-
-    if background_noise is None:
-        background_noise = get_background_noise(image)
+                  yc=None):
         
     nx, ny = np.shape(image)
 
@@ -66,61 +60,37 @@ def get_m0_and_Qs(image,
                                    y_array=y_array)
 
     # Get the moments and variances
-    moments_and_variances = get_moments_and_variances(image=image,
+    ((m0,), (Mx, My), (_Mxx, _Myy, Mxy, Mplus)) = get_moments(image=image,
                                                       prim_weight_func=prim_weight_func,
                                                       prim_weight_mask=prim_weight_mask,
                                                       sec_weight_func=sec_weight_func,
                                                       sec_weight_mask=sec_weight_mask,
                                                       xc=xc,
-                                                      yc=yc,
-                                                      background_noise=background_noise,
-                                                      gain=gain)
-
-    ((m0,), (Mx, My), (_Mxx, _Myy, Mxy, Mplus)) = \
-        moments_and_variances[0]
-    ((covar_m0,), (covar_Mx, covar_My),
-     (_covar_Mxx, _covar_Myy, covar_Mxy, covar_Mplus)) = moments_and_variances[1]
+                                                      yc=yc)
 
     # Get the Q values from the moments, plus errors from the variances
 
     scale = mv.pixel_scale
     square_scale = np.square(scale)
-    quart_scale = np.square(square_scale)
-    
-    err_m0 = np.sqrt(np.diag(covar_m0))
 
     Qx = Mx * scale
-    covar_Qx = covar_Mx * square_scale
-    err_Qx = np.sqrt(np.diag(covar_Qx))
 
     Qy = My * scale
-    covar_Qy = covar_My * square_scale
-    err_Qy = np.sqrt(np.diag(covar_Qy))
 
     Qplus = Mplus * square_scale
-    covar_Qplus = covar_Mplus * quart_scale
-    err_Qplus = np.sqrt(np.diag(covar_Qplus))
 
     Qcross = 2. * Mxy * square_scale
-    covar_Qcross = 4. * covar_Mxy * quart_scale
-    err_Qcross = np.sqrt(np.diag(covar_Qcross))
 
     # Get Qsize and its error now
-    Qsize, err_Qsize, covar_Qsize = get_Qsize_and_var(image=image,
-                                         prim_weight_func=prim_weight_func,
-                                         sec_weight_func=sec_weight_func,
-                                         xc=xc,
-                                         yc=yc,
-                                         background_noise=background_noise,
-                                         gain=gain)
+    Qsize = get_Qsize(image=image,
+                      prim_weight_func=prim_weight_func,
+                      sec_weight_func=sec_weight_func,
+                      xc=xc,
+                      yc=yc)
 
     # Put the Q values into numpy arrays
     Qxy = np.array([Qx, Qy])
-    err_Qxy = np.array([err_Qx, err_Qy])
-    covar_Qxy = np.array([covar_Qx, covar_Qy])
     
     Qpcs = np.array([Qplus, Qcross, Qsize])
-    err_Qpcs = np.array([err_Qplus, err_Qcross, err_Qsize])
-    covar_Qpcs = np.array([covar_Qplus, covar_Qcross, covar_Qsize])
 
-    return m0, err_m0, covar_m0, Qxy, err_Qxy, covar_Qxy, Qpcs, err_Qpcs, covar_Qpcs
+    return m0, Qxy, Qpcs
