@@ -27,7 +27,7 @@
 
 import click
 import numpy as np
-import PSF_fit_plotting.magic_values as mv
+import PSF_tests_plotting.magic_values as mv
 
 @click.command()
 @click.option("--input-folder", "input_folder", default=".",

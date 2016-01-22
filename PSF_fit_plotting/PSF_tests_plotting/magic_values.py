@@ -1,4 +1,4 @@
-""" @file python.PSF_fit_plotting.magic_values
+""" @file python.PSF_tests_plotting.magic_values
 
     Created 17 Jul 2015
 
