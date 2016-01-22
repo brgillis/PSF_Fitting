@@ -28,7 +28,11 @@ from psf_testing.get_model_psf import get_model_psf_for_star
 from psf_testing.moments.get_Qs import get_m0_and_Qs
 from psf_testing.psf_model_scheme import psf_model_scheme
 from psf_testing.remove_outliers import remove_outliers
+from psf_testing.smart_logging import get_default_logger
 from psf_testing.parmap import parmap
+
+# Magic value toggles
+ignore_size = False
 
 def get_num_valid_stars(stars):
     
@@ -237,10 +241,10 @@ def test_psf_for_focus(stars,
 
     # Set up multi-dimensional versions of the mask
     m0_omask = np.vstack((omask, omask)).transpose()
-    Qxy_omask = np.vstack(np.vstack((omask, omask)).transpose(),
-                          np.vstack((omask, omask)).transpose())
-    Qpcs_omask = np.vstack(np.vstack((omask, omask, omask)).transpose(),
-                           np.vstack((omask, omask, omask)).transpose())
+    Qxy_omask = np.dstack((np.vstack((omask, omask)).transpose(),
+                          np.vstack((omask, omask)).transpose()))
+    Qpcs_omask = np.dstack((np.vstack((omask, omask, omask)).transpose(),
+                           np.vstack((omask, omask, omask)).transpose()))
     
     star_props["masked_m0_diff"] = np.ma.masked_array(star_props["m0_diff"], mask=m0_omask)
     star_props["masked_Qxy_diff"] = np.ma.masked_array(star_props["Qxy_diff"], mask=Qxy_omask)
@@ -278,12 +282,28 @@ def test_psf_for_focus(stars,
         temp_array = star_props["unmasked_" + prop]/star_props[prop + "_err"]
         star_props[prop + "_sums"] = temp_array[:,1] + temp_array[:,0]
         star_props[prop + "_diffs"] = temp_array[:,1] - temp_array[:,0]
+        for comb in ("_sums","_diffs"):
+            star_props[prop + comb + "_err"] = np.std(star_props[prop+comb],axis=0)*corr_factor
     
-    for prop in ("Qxy_diff","noisy_Qxy_diff",
-                 "Qpcs_diff","noisy_Qpcs_diff"):
+    for prop in ("Qxy_diff","noisy_Qxy_diff"):
+        temp_array = star_props["unmasked_" + prop]/star_props[prop + "_err"]
+        star_props[prop + "_sums"] = temp_array[:,:,1]
+        star_props[prop + "_diffs"] = temp_array[:,:,1]
+        for comb in ("_sums","_diffs"):
+            star_props[prop + comb + "_err"] = np.std(star_props[prop+comb],axis=0)*corr_factor
+            
+    logger = get_default_logger()
+    
+    for prop in ("Qpcs_diff","noisy_Qpcs_diff"):
         temp_array = star_props["unmasked_" + prop]/star_props[prop + "_err"]
         star_props[prop + "_sums"] = temp_array[:,:,1] + temp_array[:,:,0]
         star_props[prop + "_diffs"] = temp_array[:,:,1] - temp_array[:,:,0]
+        for comb in ("_sums","_diffs"):
+            star_props[prop + comb + "_err"] = np.std(star_props[prop+comb],axis=0)*corr_factor
+        test_vars = np.square(star_props[prop + "_sums_err"]) + \
+                    np.square(star_props[prop + "_diffs_err"])
+        logger.debug("Test variance sums for " + prop + " (should be 4.0): " + 
+                     str(test_vars[0]) + ",\t" + str(test_vars[1]) + ",\t" + str(test_vars[2]) + ".")
     
     for prop in ("m0_diff","noisy_m0_diff",
                  "Qxy_diff","noisy_Qxy_diff",
@@ -293,15 +313,20 @@ def test_psf_for_focus(stars,
             star_props[prop + comb + "_err"] = np.std(star_props[prop + comb + "s"],axis=0)*corr_factor
             star_props[prop + comb + "_Zs"] = (star_props[prop + comb + "s"]/
                                                star_props[prop + comb + "s_err"])
-            star_props[prop + comb + "_Z2s"] = np.sum(np.square(star_props[prop + comb + "_Zs"],axis=0))
+            star_props[prop + comb + "_Z2s"] = np.sum(np.square(star_props[prop + comb + "_Zs"]),axis=0)
   
     chi2 = np.sum(star_props["Qxy_diff_diff_Z2s"]) + \
         np.sum(star_props["Qpcs_diff_diff_Z2s"][0:2]) + \
-        np.sum(star_props["Qpcs_diff_sum_Z2s"][0:2]) + \
-        np.sum(star_props["noisy_Qpcs_diff_diff_Z2s"][2]) + \
-        np.sum(star_props["noisy_Qpcs_diff_sum_Z2s"][2])
+        np.sum(star_props["Qpcs_diff_sum_Z2s"][0:2])
+        
+    if not ignore_size:
+        chi2 += np.sum(star_props["noisy_Qpcs_diff_diff_Z2s"][2]) + \
+                np.sum(star_props["noisy_Qpcs_diff_sum_Z2s"][2])
 
-    dof = 8 * num_good_stars - fitted_params
+    if ignore_size:
+        dof = 7 * num_good_stars - fitted_params
+    else:
+        dof = 8 * num_good_stars - fitted_params
     
     test_results = (test_focus,
             (chi2, dof),
@@ -321,26 +346,28 @@ def test_psf_for_focus(stars,
                                                     star_props["noisy_Qpcs_diff_sum_mean"][0],
                                                     star_props["noisy_Qpcs_diff_sum_mean"][1],
                                                     star_props["noisy_Qpcs_diff_sum_mean"][2]))),
-            ((star_props["m0_diff_diff_Z2"], (star_props["Qxy_diff_diff_Z2"][0],
-                                                star_props["Qxy_diff_diff_Z2"][1],
-                                                star_props["Qpcs_diff_diff_Z2"][0],
-                                                star_props["Qpcs_diff_diff_Z2"][1],
-                                                star_props["Qpcs_diff_diff_Z2"][2],
-                                                star_props["Qpcs_diff_sum_Z2"][0],
-                                                star_props["Qpcs_diff_sum_Z2"][1],
-                                                star_props["Qpcs_diff_sum_Z2"][2])),
-             (star_props["noisy_m0_diff_diff_Z2"], (star_props["noisy_Qxy_diff_diff_Z2"][0],
-                                                    star_props["noisy_Qxy_diff_diff_Z2"][1],
-                                                    star_props["noisy_Qpcs_diff_diff_Z2"][0],
-                                                    star_props["noisy_Qpcs_diff_diff_Z2"][1],
-                                                    star_props["noisy_Qpcs_diff_diff_Z2"][2],
-                                                    star_props["noisy_Qpcs_diff_sum_Z2"][0],
-                                                    star_props["noisy_Qpcs_diff_sum_Z2"][1],
-                                                    star_props["noisy_Qpcs_diff_sum_Z2"][2]))),
+            ((star_props["m0_diff_diff_Z2s"], (star_props["Qxy_diff_diff_Z2s"][0],
+                                                star_props["Qxy_diff_diff_Z2s"][1],
+                                                star_props["Qpcs_diff_diff_Z2s"][0],
+                                                star_props["Qpcs_diff_diff_Z2s"][1],
+                                                star_props["Qpcs_diff_diff_Z2s"][2],
+                                                star_props["Qpcs_diff_sum_Z2s"][0],
+                                                star_props["Qpcs_diff_sum_Z2s"][1],
+                                                star_props["Qpcs_diff_sum_Z2s"][2])),
+             (star_props["noisy_m0_diff_diff_Z2s"], (star_props["noisy_Qxy_diff_diff_Z2s"][0],
+                                                    star_props["noisy_Qxy_diff_diff_Z2s"][1],
+                                                    star_props["noisy_Qpcs_diff_diff_Z2s"][0],
+                                                    star_props["noisy_Qpcs_diff_diff_Z2s"][1],
+                                                    star_props["noisy_Qpcs_diff_diff_Z2s"][2],
+                                                    star_props["noisy_Qpcs_diff_sum_Z2s"][0],
+                                                    star_props["noisy_Qpcs_diff_sum_Z2s"][1],
+                                                    star_props["noisy_Qpcs_diff_sum_Z2s"][2]))),
             (star_props["m0"], star_props["Qxy"], star_props["Qpcs"]),
             (model_m0s, model_Qxys, model_Qpcss),
             (noisy_model_m0s, noisy_model_Qxys, noisy_model_Qpcss),
-            (star_props["m0_diff_err"], star_props["Qxy_diff_err"], star_props["Qpcs_diff_err"]),
+            (np.broadcast_arrays(star_props["m0_diff_err"],star_props["m0"])[0],
+             np.broadcast_arrays(star_props["Qxy_diff_err"],star_props["Qxy"])[0],
+             np.broadcast_arrays(star_props["Qpcs_diff_err"],star_props["Qpcs"])[0]),
             (omask, Qxy_omask, Qpcs_omask),
             (star_props["m0_diff_diff_Zs"],
              star_props["Qxy_diff_diff_Zs"],

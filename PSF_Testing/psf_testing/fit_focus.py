@@ -29,7 +29,7 @@ from psf_testing.memoize import memoize
 
 
 def get_chi2_of_test_results(test_results):
-    return test_results[1][0][1]
+    return test_results[1][0]
 
 def fit_best_focus_and_test_psf(stars,
 

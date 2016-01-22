@@ -33,15 +33,12 @@ def save_fitting_record(fitting_record,
                         filename_root):
     focii = []
     chi_squareds = []
-    emp_chi_squareds = []
     
     m0_diffs = []
     m0_Zs = []
-    m0_emp_Zs = []
 
     m0_noisy_diffs = []
     m0_noisy_Zs = []
-    m0_noisy_emp_Zs = []
     
     Qs = {}
 
@@ -55,54 +52,43 @@ def save_fitting_record(fitting_record,
         
     for test_results in fitting_record:
         focii.append(test_results[0])
-        chi_squareds.append(test_results[1][0][0])
-        emp_chi_squareds.append(test_results[1][0][1])
+        chi_squareds.append(test_results[1][0])
     
         m0_diffs.append(test_results[2][0][0])
         m0_Zs.append(test_results[3][0][0])
-        m0_emp_Zs.append(test_results[4][0][0])
     
         m0_noisy_diffs.append(test_results[2][1][0])
         m0_noisy_Zs.append(test_results[3][1][0])
-        m0_noisy_emp_Zs.append(test_results[4][1][0])
     
         for Q_label, j in zip(("QXD", "QYD", "QPS", "QCS", "QSS", "QPD", "QCD", "QSD"), range(8)):
             Qs[Q_label + "_DIF"].append(test_results[2][0][1][j])
             Qs[Q_label + "_Z2"].append(test_results[3][0][1][j])
-            Qs[Q_label + "_EZ2"].append(test_results[4][0][1][j])
             Qs[Q_label + "NDIFF"].append(test_results[2][1][1][j])
             Qs[Q_label + "NZ2"].append(test_results[3][1][1][j])
-            Qs[Q_label + "NEZ2"].append(test_results[4][1][1][j])
     
     columns = [fits.Column(name="focus", format='E', array=focii),
                fits.Column(name="chi_squared", format='E', array=chi_squareds),
-               fits.Column(name="emp_chi_squared", format='E', array=emp_chi_squareds),
                fits.Column(name="m0_diff", format='E', array=m0_diffs),
-               fits.Column(name="m0_Z2", format='E', array=m0_Zs),
-               fits.Column(name="m0_emp_Z2", format='E', array=m0_emp_Zs)]
+               fits.Column(name="m0_Z2", format='E', array=m0_Zs)]
     
     for Q_label, colname in zip(("QXD", "QYD", "QPS", "QCS", "QSS", "QPD", "QCD", "QSD"), 
                                 ("Qx_diff", "Qy_diff", "Qplus_sum", "Qcross_sum", "Qsize_sum",
                                  "Qplus_diff", "Qcross_diff", "Qsize_diff")):
         columns.append(fits.Column(name=colname + "_diff", format='E', array=Qs[Q_label + "_DIF"]))
         columns.append(fits.Column(name=colname + "_Z2", format='E', array=Qs[Q_label + "_Z2"]))
-        columns.append(fits.Column(name=colname + "_emp_Z2", format='E', array=Qs[Q_label + "_EZ2"]))
         
     columns += [fits.Column(name="m0_noisy_diff", format='E', array=m0_noisy_diffs),
-                fits.Column(name="m0_noisy_Z2", format='E', array=m0_noisy_Zs),
-                fits.Column(name="m0_noisy_emp_Z2", format='E', array=m0_noisy_emp_Zs)]
+                fits.Column(name="m0_noisy_Z2", format='E', array=m0_noisy_Zs)]
     
     for Q_label, colname in zip(("QXD", "QYD", "QPS", "QCS", "QSS", "QPD", "QCD", "QSD"), 
                                 ("Qx_diff", "Qy_diff", "Qplus_sum", "Qcross_sum", "Qsize_sum",
                                  "Qplus_diff", "Qcross_diff", "Qsize_diff")):
         columns.append(fits.Column(name=colname + "_noisy_diff", format='E', array=Qs[Q_label + "NDIFF"]))
         columns.append(fits.Column(name=colname + "_noisy_Z2", format='E', array=Qs[Q_label + "NZ2"]))
-        columns.append(fits.Column(name=colname + "_noisy_emp_Z2", format='E', array=Qs[Q_label + "NEZ2"]))
 
     tbhdu = fits.BinTableHDU.from_columns(columns)
     
-    tbhdu.header["DOF"] = test_results[1][1][0]
-    tbhdu.header["EDOF"] = test_results[1][1][1]
+    tbhdu.header["DOF"] = test_results[1][1]
 
     fitting_record_filename = filename_root + "_fitting_record" + mv.table_extension
 
@@ -117,11 +103,13 @@ def report_results(test_results,
     # Set up the columns first
     columns = []
         
-    Q_err_index = 8
+    Q_err_index = 7
 
     for weight_label, k in zip(("core_", "wings_"), (0,1)):
 
-        for label, i, err_i in zip(("star_", "model_", "noisy_model_"), (5, 6, 7), (Q_err_index, None, Q_err_index)):
+        for label, i, err_i in zip(("star_", "model_", "noisy_model_"),
+                                   (4, 5, 6),
+                                   (Q_err_index, None, Q_err_index)):
     
             if err_i is None:
                 get_errs = np.zeros_like
@@ -134,25 +122,25 @@ def report_results(test_results,
             columns.append(fits.Column(name=weight_label + label + "m0" + "_err", format='E',
                                        array=get_errs(test_results[err_i][0][:,k])))
     
-            for Q_label, j in zip(("Qx_diff", "Qy_diff"), range(2)):
+            for Q_label, j in zip(("Qx", "Qy"), range(2)):
     
                 columns.append(fits.Column(name=weight_label + label + Q_label, format='E',
                                            array=test_results[i][1][:,j,k]))
                 columns.append(fits.Column(name=weight_label + label + Q_label + "_err", format='E',
                                            array=get_errs(test_results[err_i][1][:,j,k])))
     
-            for Q_label, j in zip(("Qplus_diff", "Qcross_diff", "Qsize_diff"), range(3)):
+            for Q_label, j in zip(("Qplus", "Qcross", "Qsize"), range(3)):
     
                 columns.append(fits.Column(name=weight_label + label + Q_label, format='E',
                                            array=test_results[i][2][:,j,k]))
                 columns.append(fits.Column(name=weight_label + label + Q_label + "_err", format='E',
                                            array=get_errs(test_results[err_i][2][:,j,k])))
         
-    columns.append(fits.Column(name="star_x_pix", format='E', array=test_results[11][0]))
-    columns.append(fits.Column(name="star_y_pix", format='E', array=test_results[11][1]))
+    columns.append(fits.Column(name="star_x_pix", format='E', array=test_results[10][0]))
+    columns.append(fits.Column(name="star_y_pix", format='E', array=test_results[10][1]))
 
     columns.append(fits.Column(name="is_not_outlier", format='L',
-                               array=np.logical_not(test_results[9][0])))
+                               array=np.logical_not(test_results[8][0])))
 
     tbhdu = fits.BinTableHDU.from_columns(columns)
 
@@ -161,28 +149,22 @@ def report_results(test_results,
     tbhdu.header["CCDCHIP"] = chip
     tbhdu.header["OBS_TIME"] = obs_time
     tbhdu.header["FOCUS"] = test_results[0]
-    tbhdu.header["CHI_SQR"] = test_results[1][0][0]
-    tbhdu.header["ECHI_SQR"] = test_results[1][0][1]
-    tbhdu.header["DOF"] = test_results[1][1][0]
-    tbhdu.header["EDOF"] = test_results[1][1][1]
+    tbhdu.header["CHI_SQR"] = test_results[1][0]
+    tbhdu.header["DOF"] = test_results[1][1]
 
     tbhdu.header["M0D_DIF"] = test_results[2][0][0]
     tbhdu.header["M0D_Z2"] = test_results[3][0][0]
-    tbhdu.header["M0D_EZ2"] = test_results[4][0][0]
 
     for Q_label, j in zip(("QXD", "QYD", "QPS", "QCS", "QSS", "QPD", "QCD", "QSD"), range(8)):
         tbhdu.header[Q_label + "_DIF"] = test_results[2][0][1][j]
         tbhdu.header[Q_label + "_Z2"] = test_results[3][0][1][j]
-        tbhdu.header[Q_label + "_EZ2"] = test_results[4][0][1][j]
 
     tbhdu.header["M0DNDIF"] = test_results[2][1][0]
     tbhdu.header["M0DNZ2"] = test_results[3][1][0]
-    tbhdu.header["M0DNEZ2"] = test_results[4][1][0]
 
     for Q_label, j in zip(("QXD", "QYD", "QPS", "QCS", "QSS", "QPD", "QCD", "QSD"), range(8)):
         tbhdu.header[Q_label + "NDIF"] = test_results[2][1][1][j]
         tbhdu.header[Q_label + "NZ2"] = test_results[3][1][1][j]
-        tbhdu.header[Q_label + "NEZ2"] = test_results[4][1][1][j]
 
 
     results_filename = filename_root + mv.results_tail
@@ -194,8 +176,6 @@ def report_results(test_results,
     logger.info("Chi-squared for focus " + str(tbhdu.header["FOCUS"]) +
           " = " + str(tbhdu.header["CHI_SQR"]) + ", for " + str(tbhdu.header["DOF"]) +
           " degrees of freedom.")
-    logger.info("Empirical Chi-squared of " + str(tbhdu.header["ECHI_SQR"]) + ", for "
-          + str(tbhdu.header["EDOF"]) + " degrees of freedom.")
     
     if fitting_record is not None:
         save_fitting_record(fitting_record,filename_root)

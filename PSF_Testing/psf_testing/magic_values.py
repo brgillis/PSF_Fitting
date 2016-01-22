@@ -99,6 +99,7 @@ default_focus_precision = 0.1
 default_num_grid_points = (8, 4) # (x,y) in fits ordering, (y,x) in C ordering
 
 default_image_shape = (4096, 2048) # (x,y) in fits ordering, (y,x) in C ordering
+default_logging_level = "info"
 
 # Default weight function for measuring star/model moments
 default_weight_sigma = 3.0 # Pixels

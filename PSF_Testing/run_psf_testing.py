@@ -96,6 +96,9 @@ def main(argv):
     parser.add_argument("--update", action="store_true",
                         help="Force update of Sextractor catalogues and TinyTim PSFs.")
     
+    parser.add_argument("--logging_level", type=str, default=mv.default_logging_level,
+                        help="Level of logging info to display. Default 'info'.")
+    
     # Execute command-line parsing
     args = parser.parse_args()
     
@@ -105,6 +108,7 @@ def main(argv):
         test_single_focus = False
         
     logger = get_default_logger()
+    logger.setLevel(args.logging_level.upper())
     
     # Pass the cline-args to the test_psf function, which carries out the testing
     

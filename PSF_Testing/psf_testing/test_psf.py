@@ -123,16 +123,12 @@ def test_psf(image_filename,
             star.valid = False
             continue
 
-        (star.m0, star.m0_err, star.m0_covar,
-         star.Qxy, star.Qx_err, star.Qxy_covar,
-         star.Qpcs, star.Qpcs_err, star.Qpcs_covar) = \
+        (star.m0, star.Qxy, star.Qpcs) = \
             get_m0_and_Qs(image=star.stamp,
                           prim_weight_func=prim_weight_func,
                           sec_weight_func=sec_weight_func,
                           xc=star.xc,
-                          yc=star.yc,
-                          background_noise=star.background_noise,
-                          gain=gain)
+                          yc=star.yc)
 
         star.chip = chip
 

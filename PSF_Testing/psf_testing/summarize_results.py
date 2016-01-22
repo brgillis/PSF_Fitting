@@ -34,18 +34,14 @@ def make_results_summary(results_filenames,
     obs_times = []
     focii = []
     chi_squareds = []
-    emp_chi_squareds = []
     
     dofs = []
-    edofs = []
     
     m0_diff_diffs = []
     m0_Zs = []
-    m0_emp_Zs = []
 
     m0_noisy_diff_diffs = []
     m0_noisy_Zs = []
-    m0_noisy_emp_Zs = []
     
     Qs = {}
     
@@ -54,10 +50,8 @@ def make_results_summary(results_filenames,
     for Q_label in ("QXD", "QYD", "QPS", "QCS", "QSS", "QPD", "QCD", "QSD"):
         Qs[Q_label + "_DIF"] = []
         Qs[Q_label + "_Z2"] = []
-        Qs[Q_label + "_EZ2"] = []
         Qs[Q_label + "NDIF"] = []
         Qs[Q_label + "NZ2"] = []
-        Qs[Q_label + "NEZ2"] = []
     
     for results_filename in results_filenames:
         try:
@@ -77,26 +71,20 @@ def make_results_summary(results_filenames,
         focii.append(header["FOCUS"])
         
         chi_squareds.append(header["CHI_SQR"])
-        emp_chi_squareds.append(header["ECHI_SQR"])
         
         dofs.append(header["DOF"])
-        edofs.append(header["EDOF"])
         
         m0_diff_diffs.append(header["M0D_DIF"])
         m0_Zs.append(header["M0D_Z2"])
-        m0_emp_Zs.append(header["M0D_EZ2"])
     
         m0_noisy_diff_diffs.append(header["M0DNDIF"])
         m0_noisy_Zs.append(header["M0DNZ2"])
-        m0_noisy_emp_Zs.append(header["M0DNEZ2"])
     
         for Q_label in ("QXD", "QYD", "QPS", "QCS", "QSS", "QPD", "QCD", "QSD"):
             Qs[Q_label + "_DIF"].append(header[Q_label + "_DIF"])
             Qs[Q_label + "_Z2"].append(header[Q_label + "_Z2"])
-            Qs[Q_label + "_EZ2"].append(header[Q_label + "_EZ2"])
             Qs[Q_label + "NDIF"].append(header[Q_label + "NDIF"])
             Qs[Q_label + "NZ2"].append(header[Q_label + "NZ2"])
-            Qs[Q_label + "NEZ2"].append(header[Q_label + "NEZ2"])
     
     columns = [fits.Column(name="filename", format='30A', array=image_filenames),
                fits.Column(name="chip", format='B', array=chips),
@@ -104,11 +92,8 @@ def make_results_summary(results_filenames,
                fits.Column(name="focus", format='E', array=focii),
                fits.Column(name="chi_squared", format='E', array=chi_squareds),
                fits.Column(name="dofs", format='E', array=dofs),
-               fits.Column(name="emp_chi_squared", format='E', array=emp_chi_squareds),
-               fits.Column(name="emp_dofs", format='E', array=edofs),
                fits.Column(name="m0_diff_diff", format='E', array=m0_diff_diffs),
-               fits.Column(name="m0_Z2", format='E', array=m0_Zs),
-               fits.Column(name="m0_emp_Z2", format='E', array=m0_emp_Zs)]
+               fits.Column(name="m0_Z2", format='E', array=m0_Zs)]
     
     for Q_label, colname in zip(("QXD", "QYD", "QPS", "QCS", "QSS", "QPD", "QCD", "QSD"), 
                                 ("Qx_diff", "Qy_diff",
@@ -116,11 +101,9 @@ def make_results_summary(results_filenames,
                                  "Qplus_diff", "Qcross_diff", "Qsize_diff")):
         columns.append(fits.Column(name=colname + "_diff", format='E', array=Qs[Q_label + "_DIF"]))
         columns.append(fits.Column(name=colname + "_Z2", format='E', array=Qs[Q_label + "_Z2"]))
-        columns.append(fits.Column(name=colname + "_emp_Z2", format='E', array=Qs[Q_label + "_EZ2"]))
         
     columns += [fits.Column(name="m0_noisy_diff_diff", format='E', array=m0_noisy_diff_diffs),
-                fits.Column(name="m0_noisy_Z2", format='E', array=m0_noisy_Zs),
-                fits.Column(name="m0_noisy_emp_Z2", format='E', array=m0_noisy_emp_Zs)]
+                fits.Column(name="m0_noisy_Z2", format='E', array=m0_noisy_Zs)]
     
     for Q_label, colname in zip(("QXD", "QYD", "QPS", "QCS", "QSS", "QPD", "QCD", "QSD"), 
                                 ("Qx_diff", "Qy_diff",
@@ -128,7 +111,6 @@ def make_results_summary(results_filenames,
                                  "Qplus_diff", "Qcross_diff", "Qsize_diff")):
         columns.append(fits.Column(name=colname + "_noisy_diff", format='E', array=Qs[Q_label + "NDIF"]))
         columns.append(fits.Column(name=colname + "_noisy_Z2", format='E', array=Qs[Q_label + "NZ2"]))
-        columns.append(fits.Column(name=colname + "_noisy_emp_Z2", format='E', array=Qs[Q_label + "NEZ2"]))
 
     tbhdu = fits.BinTableHDU.from_columns(columns)
 

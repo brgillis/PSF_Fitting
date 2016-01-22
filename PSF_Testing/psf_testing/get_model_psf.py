@@ -123,7 +123,25 @@ def make_subsampled_psf_model(filename,
         pass
 
     # Open the subsampled model image
-    subsampled_image = fits.open(filename_base + mv.subsampled_model_tail)
+    try:
+        subsampled_image = fits.open(filename_base + mv.subsampled_model_tail)
+    except IOError as _e:
+        # This normally shouldn't happen, but might if two threads somehoe end up using
+        # the same lock. Best case is to wait and see if the other thread handles this
+        # for us
+        time_start = time.time()
+        while ((not os.path.isfile(filename_base + mv.subsampled_model_tail))
+            and (time.time() - time_start < 120)):
+            time.sleep(1)
+        
+        # Give the file a chance to be fully written
+        time.sleep(1)
+        
+        if not os.path.isfile(filename_base + mv.subsampled_model_tail):
+            raise
+        else:
+            subsampled_image = fits.open(filename_base + mv.subsampled_model_tail)
+            
 
     # Define a modified weight function to work on subsampled pixels
     def ss_weight_func(x, y):

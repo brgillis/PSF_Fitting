@@ -41,12 +41,10 @@ def get_logger(name=None):
 
 def get_default_logger(name=None):
     logger = getLogger(name)
-    logger.setLevel(log.INFO)
     
     if len(logger.handlers)==0:
     
         handler = log.StreamHandler()
-        handler.setLevel(log.INFO)
     
         formatter = log.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         
