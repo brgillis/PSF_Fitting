@@ -324,7 +324,7 @@ def test_psf_for_focus(stars,
                 np.sum(star_props["noisy_Qpcs_diff_sum_Z2s"][2])
 
     if ignore_size:
-        dof = 7 * num_good_stars - fitted_params
+        dof = 6 * num_good_stars - fitted_params
     else:
         dof = 8 * num_good_stars - fitted_params
     
