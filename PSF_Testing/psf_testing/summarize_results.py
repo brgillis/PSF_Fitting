@@ -33,9 +33,12 @@ def make_results_summary(results_filenames,
     chips = []
     obs_times = []
     focii = []
+    
+    X_squareds = []
     chi_squareds = []
     
-    dofs = []
+    X2_dofs = []
+    chi2_dofs = []
     
     m0_diff_diffs = []
     m0_Zs = []
@@ -70,9 +73,11 @@ def make_results_summary(results_filenames,
 
         focii.append(header["FOCUS"])
         
+        X_squareds.append(header["X_SQR"])
         chi_squareds.append(header["CHI_SQR"])
         
-        dofs.append(header["DOF"])
+        X2_dofs.append(header["XDOF"])
+        chi2_dofs.append(header["CDOF"])
         
         m0_diff_diffs.append(header["M0D_DIF"])
         m0_Zs.append(header["M0D_Z2"])
@@ -90,8 +95,10 @@ def make_results_summary(results_filenames,
                fits.Column(name="chip", format='B', array=chips),
                fits.Column(name="obs_time", format='E', array=obs_times),
                fits.Column(name="focus", format='E', array=focii),
+               fits.Column(name="X_squared", format='E', array=X_squareds),
                fits.Column(name="chi_squared", format='E', array=chi_squareds),
-               fits.Column(name="dofs", format='E', array=dofs),
+               fits.Column(name="X2_dofs", format='E', array=X2_dofs),
+               fits.Column(name="chi2_dofs", format='E', array=chi2_dofs),
                fits.Column(name="m0_diff_diff", format='E', array=m0_diff_diffs),
                fits.Column(name="m0_Z2", format='E', array=m0_Zs)]
     

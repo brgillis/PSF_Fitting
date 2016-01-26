@@ -32,6 +32,7 @@ from psf_testing.smart_logging import get_default_logger
 def save_fitting_record(fitting_record,
                         filename_root):
     focii = []
+    X_squareds = []
     chi_squareds = []
     
     m0_diffs = []
@@ -52,7 +53,8 @@ def save_fitting_record(fitting_record,
         
     for test_results in fitting_record:
         focii.append(test_results[0])
-        chi_squareds.append(test_results[1][0])
+        X_squareds.append(test_results[1][0])
+        chi_squareds.append(test_results[1][2])
     
         m0_diffs.append(test_results[2][0][0])
         m0_Zs.append(test_results[3][0][0])
@@ -67,6 +69,7 @@ def save_fitting_record(fitting_record,
             Qs[Q_label + "NZ2"].append(test_results[3][1][1][j])
     
     columns = [fits.Column(name="focus", format='E', array=focii),
+               fits.Column(name="X_squared", format='E', array=X_squareds),
                fits.Column(name="chi_squared", format='E', array=chi_squareds),
                fits.Column(name="m0_diff", format='E', array=m0_diffs),
                fits.Column(name="m0_Z2", format='E', array=m0_Zs)]
@@ -88,7 +91,8 @@ def save_fitting_record(fitting_record,
 
     tbhdu = fits.BinTableHDU.from_columns(columns)
     
-    tbhdu.header["DOF"] = test_results[1][1]
+    tbhdu.header["XDOF"] = test_results[1][1]
+    tbhdu.header["CDOF"] = test_results[1][3]
 
     fitting_record_filename = filename_root + "_fitting_record" + mv.table_extension
 
@@ -149,8 +153,10 @@ def report_results(test_results,
     tbhdu.header["CCDCHIP"] = chip
     tbhdu.header["OBS_TIME"] = obs_time
     tbhdu.header["FOCUS"] = test_results[0]
-    tbhdu.header["CHI_SQR"] = test_results[1][0]
-    tbhdu.header["DOF"] = test_results[1][1]
+    tbhdu.header["X_SQR"] = test_results[1][0]
+    tbhdu.header["XDOF"] = test_results[1][1]
+    tbhdu.header["CHI_SQR"] = test_results[1][2]
+    tbhdu.header["CDOF"] = test_results[1][3]
 
     tbhdu.header["M0D_DIF"] = test_results[2][0][0]
     tbhdu.header["M0D_Z2"] = test_results[3][0][0]
@@ -173,8 +179,11 @@ def report_results(test_results,
     
     # Print summary
     logger = get_default_logger()
-    logger.info("Chi-squared for focus " + str(tbhdu.header["FOCUS"]) +
-          " = " + str(tbhdu.header["CHI_SQR"]) + ", for " + str(tbhdu.header["DOF"]) +
+    logger.info("X^2 for focus " + str(tbhdu.header["FOCUS"]) +
+          " = " + str(tbhdu.header["X_SQR"]) + ", for " + str(tbhdu.header["XDOF"]) +
+          " degrees of freedom.")
+    logger.info("chi^2 for focus " + str(tbhdu.header["FOCUS"]) +
+          " = " + str(tbhdu.header["CHI_SQR"]) + ", for " + str(tbhdu.header["CDOF"]) +
           " degrees of freedom.")
     
     if fitting_record is not None:

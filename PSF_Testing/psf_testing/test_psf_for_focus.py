@@ -315,21 +315,28 @@ def test_psf_for_focus(stars,
                                                star_props[prop + comb + "s_err"])
             star_props[prop + comb + "_Z2s"] = np.sum(np.square(star_props[prop + comb + "_Zs"]),axis=0)
   
-    chi2 = np.sum(star_props["Qxy_diff_diff_Z2s"]) + \
+    X2 = np.sum(star_props["Qxy_diff_diff_Z2s"]) + \
         np.sum(star_props["Qpcs_diff_diff_Z2s"][0:2]) + \
         np.sum(star_props["Qpcs_diff_sum_Z2s"][0:2])
+    chi2 = np.sum(np.square(star_props["Qxy_diff_diff_mean"]/star_props["Qxy_diff_diff_err"])) + \
+           np.sum(np.square(star_props["Qpcs_diff_diff_mean"][0:2]/star_props["Qpcs_diff_diff_err"][0:2])) + \
+           np.sum(np.square(star_props["Qpcs_diff_sum_mean"][0:2]/star_props["Qpcs_diff_sum_err"][0:2]))
         
     if not ignore_size:
-        chi2 += np.sum(star_props["noisy_Qpcs_diff_diff_Z2s"][2]) + \
+        X2 += np.sum(star_props["noisy_Qpcs_diff_diff_Z2s"][2]) + \
                 np.sum(star_props["noisy_Qpcs_diff_sum_Z2s"][2])
+        chi2 += np.square(star_props["noisy_Qpcs_diff_diff_mean"][2]/star_props["noisy_Qpcs_diff_diff_err"][2]) + \
+                np.square(star_props["noisy_Qpcs_diff_diff_mean"][2]/star_props["noisy_Qpcs_diff_diff_err"][2])
 
     if ignore_size:
-        dof = 6 * num_good_stars - fitted_params
+        X2_dof = 6 * num_good_stars - fitted_params
+        chi2_dof = 6 - fitted_params
     else:
-        dof = 8 * num_good_stars - fitted_params
+        X2_dof = 8 * num_good_stars - fitted_params
+        chi2_dof = 8 - fitted_params
     
     test_results = (test_focus,
-            (chi2, dof),
+            (X2, X2_dof, chi2, chi2_dof),
             ((star_props["m0_diff_diff_mean"], (star_props["Qxy_diff_diff_mean"][0],
                                                 star_props["Qxy_diff_diff_mean"][1],
                                                 star_props["Qpcs_diff_diff_mean"][0],
