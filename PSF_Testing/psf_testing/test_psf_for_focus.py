@@ -327,6 +327,8 @@ def test_psf_for_focus(stars,
                 np.sum(star_props["noisy_Qpcs_diff_sum_Z2s"][2])
         chi2 += np.square(star_props["noisy_Qpcs_diff_diff_mean"][2]/star_props["noisy_Qpcs_diff_diff_err"][2]) + \
                 np.square(star_props["noisy_Qpcs_diff_diff_mean"][2]/star_props["noisy_Qpcs_diff_diff_err"][2])
+                
+    chi2 *= num_good_stars
 
     if ignore_size:
         X2_dof = 6 * num_good_stars - fitted_params

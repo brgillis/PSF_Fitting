@@ -28,8 +28,11 @@ from psf_testing.test_psf_for_focus import test_psf_for_focus
 from psf_testing.memoize import memoize
 
 
-def get_chi2_of_test_results(test_results):
+def get_X2_of_test_results(test_results):
+    # Get X2
     return test_results[1][0]
+    # Get chi2
+    # return test_results[1][2]
 
 def fit_best_focus_and_test_psf(stars,
 
@@ -64,7 +67,7 @@ def fit_best_focus_and_test_psf(stars,
 
     # Define a function that we can use for fitting the focus
     @memoize
-    def get_chi2_for_focus(test_focus):
+    def get_X2_for_focus(test_focus):
         test_results = test_psf_for_focus(stars=stars,
 
                                             image_filename=image_filename,
@@ -88,15 +91,15 @@ def fit_best_focus_and_test_psf(stars,
                                             fitting_record=fitting_record,
                                             
                                             parallelize=parallelize)
-        return get_chi2_of_test_results(test_results)
+        return get_X2_of_test_results(test_results)
     
 #     # Calculate (and cache) the value for focus 0 first, so we'll always use the
 #     # outliers list for that
-    get_chi2_for_focus(0.0)
+    get_X2_for_focus(0.0)
 
     # Initialize the test
 
-    best_focus = bf_minimize(get_chi2_for_focus,
+    best_focus = bf_minimize(get_X2_for_focus,
                 min_input=min_test_focus,
                 max_input=max_test_focus,
                 test_points=test_focus_samples,
