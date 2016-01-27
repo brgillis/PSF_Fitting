@@ -3,6 +3,7 @@
 	<name>PSF_tests_plotting</name>
 	<comment></comment>
 	<projects>
+		<project>PSF_Testing</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
