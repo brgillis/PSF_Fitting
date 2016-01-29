@@ -25,47 +25,159 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import click
+import argparse
+import matplotlib
+import matplotlib.pyplot as pyplot
 import numpy as np
-import PSF_tests_plotting.magic_values as mv
+from os.path import join
+import subprocess as sbp
+import sys
 
-@click.command()
-@click.option("--input-folder", "input_folder", default=".",
-              help="Folder where stacks are located.")
-@click.option("--output-folder", "output_folder", default="./plots",
-              help="Folder to place generated plots in.")
-@click.option("--type", "stack_type", default="residual", help="What type of stacks to plot. Allowed are " +
-              "'residual', 'stamp', and 'psf'.")
+matplotlib.rcParams['ps.useafm'] = True
+matplotlib.rcParams['pdf.use14corefonts'] = True
+matplotlib.rcParams['text.usetex'] = True
 
-@click.option("--nstack", "number_to_plot", default=9, help="Number of stacks to plot.")
-@click.option("--choose", "how_to_choose", default="slice",
-              help="How to choose stacks to plot. Allowed are " +
-              "'first', 'random', 'slice', 'list'.")
-@click.option("--size", "size_in_pixels", default=41,
-              help="Size in pixels of central portion to be plotted.")
-@click.option("--zmin", default=None, help="Minimum pixel value for colormap.")
-@click.option("--zmax", default=None, help="Maximum pixel value for colormap.")
-@click.option("--log/--lin", "logscale_z", default=True,
-              help="Log- or lin-scale pixel values.")
-@click.option("--colormap", "colormap_to_use", default="bw", help="Colormap for plotting.")
-@click.option("--slice_offset", default=0, help="If using --choose=slice, initial offset for slice.")
-@click.option("--list", "list_filename", default="stacks_to_plot.dat",
-              help="If using --choose=list, filename for" +
-              "list of stacks to plot.")
-def main(**kwargs):
+from astropy.io import fits
+
+default_image_location = "/disk2/brg/Data/HST_Fields"
+default_image_name = "jb5d04qiq_sci1_cor"
+
+default_plot_name_tail = "_stacks"
+default_paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/PSF_Model_Testing/"
+default_file_type = "png"
+
+default_colormap = "bw"
+
+default_i_min = 0.1
+default_i_max = 400
+
+default_res_i_min = -50
+default_res_i_max = 50
+
+figsize = (4,4)
+labelsize = 8
+
+def make_stacks(image_location = default_image_location,
+                image_name = default_image_name,
+                
+                plot_name_tail = default_plot_name_tail,
+                paper_location = default_paper_location,
+                file_type = default_file_type,
+                
+                colormap = default_colormap,
+                reverse_colormap = False,
+                
+                i_min = default_i_min,
+                i_max = default_i_max,
+                
+                res_i_min = default_res_i_min,
+                res_i_max = default_res_i_max,
+                
+                hide = False,
+                ):
+    
+    stack_filename_base = join(image_location,image_name)
+    
+    stacks = {}
+    
+    for stack_name in ("star", "model", "noisy_model", "residual"):
+        
+        stack_filename = stack_filename_base + "_" + stack_name + "_stack.fits"
+        
+        stack = fits.open(stack_filename)[0]
+    
+        stacks[stack_name] = np.flipud(stack.data)
+            
+    # Do the plotting now
+    
+    fig = pyplot.figure(figsize=figsize)
+    gs = matplotlib.gridspec.GridSpec(2, 2)
+    gs.update(wspace=0.0, hspace=0, left=0.1, right=0.9, bottom=0.1, top=0.9) 
+    
+    for stack_name, label, i in (("star","Star",0),
+                          ("model","Model",1),
+                          ("noisy_model","Noisy model",2)):
+        ax = pyplot.subplot(gs[i])
+        clipped_data = np.clip(stacks[stack_name],i_min,i_max)
+        ax.matshow(np.log(clipped_data),
+                   cmap=pyplot.cm.gray,
+                   interpolation='nearest',
+                   vmin=np.log(i_min),
+                   vmax=np.log(i_max),
+                   )
+        fig.gca().xaxis.set_major_locator(pyplot.NullLocator())
+        fig.gca().yaxis.set_major_locator(pyplot.NullLocator())
+        
+        ax.set_xlabel(label)
+        
+        if(i<2):
+            ax2 = ax.twiny()
+            ax2.set_xlabel(label)
+            fig.gca().xaxis.set_major_locator(pyplot.NullLocator())
+            fig.gca().yaxis.set_major_locator(pyplot.NullLocator())
+
+        
+    ax = pyplot.subplot(gs[3])
+    clipped_data = np.clip(stacks["residual"],res_i_min,res_i_max)
+    ax.matshow(clipped_data,
+               cmap=pyplot.cm.gray,
+               interpolation='nearest',
+               vmin=res_i_min,
+               vmax=res_i_max,
+               )
+    fig.gca().xaxis.set_major_locator(pyplot.NullLocator())
+    fig.gca().yaxis.set_major_locator(pyplot.NullLocator())
+        
+    ax.set_xlabel("Residual")
+        
+    # Save the figure
+    outfile_name = image_name + plot_name_tail + "." + file_type
+    pyplot.savefig(outfile_name, format=file_type, bbox_inches="tight", pad_inches=0.05)
+    
+    # Copy it to the paper location if in eps format
+    if file_type=="eps":
+        cmd = "cp " + outfile_name + " " + paper_location
+        sbp.call(cmd,shell=True)
+    
+    if not hide:
+        fig.show()
+    
+    return
+
+def main(argv):
     """ @TODO main docstring
     """
     
-    # Determine how to display the stacks
-    num_stacks_per_col = int(np.sqrt(number_to_plot))
-    num_stacks_per_row = number_to_plot / num_stacks_per_col
-    if(num_stacks_per_row*num_stacks_per_col < number_to_plot):
-        num_stacks_per_row += 1
-        
-        # Assert this is enough
-        assert num_stacks_per_row*num_stacks_per_col >= number_to_plot
+    parser = argparse.ArgumentParser()
     
-    pass
+    # Image filename
+    parser.add_argument("--image_location",type=str, default=default_image_location)
+    parser.add_argument("--image_name",type=str, default=[], action='append')
+    
+    parser.add_argument("--plot_name_tail",type=str, default=default_plot_name_tail)
+    parser.add_argument("--paper_location",type=str, default=default_paper_location)
+    parser.add_argument("--file_type",type=str, default=default_file_type) 
+    
+    parser.add_argument("--colormap",type=str, default=default_colormap) 
+    parser.add_argument("--reverse_colormap", action="store_true")
+    
+    parser.add_argument("--hide", action="store_true")
+    
+    args = vars(parser.parse_args())
+    
+    images = args['image_name']
+    
+    if(len(images)==0):
+        images.append(default_image_name)
+    
+    for image in images:
+        args['image_name'] = image
+        make_stacks(**args)
+    
+    if not args['hide']:
+        pyplot.show()
+    
+    return
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)
