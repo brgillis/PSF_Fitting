@@ -116,19 +116,35 @@ def get_Qsize(image,
                                 prim_weight_func=prim_weight_func,
                                 x_array=x_array,
                                 y_array=y_array)
+    
+    # Get similar stats for a point source image
+    ps_image = np.zeros_like(image)
+    ps_image[xc,yc] = 1
+    
+    N_ps, _I_mean_ps, W_ps = get_light_distribution(image=ps_image,
+                                                    prim_weight_func=prim_weight_func,
+                                                    x_array=x_array,
+                                                    y_array=y_array)
 
     # Put this into the calculation for Qsize
     ri_array = np.linspace(start=0., stop=dmax, num=dmax, endpoint=False)
 
     Qsize = np.zeros(2)
+    Qsize_ps = np.zeros(2)
 
     for i, weight_func in zip(range(2), (prim_radial_weight_func, sec_radial_weight_func)):
 
         w_ri_array = weight_func(ri_array)*N
+        w_ri_ps_array = weight_func(ri_array)*N_ps
 
         weighted_W = W * w_ri_array
+        weighted_W_ps = W_ps * w_ri_ps_array
 
         # Get Qsize from this
         Qsize[i] = (weighted_W * ri_array).sum() / weighted_W.sum()
+        Qsize_ps[i] = (weighted_W_ps * ri_array).sum() / weighted_W_ps.sum()
+        
+    # Subtract the point source result to normalize
+    Qsize -= Qsize_ps
 
     return Qsize * mv.pixel_scale

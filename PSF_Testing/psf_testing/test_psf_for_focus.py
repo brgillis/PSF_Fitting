@@ -32,7 +32,7 @@ from psf_testing.smart_logging import get_default_logger
 from psf_testing.parmap import parmap
 
 # Magic value toggles
-ignore_size = False
+ignore_size = True
 
 def get_num_valid_stars(stars):
     

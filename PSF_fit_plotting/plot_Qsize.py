@@ -63,6 +63,10 @@ default_seed = 151357
 colors = ("#600060","#00C0C0","#FFFF40","k")
 point_size = 4
 
+Qsize_scale = {}
+Qsize_scale["core"] = 5
+Qsize_scale["wings"] = 3
+
 def make_Qsize_plots(plot_name = default_plot_name,
                      noisy_plot_name = default_noisy_plot_name,
                      
@@ -161,13 +165,13 @@ def make_Qsize_plots(plot_name = default_plot_name,
         normed_sigmas = test_sigmas/wf_scale
         
         ax.plot(normed_sigmas,
-                Qsizes**2,
-                label=r"$Q_{\rm s}^2$",
+                (Qsize_scale[wf_name]*Qsizes)**2,
+                label=r"$(" + str(Qsize_scale[wf_name]) + r"Q_{\rm s})^2$",
                 color=colors[3],
                 linewidth=2)
         ax.plot(normed_sigmas,
-                noisy_Qsizes**2,
-                label=r"$Q_{\rm s}^2$ + noise",
+                (Qsize_scale[wf_name]*noisy_Qsizes)**2,
+                label=r"$(" + str(Qsize_scale[wf_name]) + r"Q_{\rm s})^2$ + noise",
                 color=colors[3],
                 linewidth=1)
         ax.plot(normed_sigmas,
@@ -194,7 +198,7 @@ def make_Qsize_plots(plot_name = default_plot_name,
         ax.legend(loc='upper left')
         
         ax.set_xlim(np.min(normed_sigmas),np.max(normed_sigmas))
-        ax.set_ylim(np.min(noisy_quad_moments),
+        ax.set_ylim(0,
                     1.1*np.max(noisy_quad_moment_with_dets))
         
         # Save the figure

@@ -72,9 +72,8 @@ def make_stacks(stars, stack_size=(2 * mv.default_weight_rmax + 1),
         # Subtract off any lingering background
         stack -= get_background_level(image)
         
-        # Normalize the stack by its m0
-        m0 = centre_image(image=image,weight_func=weight_func)[5]
-        stack /= m0
+        # Normalize the stack by its number of stars
+        stack /= num_stars
 
         stacks[stack_name] = stack
         
