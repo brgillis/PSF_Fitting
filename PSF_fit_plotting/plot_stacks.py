@@ -48,11 +48,11 @@ default_file_type = "png"
 
 default_colormap = "bw"
 
-default_i_min = 0.1
-default_i_max = 400
+default_i_min = 0.005
+default_i_max = 8
 
-default_res_i_min = -50
-default_res_i_max = 50
+default_res_i_min = -0.5
+default_res_i_max = 0.5
 
 figsize = (4,4)
 labelsize = 8
@@ -108,13 +108,14 @@ def make_stacks(image_location = default_image_location,
         fig.gca().xaxis.set_major_locator(pyplot.NullLocator())
         fig.gca().yaxis.set_major_locator(pyplot.NullLocator())
         
-        ax.set_xlabel(label)
         
         if(i<2):
             ax2 = ax.twiny()
             ax2.set_xlabel(label)
             fig.gca().xaxis.set_major_locator(pyplot.NullLocator())
             fig.gca().yaxis.set_major_locator(pyplot.NullLocator())
+        else:
+            ax.set_xlabel(label)
 
         
     ax = pyplot.subplot(gs[3])
