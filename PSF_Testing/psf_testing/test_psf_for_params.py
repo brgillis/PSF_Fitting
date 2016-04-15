@@ -1,4 +1,4 @@
-""" @file test_psf_for_focus.py
+""" @file test_psf_for_params.py
 
     Created 21 Sep 2015
 
@@ -22,7 +22,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from copy import deepcopy
 import numpy as np
+
 from psf_testing import magic_values as mv
 from psf_testing.get_model_psf import get_model_psf_for_star
 from psf_testing.moments.get_Qs import get_m0_and_Qs
@@ -74,12 +76,22 @@ def get_star_arrays(stars,outliers_mask=None):
             
     return star_props
 
-def test_psf_for_focus(stars,
+def test_psf_for_params(stars,
 
                        image_filename,
                        image=None,
 
                        test_focus=mv.default_test_focus,
+                       astigmatism_0=None,
+                       astigmatism_45=None,
+                       coma_x=None,
+                       coma_y=None,
+                       clover_x=None,
+                       clover_y=None,
+                       spherical_3rd=None,
+                       spherical_5th=None,
+                       shape=None,
+                       
                        num_grid_points=mv.default_num_grid_points,
 
                        prim_weight_func=mv.default_prim_weight_func,
@@ -98,7 +110,9 @@ def test_psf_for_focus(stars,
                        outliers_mask=None,
                        files_to_cleanup=None,
                        
-                       parallelize=False):
+                       parallelize=False,
+                       
+                       **params):
 
     if outliers_mask is None:
         outliers_mask = []
@@ -139,7 +153,8 @@ def test_psf_for_focus(stars,
                                            scheme=model_scheme,
                                            weight_func=prim_weight_func,
                                            tinytim_path=tinytim_path,
-                                           tinytim_data_path=tinytim_data_path)
+                                           tinytim_data_path=tinytim_data_path,
+                                           **params)
 
         (star.model_m0, star.model_Qxy, star.model_Qpcs) = \
             get_m0_and_Qs(image=model_psf,
@@ -337,7 +352,12 @@ def test_psf_for_focus(stars,
         X2_dof = 8 * num_good_stars - fitted_params
         chi2_dof = 8 - fitted_params
     
-    test_results = (test_focus,
+    test_params = deepcopy(mv.default_params)
+    for param in params:
+        test_params[param] = params[param]
+    
+    test_results = ((test_focus, test_params["astigmatism_0"], test_params["astigmatism_45"],
+                     test_params["spherical_3rd"], test_params["spherical_5th"]),
             (X2, X2_dof, chi2, chi2_dof),
             ((star_props["m0_diff_diff_mean"], (star_props["Qxy_diff_diff_mean"][0],
                                                 star_props["Qxy_diff_diff_mean"][1],

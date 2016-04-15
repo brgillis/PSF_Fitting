@@ -32,6 +32,10 @@ from psf_testing.smart_logging import get_default_logger
 def save_fitting_record(fitting_record,
                         filename_root):
     focii = []
+    astigmatism_0s = []
+    astigmatism_45s = []
+    spherical_3rds = []
+    spherical_5ths = []
     X_squareds = []
     chi_squareds = []
     
@@ -52,7 +56,13 @@ def save_fitting_record(fitting_record,
         Qs[Q_label + "NEZ2"] = []
         
     for test_results in fitting_record:
-        focii.append(test_results[0])
+        
+        focii.append(test_results[0][0])
+        astigmatism_0s.append(test_results[0][1])
+        astigmatism_45s.append(test_results[0][2])
+        spherical_3rds.append(test_results[0][3])
+        spherical_5ths.append(test_results[0][4])
+        
         X_squareds.append(test_results[1][0])
         chi_squareds.append(test_results[1][2])
     
@@ -69,6 +79,10 @@ def save_fitting_record(fitting_record,
             Qs[Q_label + "NZ2"].append(test_results[3][1][1][j])
     
     columns = [fits.Column(name="focus", format='E', array=focii),
+               fits.Column(name="astigmatism_0", format='E', array=astigmatism_0s),
+               fits.Column(name="astigmatism_45", format='E', array=astigmatism_45s),
+               fits.Column(name="spherical_3rd", format='E', array=spherical_3rds),
+               fits.Column(name="spherical_5th", format='E', array=spherical_5ths),
                fits.Column(name="X_squared", format='E', array=X_squareds),
                fits.Column(name="chi_squared", format='E', array=chi_squareds),
                fits.Column(name="m0_diff", format='E', array=m0_diffs),
@@ -152,7 +166,11 @@ def report_results(test_results,
 
     tbhdu.header["CCDCHIP"] = chip
     tbhdu.header["OBS_TIME"] = obs_time
-    tbhdu.header["FOCUS"] = test_results[0]
+    tbhdu.header["FOCUS"] = test_results[0][0]
+    tbhdu.header["ASTIG_0"] = test_results[0][1]
+    tbhdu.header["ASTIG_45"] = test_results[0][2]
+    tbhdu.header["SPHERE_3"] = test_results[0][3]
+    tbhdu.header["SPHERE_5"] = test_results[0][4]
     tbhdu.header["X_SQR"] = test_results[1][0]
     tbhdu.header["XDOF"] = test_results[1][1]
     tbhdu.header["CHI_SQR"] = test_results[1][2]
@@ -179,11 +197,14 @@ def report_results(test_results,
     
     # Print summary
     logger = get_default_logger()
-    logger.info("X^2 for focus " + str(tbhdu.header["FOCUS"]) +
+    logger.info("X^2 for focus " + str(tbhdu.header["FOCUS"]) + ", " +
+                "astigmatism_0 " + str(tbhdu.header["ASTIG_0"]) + ", " +
+                "astigmatism_45 " + str(tbhdu.header["ASTIG_45"]) + ", " +
+                "spherical_3rd " + str(tbhdu.header["SPHERE_3"]) + ", " +
+                "spherical_5th " + str(tbhdu.header["SPHERE_5"]) + 
           " = " + str(tbhdu.header["X_SQR"]) + ", for " + str(tbhdu.header["XDOF"]) +
           " degrees of freedom.")
-    logger.info("chi^2 for focus " + str(tbhdu.header["FOCUS"]) +
-          " = " + str(tbhdu.header["CHI_SQR"]) + ", for " + str(tbhdu.header["CDOF"]) +
+    logger.info("chi^2  = " + str(tbhdu.header["CHI_SQR"]) + ", for " + str(tbhdu.header["CDOF"]) +
           " degrees of freedom.")
     
     if fitting_record is not None:

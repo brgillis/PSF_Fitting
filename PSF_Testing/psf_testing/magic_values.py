@@ -91,12 +91,24 @@ sex_cat_num_cols = 24
 
 # Focus fitting values
 default_test_focus = 0.0
-default_init_test_focus = 1.0
+default_init_test_focus = -1.0
 default_min_test_focus = -6.0
 default_max_test_focus = 6.0
 default_focus_samples = 4
 default_focus_precision = 0.1
 default_num_grid_points = (8, 4) # (x,y) in fits ordering, (y,x) in C ordering
+
+# Param fitting values
+default_params = {"astigmatism_0":0.031,
+                  "astigmatism_45":0.028,
+                  "coma_x":0.003,
+                  "coma_y":0.001,
+                  "clover_x":0.008,
+                  "clover_y":0.018,
+                  "spherical_3rd":-0.025,
+                  "spherical_5th":0.009,
+                  }
+default_penalty_sigma = 0.005
 
 default_image_shape = (4096, 2048) # (x,y) in fits ordering, (y,x) in C ordering
 default_logging_level = "info"

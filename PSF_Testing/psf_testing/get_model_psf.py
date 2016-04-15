@@ -253,7 +253,8 @@ def get_model_psf_for_star(star,
                            scheme,
                            weight_func=mv.default_prim_weight_func,
                            tinytim_path=mv.default_tinytim_path,
-                           tinytim_data_path=mv.default_tinytim_data_path):
+                           tinytim_data_path=mv.default_tinytim_data_path,
+                           **params):
     """ Gets a model psf for a given star and the chip it was detected on
 
         Requires: star <star>
@@ -262,6 +263,7 @@ def get_model_psf_for_star(star,
                                                  subsampled model)
                   tinytim_path <string> (location of TinyTim executable)
                   tinytim_data_path <string> (location where TinyTim data will be stored)
+                  **params <dict> (Extra parameters for describing the PSF)
 
         Returns: model_psf <star> (with m_err, Q values, and Q errors not yet determined)
     """
@@ -275,7 +277,7 @@ def get_model_psf_for_star(star,
                         "_c-" + str(star.chip) + mv.image_extension)
 
     # Check if we need to update this file, or if we can reuse the existing version
-    if file_needs_update(subsampled_name):
+    if file_needs_update(subsampled_name) or len(params)>0:
 
         # We'll need to update it, so we'll call TinyTim to generate a PSF model
         subsampled_model = make_subsampled_psf_model(filename=subsampled_name,
@@ -284,7 +286,8 @@ def get_model_psf_for_star(star,
                                   focus=scheme.focus,
                                   chip=star.chip,
                                   weight_func=weight_func,
-                                  tinytim_path=tinytim_path)
+                                  tinytim_path=tinytim_path,
+                                  **params)
 
     else:
 

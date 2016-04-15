@@ -38,7 +38,7 @@ from psf_testing.report_results import report_results
 from psf_testing.stacking import make_and_save_stacks
 from psf_testing.star_selection.image_info import get_chip, get_exp_time, get_gain, get_obs_time
 from psf_testing.star_selection.sextractor_utility import get_stars_in_image
-from psf_testing.test_psf_for_focus import test_psf_for_focus
+from psf_testing.test_psf_for_params import test_psf_for_params
 
 
 def test_psf(image_filename,
@@ -139,7 +139,7 @@ def test_psf(image_filename,
 
     # If we're testing a single focus value, do that now
     if test_single_focus:
-        test_results = test_psf_for_focus(stars=stars,
+        test_results = test_psf_for_params(stars=stars,
 
                                           image_filename=image_filename,
                                           image=image,
