@@ -78,6 +78,12 @@ def main(argv):
                         help="Number of sample points on the image to get model foci for " +
                              "along the y axis.")
     
+    # Parameter fitting
+    parser.add_argument("--fit_all_params", action="store_true",
+                        help="If true, will also fit astigmatism parameters. This will greatly increase runtime.")
+    parser.add_argument("--penalty_sigma", type=float, default=mv.default_penalty_sigma,
+                        help="How lenient to be in letting params vary from default values. If 0, will impose no penalty.")
+    
     # SExtractor data/files
     parser.add_argument("--sex_data_path",type=str, default=mv.default_sex_data_path,
                         help="Path of data required by sextractor (ie. template .cfg files etc.).")
@@ -121,6 +127,7 @@ def main(argv):
                  max_star_mag = args.max_mag,
                  min_lowest_separation = args.min_lowest_separation,
                  
+                 fit_all_params=args.fit_all_params,
                  test_single_focus = test_single_focus,
                  test_focus = args.focus,
                  min_test_focus = args.min_focus,
@@ -157,6 +164,7 @@ def main(argv):
                          max_star_mag = args.max_mag,
                          min_lowest_separation = args.min_lowest_separation,
                          
+                         fit_all_params=args.fit_all_params,
                          test_single_focus = test_single_focus,
                          test_focus = args.focus,
                          min_test_focus = args.min_focus,

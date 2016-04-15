@@ -38,6 +38,11 @@ def get_X2_of_test_results(test_results):
 
 def get_params_penalty(penalty_sigma=mv.default_penalty_sigma,
                        **params):
+    
+    # Use 0 as a flag to impose no penalty
+    if penalty_sigma==0:
+        return 0
+    
     penalty = 0
     
     for param in params:
@@ -77,7 +82,6 @@ def fit_best_params_and_test_psf(stars,
     fitting_record = []
 
     # Define a function that we can use for fitting the focus
-    @memoize
     def get_X2_for_params(param_array):
         test_focus = param_array[0]
         params["astigmatism_0"] = param_array[1]

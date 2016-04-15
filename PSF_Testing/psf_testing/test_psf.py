@@ -30,6 +30,7 @@ from psf_testing import magic_values as mv
 from psf_testing.check_updates import make_update_marker
 from psf_testing.extract_stamp import extract_stamp_for_star
 from psf_testing.fit_focus import fit_best_focus_and_test_psf
+from psf_testing.fit_params import fit_best_params_and_test_psf
 from psf_testing.smart_logging import get_default_logger
 from psf_testing.moments.centre_image import centre_image
 from psf_testing.moments.estimate_background import get_background_level_and_noise
@@ -51,6 +52,7 @@ def test_psf(image_filename,
              min_lowest_separation=mv.default_min_lowest_separation,
              min_star_snr=mv.default_min_star_snr,
 
+             fit_all_params=False,
              test_single_focus=False,
              test_focus=None,
              min_test_focus=mv.default_min_test_focus,
@@ -138,7 +140,28 @@ def test_psf(image_filename,
             continue
 
     # If we're testing a single focus value, do that now
-    if test_single_focus:
+    if fit_all_params:
+        test_results, fitting_record = fit_best_params_and_test_psf(stars=stars,
+
+                                                    image_filename=image_filename,
+                                                    image=image,
+
+                                                    num_grid_points=num_grid_points,
+
+                                                    prim_weight_func=prim_weight_func,
+                                                    sec_weight_func=sec_weight_func,
+
+                                                    tinytim_path=tinytim_path,
+                                                    tinytim_data_path=tinytim_data_path,
+
+                                                    gain=gain,
+                                                    save_models=save_stacks,
+                                                    files_to_cleanup=files_to_cleanup,
+                                          
+                                                    parallelize=parallelize,
+                                                    
+                                                    **mv.default_params)
+    elif test_single_focus:
         test_results = test_psf_for_params(stars=stars,
 
                                           image_filename=image_filename,

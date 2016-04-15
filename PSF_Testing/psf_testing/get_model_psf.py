@@ -28,6 +28,7 @@ import os
 from astropy.io import fits
 
 import numpy as np
+from psf_testing.function_cache import lru_cache
 from psf_testing import magic_values as mv
 from psf_testing.check_updates import file_needs_update
 from psf_testing.io import replace_multiple_in_file
@@ -249,6 +250,54 @@ def make_subsampled_psf_model(filename,
 
     return subsampled_image[0]
 
+@lru_cache(128)
+def get_cached_subsampled_psf(tinytim_path,
+                              tinytim_data_path,
+                              weight_func,
+                              psf_position,
+                              chip,
+                              focus,
+                              **params):
+
+    # Determine the name for the subsampled model PSF file
+    subsampled_name = os.path.join(tinytim_data_path, "subsampled_psf_x-" + str(psf_position[0]) + \
+                        "_y-" + str(psf_position[1]) + "_f-" + str(focus) + \
+                        "_c-" + str(chip) + mv.image_extension)
+
+    # Check if we need to update this file, or if we can reuse the existing version
+    # if file_needs_update(subsampled_name) or len(params)>0:
+    if file_needs_update(subsampled_name):
+
+        # We'll need to update it, so we'll call TinyTim to generate a PSF model
+        subsampled_model = make_subsampled_psf_model(filename=subsampled_name,
+                                  xp=psf_position[0],
+                                  yp=psf_position[1],
+                                  focus=focus,
+                                  chip=chip,
+                                  weight_func=weight_func,
+                                  tinytim_path=tinytim_path,
+                                  **params)
+        # Cleanup now if we're fitting params
+        if len(params)>0:
+            sbp.call("rm "+subsampled_name, shell=True)
+
+    else:
+
+        # It doesn't need an update, so open up the old image
+        try:
+            subsampled_model = fits.open(subsampled_name)[0]
+        except IOError as _e:
+            # File is corrupt, so we'll regenerate it
+            subsampled_model = make_subsampled_psf_model(filename=subsampled_name,
+                                      xp=psf_position[0],
+                                      yp=psf_position[1],
+                                      focus=focus,
+                                      chip=chip,
+                                      weight_func=weight_func,
+                                      tinytim_path=tinytim_path)
+            
+    return subsampled_model
+
 def get_model_psf_for_star(star,
                            scheme,
                            weight_func=mv.default_prim_weight_func,
@@ -271,38 +320,13 @@ def get_model_psf_for_star(star,
     # Get the position we'll generate the model PSF for
     psf_position = scheme.get_position_to_use(star.x_pix, star.y_pix)
 
-    # Determine the name for the subsampled model PSF file
-    subsampled_name = os.path.join(tinytim_data_path, "subsampled_psf_x-" + str(psf_position[0]) + \
-                        "_y-" + str(psf_position[1]) + "_f-" + str(scheme.focus) + \
-                        "_c-" + str(star.chip) + mv.image_extension)
-
-    # Check if we need to update this file, or if we can reuse the existing version
-    if file_needs_update(subsampled_name) or len(params)>0:
-
-        # We'll need to update it, so we'll call TinyTim to generate a PSF model
-        subsampled_model = make_subsampled_psf_model(filename=subsampled_name,
-                                  xp=psf_position[0],
-                                  yp=psf_position[1],
-                                  focus=scheme.focus,
-                                  chip=star.chip,
-                                  weight_func=weight_func,
-                                  tinytim_path=tinytim_path,
-                                  **params)
-
-    else:
-
-        # It doesn't need an update, so open up the old image
-        try:
-            subsampled_model = fits.open(subsampled_name)[0]
-        except IOError as _e:
-            # File is corrupt, so we'll regenerate it
-            subsampled_model = make_subsampled_psf_model(filename=subsampled_name,
-                                      xp=psf_position[0],
-                                      yp=psf_position[1],
-                                      focus=scheme.focus,
-                                      chip=star.chip,
-                                      weight_func=weight_func,
-                                      tinytim_path=tinytim_path)
+    subsampled_model = get_cached_subsampled_psf(tinytim_path,
+                                                 tinytim_data_path,
+                                                 weight_func,
+                                                 psf_position,
+                                                 star.chip,
+                                                 scheme.focus,
+                                                 **params)
             
 
     # Get the charge diffusion kernel from the FITS comments
