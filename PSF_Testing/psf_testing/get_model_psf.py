@@ -30,6 +30,7 @@ from astropy.io import fits
 import numpy as np
 from psf_testing import magic_values as mv
 from psf_testing.check_updates import file_needs_update
+from psf_testing.io import replace_multiple_in_file
 from psf_testing.moments.centre_image import centre_image
 from psf_testing.rebin_psf import rebin
 import subprocess as sbp
@@ -47,8 +48,17 @@ def make_subsampled_psf_model(filename,
                               subsampling_factor=mv.default_subsampling_factor,
                               weight_func=mv.default_prim_weight_func,
                               tinytim_path=mv.default_tinytim_path,
+                              astigmatism_0=None,
+                              astigmatism_45=None,
+                              coma_x=None,
+                              coma_y=None,
+                              clover_x=None,
+                              clover_y=None,
+                              spherical_3rd=None,
+                              spherical_5th=None,
                               shape=None,
-                              files_to_cleanup=None):
+                              files_to_cleanup=None,
+                              use_cache=True):
     """ Generates a subsampled psf model for a given image position, focus, and chip.
 
         Requires: filename <string>
@@ -78,19 +88,24 @@ def make_subsampled_psf_model(filename,
         time.sleep(1)
         
         if os.path.isfile(filename):
-            try:
-                return fits.open(filename)[0]
-            except IOError as _e:
+            if use_cache:
+                try:
+                    return fits.open(filename)[0]
+                except IOError as _e:
+                    open(lock_filename, 'a').close()
+            else:
                 open(lock_filename, 'a').close()
         else:
             # Looks like a rogue lock, so go ahead and use it ourselves
             open(lock_filename, 'a').close()
     else:
         open(lock_filename, 'a').close()
+    
+    par_file = filename_base + ".par"
 
     # Set up the command to call tiny1
     cmd = "export TINYTIM=" + tinytim_path + "\n" + \
-          tinytim_path + "/tiny1 " + filename_base + ".par << EOF \n" + \
+          tinytim_path + "/tiny1 " + par_file + " << EOF \n" + \
           str(detector) + "\n" + \
           str(chip) + "\n" + \
           str(xp) + " " + str(yp) + "\n" + \
@@ -102,16 +117,48 @@ def make_subsampled_psf_model(filename,
           filename_base + "\nEOF"
     # Run the command to call tiny1
     sbp.call(cmd, shell=True)
+    
+    # Edit the parameter file to adjust coma and astigmatism if necessary
+    str_to_replace = []
+    replacements = []
+    if astigmatism_0 is not None:
+        str_to_replace.append("0.031    # Z5 = 0 degree astigmatism")
+        replacements.append(str(astigmatism_0) + "    # Z5 = 0 degree astigmatism")
+    if astigmatism_45 is not None:
+        str_to_replace.append("0.028    # Z6 = 45 degree astigmatism")
+        replacements.append(str(astigmatism_45) + "    # Z6 = 45 degree astigmatism")
+    if coma_x is not None:
+        str_to_replace.append("0.003    # Z7 = X (V2) coma")
+        replacements.append(str(coma_x) + "    # Z7 = X (V2) coma")
+    if coma_y is not None:
+        str_to_replace.append("0.001    # Z8 = Y (V3) coma")
+        replacements.append(str(coma_y) + "    # Z8 = Y (V3) coma")
+    if clover_x is not None:
+        str_to_replace.append("0.008    # Z9 = X clover")
+        replacements.append(str(clover_x) + "    # Z7 = X (V2) clover")
+    if clover_y is not None:
+        str_to_replace.append("0.018    # Z10 = Y clover")
+        replacements.append(str(clover_y) + "    # Z8 = Y (V3) clover")
+    if spherical_3rd is not None:
+        str_to_replace.append("-0.025    # Z11 = 3rd order spherical")
+        replacements.append(str(spherical_3rd) + "    # Z11 = 3rd order spherical")
+    if spherical_5th is not None:
+        str_to_replace.append("0.009    # Z22 = 5th order spherical")
+        replacements.append(str(spherical_5th) + "    # Z22 = 5th order spherical")
+        
+    if len(str_to_replace) > 0:
+        replace_multiple_in_file(par_file, par_file + ".new", str_to_replace, replacements)
+        sbp.call("mv " + par_file + ".new " + par_file, shell=True)
 
     # Set up the command to call tiny2
     cmd = "export TINYTIM=" + tinytim_path + "\n" + \
-          tinytim_path + "/tiny2 " + filename_base + ".par"
+          tinytim_path + "/tiny2 " + par_file
     # Run the command to call tiny2
     sbp.call(cmd, shell=True)
 
     # Set up the command to call tiny3
     cmd = "export TINYTIM=" + tinytim_path + "\n" + \
-          tinytim_path + "/tiny3 " + filename_base + ".par SUB=" + \
+          tinytim_path + "/tiny3 " + par_file + " SUB=" + \
         str(subsampling_factor)
     # Run the command to call tiny3
     sbp.call(cmd, shell=True)
@@ -187,7 +234,7 @@ def make_subsampled_psf_model(filename,
     except OSError as _e:
         pass
     try:
-        os.remove(filename_base + ".par")
+        os.remove(par_file)
     except OSError as _e:
         pass
     try:

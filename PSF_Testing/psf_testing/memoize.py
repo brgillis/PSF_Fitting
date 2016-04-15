@@ -1,8 +1,8 @@
-""" @file /disk2/brg/git/Tiny_Tim_PSF_Fitting/PSF_Testing/psf_testing/memoize.py
+""" @file memoize.py
 
     Created 10 Nov 2015
 
-    @TODO: File docstring
+    Decorator for storing the result of a function.
 
     ---------------------------------------------------------------------
 
