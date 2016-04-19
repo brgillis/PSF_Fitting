@@ -50,10 +50,11 @@ def save_fitting_record(fitting_record,
     for Q_label in ("QXD", "QYD", "QPS", "QCS", "QSS", "QPD", "QCD", "QSD"):
         Qs[Q_label + "_DIF"] = []
         Qs[Q_label + "_Z2"] = []
-        Qs[Q_label + "_EZ2"] = []
         Qs[Q_label + "NDIFF"] = []
         Qs[Q_label + "NZ2"] = []
-        Qs[Q_label + "NEZ2"] = []
+
+    for Q_label in ("QXC", "QYC", "QPC", "QCC", "QSC", "QXW", "QYW", "QPW", "QCW", "QSW"):
+        Qs[Q_label + "_DIF"] = []
         
     for test_results in fitting_record:
         
@@ -78,6 +79,10 @@ def save_fitting_record(fitting_record,
             Qs[Q_label + "NDIFF"].append(test_results[2][1][1][j])
             Qs[Q_label + "NZ2"].append(test_results[3][1][1][j])
     
+        for Q_label, j in zip(("QXC", "QYC", "QPC", "QCC", "QSC", "QXW", "QYW", "QPW", "QCW", "QSW",),
+                              range(10)):
+            Qs[Q_label + "_DIF"].append(test_results[11][j])
+    
     columns = [fits.Column(name="focus", format='E', array=focii),
                fits.Column(name="astigmatism_0", format='E', array=astigmatism_0s),
                fits.Column(name="astigmatism_45", format='E', array=astigmatism_45s),
@@ -93,6 +98,11 @@ def save_fitting_record(fitting_record,
                                  "Qplus_diff", "Qcross_diff", "Qsize_diff")):
         columns.append(fits.Column(name=colname + "_diff", format='E', array=Qs[Q_label + "_DIF"]))
         columns.append(fits.Column(name=colname + "_Z2", format='E', array=Qs[Q_label + "_Z2"]))
+    
+    for Q_label, colname in zip(("QXC", "QYC", "QPC", "QCC", "QSC", "QXW", "QYW", "QPW", "QCW", "QSW",), 
+                                ("Qx_core", "Qy_core", "Qplus_core", "Qcross_core", "Qsize_core",
+                                 "Qx_wings", "Qy_wings", "Qplus_wings", "Qcross_wings", "Qsize_wings")):
+        columns.append(fits.Column(name=colname + "_diff", format='E', array=Qs[Q_label + "_DIF"]))
         
     columns += [fits.Column(name="m0_noisy_diff", format='E', array=m0_noisy_diffs),
                 fits.Column(name="m0_noisy_Z2", format='E', array=m0_noisy_Zs)]

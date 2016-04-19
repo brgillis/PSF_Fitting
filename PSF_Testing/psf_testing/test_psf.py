@@ -53,8 +53,12 @@ def test_psf(image_filename,
              min_star_snr=mv.default_min_star_snr,
 
              fit_all_params=False,
+             focus_penalty_sigma=mv.default_focus_penalty_sigma,
+             penalty_sigma=mv.default_penalty_sigma,
+             
              test_single_focus=False,
              test_focus=None,
+             
              min_test_focus=mv.default_min_test_focus,
              max_test_focus=mv.default_max_test_focus,
              test_focus_samples=mv.default_focus_samples,
@@ -146,6 +150,9 @@ def test_psf(image_filename,
                                                     image_filename=image_filename,
                                                     image=image,
 
+                                                    focus_penalty_sigma=focus_penalty_sigma,
+                                                    penalty_sigma=penalty_sigma,
+                                                    
                                                     num_grid_points=num_grid_points,
 
                                                     prim_weight_func=prim_weight_func,
@@ -188,6 +195,8 @@ def test_psf(image_filename,
 
                                                     image_filename=image_filename,
                                                     image=image,
+                                                    
+                                                    focus_penalty_sigma=focus_penalty_sigma,
 
                                                     min_test_focus=min_test_focus,
                                                     max_test_focus=max_test_focus,

@@ -82,15 +82,6 @@ def test_psf_for_params(stars,
                        image=None,
 
                        test_focus=mv.default_test_focus,
-                       astigmatism_0=None,
-                       astigmatism_45=None,
-                       coma_x=None,
-                       coma_y=None,
-                       clover_x=None,
-                       clover_y=None,
-                       spherical_3rd=None,
-                       spherical_5th=None,
-                       shape=None,
                        
                        num_grid_points=mv.default_num_grid_points,
 
@@ -403,6 +394,16 @@ def test_psf_for_params(stars,
              star_props["Qpcs_diff_diff_Zs"],
              star_props["Qpcs_diff_sum_Zs"]),
             (star_props["x_pix"], star_props["y_pix"]),
+            (star_props["unmasked_Qxy_diff"][0][:,0],
+             star_props["unmasked_Qxy_diff"][1][:,0],
+             star_props["unmasked_Qpcs_diff"][0][:,0],
+             star_props["unmasked_Qpcs_diff"][1][:,0],
+             star_props["unmasked_Qpcs_diff"][2][:,0],
+             star_props["unmasked_Qxy_diff"][0][:,1],
+             star_props["unmasked_Qxy_diff"][1][:,1],
+             star_props["unmasked_Qpcs_diff"][0][:,1],
+             star_props["unmasked_Qpcs_diff"][1][:,1],
+             star_props["unmasked_Qpcs_diff"][2][:,1])
             )
     
     if fitting_record is not None:

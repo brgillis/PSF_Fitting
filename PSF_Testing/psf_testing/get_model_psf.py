@@ -82,7 +82,7 @@ def make_subsampled_psf_model(filename,
     lock_filename = filename_base + ".lock"
     if os.path.isfile(lock_filename):
         time_start = time.time()
-        while (not os.path.isfile(filename)) and (time.time() - time_start < 120):
+        while (not os.path.isfile(filename)) and (time.time() - time_start < 60):
             time.sleep(1)
         
         # Give the file a chance to be fully written
@@ -149,7 +149,7 @@ def make_subsampled_psf_model(filename,
         
     if len(str_to_replace) > 0:
         replace_multiple_in_file(par_file, par_file + ".new", str_to_replace, replacements)
-        sbp.call("mv " + par_file + ".new " + par_file, shell=True)
+        replace_multiple_in_file(par_file + ".new", par_file, [], [])
 
     # Set up the command to call tiny2
     cmd = "export TINYTIM=" + tinytim_path + "\n" + \
@@ -224,7 +224,8 @@ def make_subsampled_psf_model(filename,
     subsampled_image[0].data /= subsampled_image[0].data.sum()
 
     # Write the image out to the proper filename
-    subsampled_image.writeto(filename, clobber=True)
+    if use_cache:
+        subsampled_image.writeto(filename, clobber=True)
 
     if files_to_cleanup is not None:
         files_to_cleanup.append(filename)
@@ -236,6 +237,10 @@ def make_subsampled_psf_model(filename,
         pass
     try:
         os.remove(par_file)
+    except OSError as _e:
+        pass
+    try:
+        os.remove(par_file + ".new")
     except OSError as _e:
         pass
     try:
@@ -257,12 +262,33 @@ def get_cached_subsampled_psf(tinytim_path,
                               psf_position,
                               chip,
                               focus,
-                              **params):
+                              use_cache,
+                              astigmatism_0=None,
+                              astigmatism_45=None,
+                              coma_x=None,
+                              coma_y=None,
+                              clover_x=None,
+                              clover_y=None,
+                              spherical_3rd=None,
+                              spherical_5th=None):
 
     # Determine the name for the subsampled model PSF file
     subsampled_name = os.path.join(tinytim_data_path, "subsampled_psf_x-" + str(psf_position[0]) + \
                         "_y-" + str(psf_position[1]) + "_f-" + str(focus) + \
-                        "_c-" + str(chip) + mv.image_extension)
+                        "_c-" + str(chip))
+    
+    for (value, label) in ((astigmatism_0, "a0"),
+                           (astigmatism_45, "a45"),
+                           (coma_x, "cx"),
+                           (coma_y, "cy"),
+                           (clover_x, "clx"),
+                           (clover_y, "cly"),
+                           (spherical_3rd, "s3"),
+                           (spherical_5th, "s5"),):
+        if value is not None:
+            subsampled_name += "_" + label + "-" + str(value)
+    
+    subsampled_name +=  mv.image_extension
 
     # Check if we need to update this file, or if we can reuse the existing version
     # if file_needs_update(subsampled_name) or len(params)>0:
@@ -273,13 +299,18 @@ def get_cached_subsampled_psf(tinytim_path,
                                   xp=psf_position[0],
                                   yp=psf_position[1],
                                   focus=focus,
+                                  use_cache=use_cache,
                                   chip=chip,
                                   weight_func=weight_func,
                                   tinytim_path=tinytim_path,
-                                  **params)
-        # Cleanup now if we're fitting params
-        if len(params)>0:
-            sbp.call("rm "+subsampled_name, shell=True)
+                                  astigmatism_0=astigmatism_0,
+                                  astigmatism_45=astigmatism_45,
+                                  coma_x=coma_x,
+                                  coma_y=coma_y,
+                                  clover_x=clover_x,
+                                  clover_y=clover_y,
+                                  spherical_3rd=spherical_3rd,
+                                  spherical_5th=spherical_5th)
 
     else:
 
@@ -316,6 +347,10 @@ def get_model_psf_for_star(star,
 
         Returns: model_psf <star> (with m_err, Q values, and Q errors not yet determined)
     """
+    
+    use_cache = True
+#     if len(params) > 0:
+#         use_cache = False
 
     # Get the position we'll generate the model PSF for
     psf_position = scheme.get_position_to_use(star.x_pix, star.y_pix)
@@ -326,6 +361,7 @@ def get_model_psf_for_star(star,
                                                  psf_position,
                                                  star.chip,
                                                  scheme.focus,
+                                                 use_cache=use_cache,
                                                  **params)
             
 

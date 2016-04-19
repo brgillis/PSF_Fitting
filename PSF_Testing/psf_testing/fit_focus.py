@@ -38,6 +38,8 @@ def fit_best_focus_and_test_psf(stars,
 
                                 image_filename,
                                 image=None,
+                                
+                                focus_penalty_sigma=mv.default_focus_penalty_sigma,
 
                                 min_test_focus=mv.default_min_test_focus,
                                 max_test_focus=mv.default_max_test_focus,
@@ -92,7 +94,13 @@ def fit_best_focus_and_test_psf(stars,
                                             fitting_record=fitting_record,
                                             
                                             parallelize=parallelize)
-        return get_X2_of_test_results(test_results)
+        
+        # Use 0 as a flag to impose no penalty
+        if focus_penalty_sigma==0:
+            penalty = 0
+        else:
+            penalty = ((test_focus-mv.default_init_test_focus)/focus_penalty_sigma)**2
+        return get_X2_of_test_results(test_results) + penalty
     
     # Calculate (and cache) the value for focus 0 first, so we'll always use the
     # outliers list for that

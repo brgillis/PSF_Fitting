@@ -109,6 +109,7 @@ default_params = {"astigmatism_0":0.031,
                   "spherical_5th":0.009,
                   }
 default_penalty_sigma = 0.005
+default_focus_penalty_sigma = 10
 
 default_image_shape = (4096, 2048) # (x,y) in fits ordering, (y,x) in C ordering
 default_logging_level = "info"

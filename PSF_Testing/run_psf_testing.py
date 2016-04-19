@@ -81,6 +81,8 @@ def main(argv):
     # Parameter fitting
     parser.add_argument("--fit_all_params", action="store_true",
                         help="If true, will also fit astigmatism parameters. This will greatly increase runtime.")
+    parser.add_argument("--focus_penalty_sigma", type=float, default=mv.default_penalty_sigma,
+                        help="How lenient to be in letting focus vary from default values. If 0, will impose no penalty.")
     parser.add_argument("--penalty_sigma", type=float, default=mv.default_penalty_sigma,
                         help="How lenient to be in letting params vary from default values. If 0, will impose no penalty.")
     
@@ -144,7 +146,7 @@ def main(argv):
                  tinytim_data_path = args.tinytim_data_path,
                  cleanup_tinytim_files = args.cleanup_tinytim_files,
                  force_update = args.update,
-                 parallelize=True)
+                 parallelize = False )
     else:
         # We'll test a list of images
         image_filenames = []
@@ -165,6 +167,9 @@ def main(argv):
                          min_lowest_separation = args.min_lowest_separation,
                          
                          fit_all_params=args.fit_all_params,
+                         focus_penalty_sigma=args.focus_penalty_sigma,
+                         penalty_sigma=args.penalty_sigma,
+                         
                          test_single_focus = test_single_focus,
                          test_focus = args.focus,
                          min_test_focus = args.min_focus,
