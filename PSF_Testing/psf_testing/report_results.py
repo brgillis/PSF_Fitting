@@ -81,7 +81,7 @@ def save_fitting_record(fitting_record,
     
         for Q_label, j in zip(("QXC", "QYC", "QPC", "QCC", "QSC", "QXW", "QYW", "QPW", "QCW", "QSW",),
                               range(10)):
-            Qs[Q_label + "_DIF"].append(test_results[11][j])
+            Qs[Q_label + "_DIF"].append(np.mean(test_results[11][j]))
     
     columns = [fits.Column(name="focus", format='E', array=focii),
                fits.Column(name="astigmatism_0", format='E', array=astigmatism_0s),
@@ -192,6 +192,10 @@ def report_results(test_results,
     for Q_label, j in zip(("QXD", "QYD", "QPS", "QCS", "QSS", "QPD", "QCD", "QSD"), range(8)):
         tbhdu.header[Q_label + "_DIF"] = test_results[2][0][1][j]
         tbhdu.header[Q_label + "_Z2"] = test_results[3][0][1][j]
+
+    for Q_label, j in zip(("QXC", "QYC", "QPC", "QCC", "QSC", "QXW", "QYW", "QPW", "QCW", "QSW",),
+                          range(10)):
+        tbhdu.header[Q_label + "_DIF"] = np.mean(test_results[11][j])
 
     tbhdu.header["M0DNDIF"] = test_results[2][1][0]
     tbhdu.header["M0DNZ2"] = test_results[3][1][0]

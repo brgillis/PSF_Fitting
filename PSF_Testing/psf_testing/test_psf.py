@@ -41,7 +41,6 @@ from psf_testing.star_selection.image_info import get_chip, get_exp_time, get_ga
 from psf_testing.star_selection.sextractor_utility import get_stars_in_image
 from psf_testing.test_psf_for_params import test_psf_for_params
 
-
 def test_psf(image_filename,
 
              results_filename=None,
@@ -75,6 +74,10 @@ def test_psf(image_filename,
              save_stacks=True,
              
              parallelize=False):
+        
+    logger = get_default_logger()
+    
+    logger.info("Testing " + image_filename + ".")
 
     # Mark that we need an update if we're forcing an update
     if force_update:
@@ -236,8 +239,10 @@ def test_psf(image_filename,
     if cleanup_tinytim_files:
         for filename in files_to_cleanup:
             os.remove(filename)
-        
-    logger = get_default_logger()
+    
+    # Cleanup unneeded objects
+    del stars, image
+    import gc; gc.collect(2)
         
     logger.info("Finished analysing " + image_filename + ".")
 

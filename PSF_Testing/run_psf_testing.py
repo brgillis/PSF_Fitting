@@ -27,11 +27,22 @@
 import sys
 import argparse
 from os.path import join
-from psf_testing.parmap import parmap
+from multiprocessing import Pool, cpu_count
 
 from psf_testing import magic_values as mv
 from psf_testing.test_psf import test_psf
 from psf_testing.smart_logging import get_default_logger
+
+class test_psf_caller(object):
+    def __init__(self,*args,**kwargs):
+        self.args = args,
+        self.kwargs = kwargs
+    def __call__(self,x):
+        try:
+            test_psf(x,*self.args,**self.kwargs)
+        except Exception as e:
+            logger = get_default_logger()
+            logger.error("Exception when processing file " + str(x) + ":\n" + str(e))
 
 def main(argv):
     """ @TODO main docstring
@@ -121,7 +132,6 @@ def main(argv):
     # Pass the cline-args to the test_psf function, which carries out the testing
     
     if args.image_filename is not None:
-        logger.info("Testing " + args.image_filename + ".")
         test_psf(image_filename = args.image_filename,
                  
                  min_class_star = args.min_class_star,
@@ -155,13 +165,9 @@ def main(argv):
                 for word in line.split():
                     image_filename = join(args.image_dir, word)
                     image_filenames.append(image_filename)
-                    
-        def test_psf_for_image(image_filename):
-            try:
-                logger.info("Testing " + image_filename + ".")
-                test_psf(image_filename = image_filename,
-                         
-                         min_class_star = args.min_class_star,
+        
+        pool = Pool(processes=cpu_count(),maxtasksperchild=1)
+        pool.map(test_psf_caller(min_class_star = args.min_class_star,
                          min_star_mag = args.min_mag,
                          max_star_mag = args.max_mag,
                          min_lowest_separation = args.min_lowest_separation,
@@ -186,11 +192,8 @@ def main(argv):
                          tinytim_data_path = args.tinytim_data_path,
                          cleanup_tinytim_files = args.cleanup_tinytim_files,
                          force_update = args.update,
-                         parallelize=False)
-            except Exception as _e:
-                logger.exception("Exception in processing image " + image_filename + ".")
-            
-        parmap(test_psf_for_image,image_filenames)
+                         parallelize=False),
+                 image_filenames,chunksize=1)
     
     logger.info("Execution complete.")
 

@@ -55,6 +55,9 @@ def make_results_summary(results_filenames,
         Qs[Q_label + "_Z2"] = []
         Qs[Q_label + "NDIF"] = []
         Qs[Q_label + "NZ2"] = []
+
+    for Q_label in ("QXC", "QYC", "QPC", "QCC", "QSC", "QXW", "QYW", "QPW", "QCW", "QSW"):
+        Qs[Q_label + "_DIF"] = []
     
     for results_filename in results_filenames:
         try:
@@ -90,6 +93,9 @@ def make_results_summary(results_filenames,
             Qs[Q_label + "_Z2"].append(header[Q_label + "_Z2"])
             Qs[Q_label + "NDIF"].append(header[Q_label + "NDIF"])
             Qs[Q_label + "NZ2"].append(header[Q_label + "NZ2"])
+            
+        for Q_label in ("QXC", "QYC", "QPC", "QCC", "QSC", "QXW", "QYW", "QPW", "QCW", "QSW"):
+            Qs[Q_label + "_DIF"].append(header[Q_label + "_DIF"])
     
     columns = [fits.Column(name="filename", format='30A', array=image_filenames),
                fits.Column(name="chip", format='B', array=chips),
@@ -108,6 +114,13 @@ def make_results_summary(results_filenames,
                                  "Qplus_diff", "Qcross_diff", "Qsize_diff")):
         columns.append(fits.Column(name=colname + "_diff", format='E', array=Qs[Q_label + "_DIF"]))
         columns.append(fits.Column(name=colname + "_Z2", format='E', array=Qs[Q_label + "_Z2"]))
+        
+    for Q_label, colname in zip(("QXC", "QYC", "QPC", "QCC", "QSC", "QXW", "QYW", "QPW", "QCW", "QSW",), 
+                                ("Qx_core", "Qy_core",
+                                 "Qplus_core", "Qcross_core", "Qsize_core",
+                                 "Qx_wings", "Qy_wings",
+                                 "Qplus_wings", "Qcross_wings", "Qsize_wings",)):
+        columns.append(fits.Column(name=colname + "_diff_mean", format='E', array=Qs[Q_label + "_DIF"]))
         
     columns += [fits.Column(name="m0_noisy_diff_diff", format='E', array=m0_noisy_diff_diffs),
                 fits.Column(name="m0_noisy_Z2", format='E', array=m0_noisy_Zs)]

@@ -24,6 +24,7 @@
 
 from copy import deepcopy
 import numpy as np
+import multiprocessing
 
 from psf_testing import magic_values as mv
 from psf_testing.get_model_psf import get_model_psf_for_star
@@ -31,7 +32,7 @@ from psf_testing.moments.get_Qs import get_m0_and_Qs
 from psf_testing.psf_model_scheme import psf_model_scheme
 from psf_testing.remove_outliers import remove_outliers
 from psf_testing.smart_logging import get_default_logger
-from psf_testing.parmap import parmap
+from multiprocessing import Pool
 
 # Magic value toggles
 ignore_size = True
@@ -181,7 +182,8 @@ def test_psf_for_params(stars,
         for i in range(num_stars):
             test_star_with_index(i)
     else:
-        new_stars = parmap(test_star_with_index,range(num_stars))
+        pool = Pool(processes=multiprocessing.cpu_count(),maxtasksperchild=1)
+        new_stars = pool.map(test_star_with_index,range(num_stars))
         for i in range(num_stars):
             stars[i] = new_stars[i]
         del(new_stars)
@@ -394,16 +396,16 @@ def test_psf_for_params(stars,
              star_props["Qpcs_diff_diff_Zs"],
              star_props["Qpcs_diff_sum_Zs"]),
             (star_props["x_pix"], star_props["y_pix"]),
-            (star_props["unmasked_Qxy_diff"][0][:,0],
-             star_props["unmasked_Qxy_diff"][1][:,0],
-             star_props["unmasked_Qpcs_diff"][0][:,0],
-             star_props["unmasked_Qpcs_diff"][1][:,0],
-             star_props["unmasked_Qpcs_diff"][2][:,0],
-             star_props["unmasked_Qxy_diff"][0][:,1],
-             star_props["unmasked_Qxy_diff"][1][:,1],
-             star_props["unmasked_Qpcs_diff"][0][:,1],
-             star_props["unmasked_Qpcs_diff"][1][:,1],
-             star_props["unmasked_Qpcs_diff"][2][:,1])
+            (star_props["unmasked_Qxy_diff"][:,0,0],
+             star_props["unmasked_Qxy_diff"][:,1,0],
+             star_props["unmasked_Qpcs_diff"][:,0,0],
+             star_props["unmasked_Qpcs_diff"][:,1,0],
+             star_props["unmasked_Qpcs_diff"][:,2,0],
+             star_props["unmasked_Qxy_diff"][:,0,1],
+             star_props["unmasked_Qxy_diff"][:,1,1],
+             star_props["unmasked_Qpcs_diff"][:,0,1],
+             star_props["unmasked_Qpcs_diff"][:,1,1],
+             star_props["unmasked_Qpcs_diff"][:,2,1])
             )
     
     if fitting_record is not None:

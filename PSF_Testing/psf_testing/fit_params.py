@@ -141,13 +141,13 @@ def fit_best_params_and_test_psf(stars,
 
 
     best_param_array = minimize(get_X2_for_params, param_array, method='Nelder-Mead',
-                                options={'xtol':0.0001})
-    best_focus = best_param_array.x[0] - focus_offset
+                                options={'xtol':0.0001}).x
+    best_focus = best_param_array[0] - focus_offset
     best_params = {}
-    best_params["astigmatism_0"] = best_param_array.x[1] - param_offset
-    best_params["astigmatism_45"] = best_param_array.x[2] - param_offset
-    best_params["spherical_3rd"] = best_param_array.x[3] - param_offset
-    best_params["spherical_5th"] = best_param_array.x[4] - param_offset
+    best_params["astigmatism_0"] = best_param_array[1] - param_offset
+    best_params["astigmatism_45"] = best_param_array[2] - param_offset
+    best_params["spherical_3rd"] = best_param_array[3] - param_offset
+    best_params["spherical_5th"] = best_param_array[4] - param_offset
 
     test_results = test_psf_for_params(stars=stars,
 
@@ -173,6 +173,11 @@ def fit_best_params_and_test_psf(stars,
                                             
                                             fitting_record=None,
                                             
-                                            parallelize=parallelize)
+                                            parallelize=parallelize,
+                                            
+                                            astigmatism_0 = best_param_array[1]-param_offset,
+                                            astigmatism_45 = best_param_array[2]-param_offset,
+                                            spherical_3rd = best_param_array[3]-param_offset,
+                                            spherical_5th = best_param_array[4]-param_offset,)
 
     return test_results, fitting_record
