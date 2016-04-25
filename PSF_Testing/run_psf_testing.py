@@ -42,7 +42,7 @@ class test_psf_caller(object):
             test_psf(x,*self.args,**self.kwargs)
         except Exception as e:
             logger = get_default_logger()
-            logger.error("Exception when processing file " + str(x) + ":\n" + str(e))
+            logger.error("Exception when processing file " + str(x) + ": " + str(e))
 
 def main(argv):
     """ @TODO main docstring
@@ -92,7 +92,7 @@ def main(argv):
     # Parameter fitting
     parser.add_argument("--fit_all_params", action="store_true",
                         help="If true, will also fit astigmatism parameters. This will greatly increase runtime.")
-    parser.add_argument("--focus_penalty_sigma", type=float, default=mv.default_penalty_sigma,
+    parser.add_argument("--focus_penalty_sigma", type=float, default=mv.default_focus_penalty_sigma,
                         help="How lenient to be in letting focus vary from default values. If 0, will impose no penalty.")
     parser.add_argument("--penalty_sigma", type=float, default=mv.default_penalty_sigma,
                         help="How lenient to be in letting params vary from default values. If 0, will impose no penalty.")
@@ -132,14 +132,15 @@ def main(argv):
     # Pass the cline-args to the test_psf function, which carries out the testing
     
     if args.image_filename is not None:
-        test_psf(image_filename = args.image_filename,
-                 
-                 min_class_star = args.min_class_star,
+        test_psf_caller(min_class_star = args.min_class_star,
                  min_star_mag = args.min_mag,
                  max_star_mag = args.max_mag,
                  min_lowest_separation = args.min_lowest_separation,
-                 
+                            
                  fit_all_params=args.fit_all_params,
+                 focus_penalty_sigma=args.focus_penalty_sigma,
+                 penalty_sigma=args.penalty_sigma,
+                 
                  test_single_focus = test_single_focus,
                  test_focus = args.focus,
                  min_test_focus = args.min_focus,
@@ -148,15 +149,16 @@ def main(argv):
                  test_focus_precision = args.focus_precision,
                  num_grid_points = (args.focus_sample_x_points,
                                     args.focus_sample_y_points),
-                 
+                    
                  sex_data_path = args.sex_data_path,
                  cleanup_sex_files = args.cleanup_sex_files,
-                 
+                    
                  tinytim_path = args.tinytim_path,
                  tinytim_data_path = args.tinytim_data_path,
                  cleanup_tinytim_files = args.cleanup_tinytim_files,
                  force_update = args.update,
-                 parallelize = False )
+                 parallelize = True )(args.image_filename)
+        image_filenames = [args.image_filename]
     else:
         # We'll test a list of images
         image_filenames = []
@@ -166,7 +168,7 @@ def main(argv):
                     image_filename = join(args.image_dir, word)
                     image_filenames.append(image_filename)
         
-        pool = Pool(processes=cpu_count(),maxtasksperchild=1)
+        pool = Pool(processes=max((cpu_count()-1,1)),maxtasksperchild=1)
         pool.map(test_psf_caller(min_class_star = args.min_class_star,
                          min_star_mag = args.min_mag,
                          max_star_mag = args.max_mag,

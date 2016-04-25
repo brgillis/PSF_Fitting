@@ -32,7 +32,6 @@ from psf_testing.moments.get_Qs import get_m0_and_Qs
 from psf_testing.psf_model_scheme import psf_model_scheme
 from psf_testing.remove_outliers import remove_outliers
 from psf_testing.smart_logging import get_default_logger
-from multiprocessing import Pool
 
 # Magic value toggles
 ignore_size = True
@@ -76,6 +75,68 @@ def get_star_arrays(stars,outliers_mask=None):
         i += 1
             
     return star_props
+
+class test_star_caller(object):
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+    def __call__(self, x):
+        return test_star(x, *self.args, **self.kwargs)
+    
+def test_star(i,
+              stars,
+              model_scheme,
+              prim_weight_func,
+              sec_weight_func,
+              tinytim_path,
+              tinytim_data_path,
+              gain,
+              seed_factor,
+              num_stars,
+              save_models,
+              **params):
+    
+    star = stars[i]
+
+    if not star.valid:
+        return star
+
+    model_psf = get_model_psf_for_star(star=star,
+                                       scheme=model_scheme,
+                                       weight_func=prim_weight_func,
+                                       tinytim_path=tinytim_path,
+                                       tinytim_data_path=tinytim_data_path,
+                                       **params)
+
+    (star.model_m0, star.model_Qxy, star.model_Qpcs) = \
+        get_m0_and_Qs(image=model_psf,
+                      prim_weight_func=prim_weight_func,
+                      sec_weight_func=sec_weight_func)
+
+    # Now, get a noisy psf and test it (so we can test for noise bias)
+    model_psf_noise = np.sqrt(model_psf / gain + np.square(star.background_noise))
+
+    ny, nx = np.shape(model_psf)
+
+    # Seed the random number generated with an arbitrary but stable integer
+    np.random.seed(seed_factor*num_stars + i)
+    noisy_model_psf = model_psf + model_psf_noise * np.random.randn(ny, nx)
+
+    try:
+        (star.noisy_model_m0, star.noisy_model_Qxy, star.noisy_model_Qpcs ) = \
+            get_m0_and_Qs(image=noisy_model_psf,
+                          prim_weight_func=prim_weight_func,
+                          sec_weight_func=sec_weight_func)
+    except AssertionError as _e:
+        (star.noisy_model_m0, star.noisy_model_Qxy, star.noisy_model_Qpcs, ) = \
+            (star.model_m0, star.model_Qxy, star.model_Qpcs, )
+
+    # Save the models if desired
+    if save_models:
+        star.model_psf = model_psf
+        star.noisy_model_psf = noisy_model_psf
+        
+    return star
 
 def test_psf_for_params(stars,
 
@@ -132,58 +193,37 @@ def test_psf_for_params(stars,
 
     # Get results for each star
     num_stars = len(stars)
-    assert get_num_valid_stars(stars) > 1
-    
-    def test_star_with_index(i):
-
-        star = stars[i]
-
-        if not star.valid:
-            return star
-
-        model_psf = get_model_psf_for_star(star=star,
-                                           scheme=model_scheme,
-                                           weight_func=prim_weight_func,
-                                           tinytim_path=tinytim_path,
-                                           tinytim_data_path=tinytim_data_path,
-                                           **params)
-
-        (star.model_m0, star.model_Qxy, star.model_Qpcs) = \
-            get_m0_and_Qs(image=model_psf,
-                          prim_weight_func=prim_weight_func,
-                          sec_weight_func=sec_weight_func)
-
-        # Now, get a noisy psf and test it (so we can test for noise bias)
-        model_psf_noise = np.sqrt(model_psf / gain + np.square(star.background_noise))
-
-        ny, nx = np.shape(model_psf)
-
-        # Seed the random number generated with an arbitrary but stable integer
-        np.random.seed(seed_factor*num_stars + i)
-        noisy_model_psf = model_psf + model_psf_noise * np.random.randn(ny, nx)
-
-        try:
-            (star.noisy_model_m0, star.noisy_model_Qxy, star.noisy_model_Qpcs ) = \
-                get_m0_and_Qs(image=noisy_model_psf,
-                              prim_weight_func=prim_weight_func,
-                              sec_weight_func=sec_weight_func)
-        except AssertionError as _e:
-            (star.noisy_model_m0, star.noisy_model_Qxy, star.noisy_model_Qpcs, ) = \
-                (star.model_m0, star.model_Qxy, star.model_Qpcs, )
-
-        # Save the models if desired
-        if save_models:
-            star.model_psf = model_psf
-            star.noisy_model_psf = noisy_model_psf
-            
-        return star
+    if get_num_valid_stars(stars) <= 1:
+        raise Exception("Too few usable stars in image.")
             
     if not parallelize:
         for i in range(num_stars):
-            test_star_with_index(i)
+            stars[i] = test_star(i,
+                      stars,
+                      model_scheme,
+                      prim_weight_func,
+                      sec_weight_func,
+                      tinytim_path,
+                      tinytim_data_path,
+                      gain,
+                      seed_factor,
+                      num_stars,
+                      save_models,
+                      **params)
     else:
-        pool = Pool(processes=multiprocessing.cpu_count(),maxtasksperchild=1)
-        new_stars = pool.map(test_star_with_index,range(num_stars))
+        pool = multiprocessing.Pool(processes=multiprocessing.cpu_count(),maxtasksperchild=1)
+        new_stars = pool.map(test_star_caller(stars,
+                                              model_scheme,
+                                              prim_weight_func,
+                                              sec_weight_func,
+                                              tinytim_path,
+                                              tinytim_data_path,
+                                              gain,
+                                              seed_factor,
+                                              num_stars,
+                                              save_models,
+                                              **params),
+                             range(num_stars))
         for i in range(num_stars):
             stars[i] = new_stars[i]
         del(new_stars)
@@ -354,36 +394,36 @@ def test_psf_for_params(stars,
             (X2, X2_dof, chi2, chi2_dof),
             ((star_props["m0_diff_diff_mean"], (star_props["Qxy_diff_diff_mean"][0],
                                                 star_props["Qxy_diff_diff_mean"][1],
-                                                star_props["Qpcs_diff_diff_mean"][0],
-                                                star_props["Qpcs_diff_diff_mean"][1],
-                                                star_props["Qpcs_diff_diff_mean"][2],
                                                 star_props["Qpcs_diff_sum_mean"][0],
                                                 star_props["Qpcs_diff_sum_mean"][1],
-                                                star_props["Qpcs_diff_sum_mean"][2])),
+                                                star_props["Qpcs_diff_sum_mean"][2],
+                                                star_props["Qpcs_diff_diff_mean"][0],
+                                                star_props["Qpcs_diff_diff_mean"][1],
+                                                star_props["Qpcs_diff_diff_mean"][2])),
              (star_props["noisy_m0_diff_diff_mean"], (star_props["noisy_Qxy_diff_diff_mean"][0],
                                                     star_props["noisy_Qxy_diff_diff_mean"][1],
-                                                    star_props["noisy_Qpcs_diff_diff_mean"][0],
-                                                    star_props["noisy_Qpcs_diff_diff_mean"][1],
-                                                    star_props["noisy_Qpcs_diff_diff_mean"][2],
                                                     star_props["noisy_Qpcs_diff_sum_mean"][0],
                                                     star_props["noisy_Qpcs_diff_sum_mean"][1],
-                                                    star_props["noisy_Qpcs_diff_sum_mean"][2]))),
+                                                    star_props["noisy_Qpcs_diff_sum_mean"][2],
+                                                    star_props["noisy_Qpcs_diff_diff_mean"][0],
+                                                    star_props["noisy_Qpcs_diff_diff_mean"][1],
+                                                    star_props["noisy_Qpcs_diff_diff_mean"][2]))),
             ((star_props["m0_diff_diff_Z2s"], (star_props["Qxy_diff_diff_Z2s"][0],
                                                 star_props["Qxy_diff_diff_Z2s"][1],
-                                                star_props["Qpcs_diff_diff_Z2s"][0],
-                                                star_props["Qpcs_diff_diff_Z2s"][1],
-                                                star_props["Qpcs_diff_diff_Z2s"][2],
                                                 star_props["Qpcs_diff_sum_Z2s"][0],
                                                 star_props["Qpcs_diff_sum_Z2s"][1],
-                                                star_props["Qpcs_diff_sum_Z2s"][2])),
+                                                star_props["Qpcs_diff_sum_Z2s"][2],
+                                                star_props["Qpcs_diff_diff_Z2s"][0],
+                                                star_props["Qpcs_diff_diff_Z2s"][1],
+                                                star_props["Qpcs_diff_diff_Z2s"][2])),
              (star_props["noisy_m0_diff_diff_Z2s"], (star_props["noisy_Qxy_diff_diff_Z2s"][0],
                                                     star_props["noisy_Qxy_diff_diff_Z2s"][1],
-                                                    star_props["noisy_Qpcs_diff_diff_Z2s"][0],
-                                                    star_props["noisy_Qpcs_diff_diff_Z2s"][1],
-                                                    star_props["noisy_Qpcs_diff_diff_Z2s"][2],
                                                     star_props["noisy_Qpcs_diff_sum_Z2s"][0],
                                                     star_props["noisy_Qpcs_diff_sum_Z2s"][1],
-                                                    star_props["noisy_Qpcs_diff_sum_Z2s"][2]))),
+                                                    star_props["noisy_Qpcs_diff_sum_Z2s"][2],
+                                                    star_props["noisy_Qpcs_diff_diff_Z2s"][0],
+                                                    star_props["noisy_Qpcs_diff_diff_Z2s"][1],
+                                                    star_props["noisy_Qpcs_diff_diff_Z2s"][2]))),
             (star_props["m0"], star_props["Qxy"], star_props["Qpcs"]),
             (model_m0s, model_Qxys, model_Qpcss),
             (noisy_model_m0s, noisy_model_Qxys, noisy_model_Qpcss),

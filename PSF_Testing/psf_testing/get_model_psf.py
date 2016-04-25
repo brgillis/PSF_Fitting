@@ -78,20 +78,25 @@ def make_subsampled_psf_model(filename,
 
     filename_base = filename.replace(mv.image_extension, "")
     
+    pid = str(os.getpid())
+    
+    process_filename_base = filename_base + pid
+    process_filename = process_filename_base + mv.image_extension
+    
     # Check for a lock file on this, to make sure its safe to create
-    lock_filename = filename_base + ".lock"
+    lock_filename = process_filename_base + ".lock"
     if os.path.isfile(lock_filename):
         time_start = time.time()
-        while (not os.path.isfile(filename)) and (time.time() - time_start < 60):
+        while (not os.path.isfile(process_filename)) and (time.time() - time_start < 60):
             time.sleep(1)
         
         # Give the file a chance to be fully written
         time.sleep(1)
         
-        if os.path.isfile(filename):
+        if os.path.isfile(process_filename):
             if use_cache:
                 try:
-                    return fits.open(filename)[0]
+                    return fits.open(process_filename)[0]
                 except IOError as _e:
                     open(lock_filename, 'a').close()
             else:
@@ -102,7 +107,7 @@ def make_subsampled_psf_model(filename,
     else:
         open(lock_filename, 'a').close()
     
-    par_file = filename_base + ".par"
+    par_file = process_filename_base + ".par"
 
     # Set up the command to call tiny1
     cmd = "export TINYTIM=" + tinytim_path + "\n" + \
@@ -115,7 +120,7 @@ def make_subsampled_psf_model(filename,
           str(spec_type[1]) + "\n" + \
           str(psf_size) + "\n" + \
           str(focus) + "\n" + \
-          filename_base + "\nEOF"
+          process_filename_base + "\nEOF"
     # Run the command to call tiny1
     sbp.call(cmd, shell=True)
     
@@ -166,29 +171,29 @@ def make_subsampled_psf_model(filename,
 
     # Remove the unnecessary undistorted model
     try:
-        os.remove(filename_base + mv.undistorted_model_tail)
+        os.remove(process_filename_base + mv.undistorted_model_tail)
     except OSError as _e:
         pass
 
     # Open the subsampled model image
     try:
-        subsampled_image = fits.open(filename_base + mv.subsampled_model_tail)
+        subsampled_image = fits.open(process_filename_base + mv.subsampled_model_tail)
     except IOError as _e:
-        # This normally shouldn't happen, but might if two threads somehoe end up using
+        # This normally shouldn't happen, but might if two threads somehow end up using
         # the same lock. Best case is to wait and see if the other thread handles this
         # for us
         time_start = time.time()
-        while ((not os.path.isfile(filename_base + mv.subsampled_model_tail))
+        while ((not os.path.isfile(process_filename_base + mv.subsampled_model_tail))
             and (time.time() - time_start < 120)):
             time.sleep(1)
         
         # Give the file a chance to be fully written
         time.sleep(1)
         
-        if not os.path.isfile(filename_base + mv.subsampled_model_tail):
+        if not os.path.isfile(process_filename_base + mv.subsampled_model_tail):
             raise
         else:
-            subsampled_image = fits.open(filename_base + mv.subsampled_model_tail)
+            subsampled_image = fits.open(process_filename_base + mv.subsampled_model_tail)
             
 
     # Define a modified weight function to work on subsampled pixels
@@ -232,7 +237,7 @@ def make_subsampled_psf_model(filename,
 
     # Remove the old version, plus the .par and .tt3 files
     try:
-        os.remove(filename_base + mv.subsampled_model_tail)
+        os.remove(process_filename_base + mv.subsampled_model_tail)
     except OSError as _e:
         pass
     try:
@@ -244,7 +249,7 @@ def make_subsampled_psf_model(filename,
     except OSError as _e:
         pass
     try:
-        os.remove(filename_base + ".tt3")
+        os.remove(process_filename_base + ".tt3")
     except OSError as _e:
         pass
     

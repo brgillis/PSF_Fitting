@@ -23,6 +23,8 @@
 """
 
 from astropy.io import fits
+import numpy as np
+
 from psf_testing import smart_logging
 from psf_testing import magic_values as mv
 
@@ -58,12 +60,22 @@ def make_results_summary(results_filenames,
 
     for Q_label in ("QXC", "QYC", "QPC", "QCC", "QSC", "QXW", "QYW", "QPW", "QCW", "QSW"):
         Qs[Q_label + "_DIF"] = []
+        
+    for weight_label in ("core_", "wings_"):
+        for label in ("star_", "model_"):
+            for Q_label in ("Qx", "Qy", "Qplus", "Qcross", "Qsize"):
+                Qs[weight_label+label+Q_label + "_mean"] = []
+                
     
     for results_filename in results_filenames:
         try:
             results_file = fits.open(results_filename)
+            _ = results_file[1].header["QXC_DIF"]
         except IOError as _e:
             logger.warn("File " + results_filename + " cannot be opened and will be skipped.")
+            continue
+        except KeyError as _e:
+            logger.warn("File " + results_filename + " is out of date and will be skipped.")
             continue
             
         header = results_file[1].header
@@ -96,6 +108,19 @@ def make_results_summary(results_filenames,
             
         for Q_label in ("QXC", "QYC", "QPC", "QCC", "QSC", "QXW", "QYW", "QPW", "QCW", "QSW"):
             Qs[Q_label + "_DIF"].append(header[Q_label + "_DIF"])
+            
+        data = results_file[1].data
+        good_stars = data["is_not_outlier"]
+        mask = np.logical_not(good_stars)
+
+        for weight_label in ("core_", "wings_"):
+            for label in ("star_", "model_"):
+                for Q_label in ("Qx", "Qy", "Qplus", "Qcross", "Qsize"):
+                    good_values = np.ma.masked_array(data[weight_label+label+Q_label],mask)
+                    mean = np.mean(good_values)
+                    Qs[weight_label+label+Q_label + "_mean"].append(mean)
+                    
+                    
     
     columns = [fits.Column(name="filename", format='30A', array=image_filenames),
                fits.Column(name="chip", format='B', array=chips),
@@ -131,6 +156,13 @@ def make_results_summary(results_filenames,
                                  "Qplus_diff", "Qcross_diff", "Qsize_diff")):
         columns.append(fits.Column(name=colname + "_noisy_diff", format='E', array=Qs[Q_label + "NDIF"]))
         columns.append(fits.Column(name=colname + "_noisy_Z2", format='E', array=Qs[Q_label + "NZ2"]))
+        
+    
+    for weight_label in ("core_", "wings_"):
+        for label in ("star_", "model_"):
+            for Q_label in ("Qx", "Qy", "Qplus", "Qcross", "Qsize"):
+                name = weight_label+label+Q_label + "_mean"
+                columns.append(fits.Column(name=name, format='E', array=Qs[name]))
 
     tbhdu = fits.BinTableHDU.from_columns(columns)
 
