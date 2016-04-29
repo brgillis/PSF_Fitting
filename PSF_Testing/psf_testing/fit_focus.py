@@ -104,7 +104,7 @@ def fit_best_focus_and_test_psf(stars,
     
     # Calculate (and cache) the value for focus 0 first, so we'll always use the
     # outliers list for that
-    get_X2_for_focus(0.0)
+    get_X2_for_focus(mv.default_init_test_focus)
 
     # Initialize the test
 

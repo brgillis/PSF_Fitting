@@ -32,8 +32,8 @@ from psf_testing.test_psf_for_params import test_psf_for_params
 
 # Offsets so that the solver can use relative errors without worrying that these params
 # cross zero
-focus_offset = 100
-param_offset = 1
+focus_scale = 100
+param_scale = 1
 
 
 def get_X2_of_test_results(test_results):
@@ -93,7 +93,7 @@ def fit_best_params_and_test_psf(stars,
 
     # Define a function that we can use for fitting the focus
     def get_X2_for_params(test_param_array):
-        test_focus = test_param_array[0]-focus_offset
+        test_focus = focus_scale*(test_param_array[0]-1)
         test_results = test_psf_for_params(stars=stars,
 
                                             image_filename=image_filename,
@@ -119,35 +119,39 @@ def fit_best_params_and_test_psf(stars,
                                             
                                             parallelize=parallelize,
                                             
-                                            astigmatism_0 = test_param_array[1]-param_offset,
-                                            astigmatism_45 = test_param_array[2]-param_offset,
-                                            spherical_3rd = test_param_array[3]-param_offset,
-                                            spherical_5th = test_param_array[4]-param_offset,)
+                                            astigmatism_0 = param_scale*(test_param_array[1]-1),
+                                            astigmatism_45 = param_scale*(test_param_array[2]-1),
+                                            spherical_3rd = param_scale*(test_param_array[3]-1),
+                                            spherical_5th = param_scale*(test_param_array[4]-1),)
         return get_X2_of_test_results(test_results) + \
             get_params_penalty(test_focus,focus_penalty_sigma=focus_penalty_sigma,
                                penalty_sigma=penalty_sigma,
-                               astigmatism_0 = test_param_array[1]-param_offset,
-                               astigmatism_45 = test_param_array[2]-param_offset,
-                               spherical_3rd = test_param_array[3]-param_offset,
-                               spherical_5th = test_param_array[4]-param_offset,)
+                               astigmatism_0 = param_scale*(test_param_array[1]-1),
+                               astigmatism_45 = param_scale*(test_param_array[2]-1),
+                               spherical_3rd = param_scale*(test_param_array[3]-1),
+                               spherical_5th = param_scale*(test_param_array[4]-1),)
     
     # Initialize the test
     param_array = np.empty(5)
-    param_array[0] = test_focus + focus_offset
-    param_array[1] = params["astigmatism_0"] + param_offset
-    param_array[2] = params["astigmatism_45"] + param_offset
-    param_array[3] = params["spherical_3rd"] + param_offset
-    param_array[4] = params["spherical_5th"] + param_offset
-
+    param_array[0] = test_focus/focus_scale + 1
+    param_array[1] = params["astigmatism_0"]/param_scale + 1
+    param_array[2] = params["astigmatism_45"]/param_scale + 1
+    param_array[3] = params["spherical_3rd"]/param_scale + 1
+    param_array[4] = params["spherical_5th"]/param_scale + 1
+    
+    # Calculate (and cache) the value for init params first, so we'll always use the
+    # outliers list for that
+    get_X2_for_params(param_array)
 
     best_param_array = minimize(get_X2_for_params, param_array, method='Nelder-Mead',
-                                options={'xtol':0.001,'ftol':0.001}).x
-    best_focus = best_param_array[0] - focus_offset
+                                options={'xtol':0.0001,'ftol':100}).x
+
+    best_focus = focus_scale*(best_param_array[0] - 1)
     best_params = {}
-    best_params["astigmatism_0"] = best_param_array[1] - param_offset
-    best_params["astigmatism_45"] = best_param_array[2] - param_offset
-    best_params["spherical_3rd"] = best_param_array[3] - param_offset
-    best_params["spherical_5th"] = best_param_array[4] - param_offset
+    best_params["astigmatism_0"] = param_scale*(best_param_array[1]-1)
+    best_params["astigmatism_45"] = param_scale*(best_param_array[2]-1)
+    best_params["spherical_3rd"] = param_scale*(best_param_array[3]-1)
+    best_params["spherical_5th"] = param_scale*(best_param_array[4]-1)
 
     test_results = test_psf_for_params(stars=stars,
 
@@ -175,9 +179,9 @@ def fit_best_params_and_test_psf(stars,
                                             
                                             parallelize=parallelize,
                                             
-                                            astigmatism_0 = best_param_array[1]-param_offset,
-                                            astigmatism_45 = best_param_array[2]-param_offset,
-                                            spherical_3rd = best_param_array[3]-param_offset,
-                                            spherical_5th = best_param_array[4]-param_offset,)
+                                            astigmatism_0 = param_scale*(best_param_array[1]-1),
+                                            astigmatism_45 = param_scale*(best_param_array[2]-1),
+                                            spherical_3rd = param_scale*(best_param_array[3]-1),
+                                            spherical_5th = param_scale*(best_param_array[4]-1),)
 
     return test_results, fitting_record

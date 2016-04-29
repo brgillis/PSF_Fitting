@@ -169,7 +169,7 @@ def main(argv):
                     image_filenames.append(image_filename)
         
         pool = Pool(processes=max((cpu_count()-1,1)),maxtasksperchild=1)
-        pool.map(test_psf_caller(min_class_star = args.min_class_star,
+        _ = pool.map(test_psf_caller(min_class_star = args.min_class_star,
                          min_star_mag = args.min_mag,
                          max_star_mag = args.max_mag,
                          min_lowest_separation = args.min_lowest_separation,

@@ -34,7 +34,7 @@ from psf_testing.remove_outliers import remove_outliers
 from psf_testing.smart_logging import get_default_logger
 
 # Magic value toggles
-ignore_size = True
+ignore_size = False
 
 def get_num_valid_stars(stars):
     

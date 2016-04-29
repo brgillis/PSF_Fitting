@@ -222,6 +222,7 @@ def report_results(test_results,
           " degrees of freedom.")
     
     if fitting_record is not None:
-        save_fitting_record(fitting_record,filename_root)
+        if len(fitting_record)>0:
+            save_fitting_record(fitting_record,filename_root)
 
     return
