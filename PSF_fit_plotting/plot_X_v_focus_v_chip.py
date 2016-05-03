@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-""" @file /disk2/brg/git/Tiny_Tim_PSF_Fitting/PSF_fit_plotting/plot_fit_statistics.py
+""" @file plot_X_v_focus_v_chip.py
 
-    Created 29 Jan 2016
+    Created 25 Apr 2016
 
     @TODO: File docstring
 
@@ -39,19 +39,18 @@ from astropy.io import fits
 
 default_summary_filename = "/disk2/brg/git/Tiny_Tim_PSF_Fitting/PSF_Testing/psf_testing_results_summary.fits"
 
-default_plot_name = "fitting_parameter_hists"
+default_plot_name = "X_v_focus_v_chip"
 default_paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/PSF_Model_Testing/"
 default_file_type = "png"
 
 default_red_X2_min = 0.1
-default_red_X2_max = 100.0
-default_nbins = 20
+default_red_X2_max = 10.0
 
-figsize = (8,8)
+figsize = (6,6)
 
-base_fontsize = 12
+fontsize = 12
 
-def make_fit_statistic_plots(summary_filename = default_summary_filename,
+def make_X_v_focus_v_chip_plot(summary_filename = default_summary_filename,
                              
                             plot_name = default_plot_name,
                             paper_location = default_paper_location,
@@ -59,67 +58,45 @@ def make_fit_statistic_plots(summary_filename = default_summary_filename,
                             
                             red_X2_min = default_red_X2_min,
                             red_X2_max = default_red_X2_max,
-                            nbins = default_nbins,
-                            
-                            fade_size = False,
-                            
-                            plot_chi2 = False,
                             
                             hide = False,
+                            
+                            plot_chi2 = False,
                             ):
     
     summary_table = fits.open(summary_filename)[1].data
     
-    fig = pyplot.figure(figsize=figsize)
-    
-    if plot_chi2:
-        dofs = summary_table["chi2_dofs"]+3
-        plot_tuples = (("chi_squared", r"\chi^2", 'r', 0),)
-        gs = matplotlib.gridspec.GridSpec(1, 1)
-        ymax = 120
-        fontsize = 2*base_fontsize
-        bins = np.logspace(np.log10(red_X2_min),np.log10(red_X2_max),
-                                            nbins+1,base=10)
-        xlog=True
-    else:
-        dofs = summary_table["X2_dofs"]
-        gs = matplotlib.gridspec.GridSpec(3, 3)
-        plot_tuples = (("X_squared", r"X^2", 'r', 0),
-                        ("Qx_diff_Z2", r"Z^2(Q_{x}^{-})", 'y', 1),
-                        ("Qy_diff_Z2", r"Z^2(Q_{y}^{-})", 'y', 2),
-                        ("Qplus_sum_Z2", r"Z^2(Q_{\rm +}^{+})", 'y', 3),
-                        ("Qcross_sum_Z2", r"Z^2(Q_{\times}^{+})", 'y', 4),
-                        ("Qsize_sum_Z2", r"Z^2(Q_{\rm s}^{+})", 'y', 5),
-                        ("Qplus_diff_Z2", r"Z^2(Q_{\rm +}^{-})", 'y', 6),
-                        ("Qcross_diff_Z2", r"Z^2(Q_{\times}^{-})", 'y', 7),
-                        ("Qsize_diff_Z2", r"Z^2(Q_{\rm s}^{-})", 'y', 8),)
-        ymax = 450
-        fontsize = base_fontsize
-        bins = np.logspace(np.log10(red_X2_min),np.log10(red_X2_max),
-                                            nbins+1,base=10)
-        xlog=True
+    _fig = pyplot.figure(figsize=figsize)
         
+    gs = matplotlib.gridspec.GridSpec(1, 1)
     gs.update(wspace=0.3, hspace=0.3, left=0.1, right=0.9, bottom=0.1, top=0.9)
         
+    ax = pyplot.subplot(gs[0])
     
-    for param_name, label, color, i in plot_tuples:
-        
-        ax = pyplot.subplot(gs[i])
-        
-        vals = summary_table[param_name]/dofs
-        
-        if fade_size and "size" in param_name:
-            color = "w"
-        
-        pyplot.hist(vals, bins=bins, facecolor=color)
-        
-        ax.set_ylim([0,ymax])
-        
-        ax.set_xlabel(r"$" + label + r"/\nu$",fontsize=fontsize)
-        ax.set_ylabel("\# of images",fontsize=fontsize,labelpad=-1)
-        
-        if xlog:
-            ax.set_xscale("log", nonposx='clip')
+    if plot_chi2:
+        y_label = r"Best $\chi^2_{\rm red}$"
+        fitted_param = summary_table["chi_squared"]/(summary_table["chi2_dofs"]+3)
+    else:
+        y_label = r"Best $X^2_{\rm red}$"
+        fitted_param = summary_table["X_squared"]/summary_table["X2_dofs"]
+    ax.set_yscale("log", nonposy='clip')
+
+    chip1_mask = summary_table["chip"]==1
+    chip2_mask = ~chip1_mask
+
+    for mask, label, color, marker in ((chip1_mask, "Chip 1", '#C00000', "o"),
+                               (chip2_mask, "Chip 2", '#4040FF', "^")):
+        focii = np.ma.masked_array(summary_table["focus"],mask)
+        X2s = np.ma.masked_array(fitted_param,mask)
+
+        pyplot.scatter(focii,X2s,edgecolors=color,label=label,alpha=1,marker=marker,facecolors='none')
+    
+    ax.set_ylim([red_X2_min,red_X2_max])
+    
+    ax.set_xlabel("Best-fit focus offset (microns)",fontsize=fontsize)
+    ax.set_ylabel(y_label,fontsize=fontsize,labelpad=-8)
+    
+    ax.legend(loc="upper right")
         
     # Save the figure
     outfile_name = plot_name + "." + file_type
@@ -149,10 +126,7 @@ def main(argv):
     parser.add_argument("--file_type",type=str, default=default_file_type) 
     
     parser.add_argument("--red_X2_min",type=float, default=default_red_X2_min) 
-    parser.add_argument("--red_X2_max",type=float, default=default_red_X2_max) 
-    parser.add_argument("--nbins",type=int, default=default_nbins) 
-    
-    parser.add_argument("--fade_size", action="store_true")
+    parser.add_argument("--red_X2_max",type=float, default=default_red_X2_max)
     
     parser.add_argument("--plot_chi2", action="store_true")
     
@@ -160,7 +134,7 @@ def main(argv):
     
     args = vars(parser.parse_args())
     
-    make_fit_statistic_plots(**args)
+    make_X_v_focus_v_chip_plot(**args)
     
     return
 

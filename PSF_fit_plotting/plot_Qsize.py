@@ -31,6 +31,7 @@ import numpy as np
 import os
 import subprocess as sbp
 import sys
+from scipy.interpolate import InterpolatedUnivariateSpline
 
 matplotlib.rcParams['ps.useafm'] = True
 matplotlib.rcParams['pdf.use14corefonts'] = True
@@ -63,9 +64,10 @@ default_seed = 151357
 colors = ("#600060","#00C0C0","#FFFF40","k")
 point_size = 4
 
-Qsize_scale = {}
-Qsize_scale["core"] = 5
-Qsize_scale["wings"] = 3
+Qsize_scale = {"core":5, "wings":3}
+
+star_Qsizes_pix = {"core":0.055254, "wings":0.097274}
+model_Qsizes_pix = {"core":0.04823, "wings":0.095076}
 
 def make_Qsize_plots(plot_name = default_plot_name,
                      noisy_plot_name = default_noisy_plot_name,
@@ -151,6 +153,33 @@ def make_Qsize_plots(plot_name = default_plot_name,
             noisy_quad_moments[i] = np.abs(noisy_Mxx + noisy_Myy)/wf_scale**2
             noisy_quad_moment_with_dets[i] = np.abs(noisy_Mxx + noisy_Myy + \
                 2 * np.sqrt( np.abs(noisy_Mxx*noisy_Myy - np.square(noisy_Mxy) ) ) ) /wf_scale**2
+        
+        normed_sigmas = test_sigmas/wf_scale
+        
+        # Calculate some equivalent values needed for the paper
+        
+        star_Qsize = star_Qsizes_pix[wf_name]/wf_scale/mv.pixel_scale
+        model_Qsize = model_Qsizes_pix[wf_name]/wf_scale/mv.pixel_scale
+        
+        quad_moments_spline = InterpolatedUnivariateSpline(Qsizes,quad_moments)
+        
+        star_quad_moments = quad_moments_spline(star_Qsize)
+        model_quad_moments = quad_moments_spline(model_Qsize)
+        
+        print("Equivalent moment size for Qs of " + str(star_Qsize*wf_scale*mv.pixel_scale)
+              + " = " + str(star_quad_moments*(wf_scale*mv.pixel_scale)**2))
+        print("Equivalent moment size for Qs of " + str(model_Qsize*wf_scale*mv.pixel_scale)
+              + " = " + str(model_quad_moments*(wf_scale*mv.pixel_scale)**2))
+        
+        quad_moment_with_dets_spline = InterpolatedUnivariateSpline(Qsizes,quad_moment_with_dets)
+        
+        star_quad_moment_with_dets = quad_moment_with_dets_spline(star_Qsize)
+        model_quad_moment_with_dets = quad_moment_with_dets_spline(model_Qsize)
+        
+        print("Equivalent moment with det size for Qs of " + str(star_Qsize*wf_scale*mv.pixel_scale)
+              + " = " + str(star_quad_moment_with_dets*(wf_scale*mv.pixel_scale)**2))
+        print("Equivalent moment with det size for Qs of " + str(model_Qsize*wf_scale*mv.pixel_scale)
+              + " = " + str(model_quad_moment_with_dets*(wf_scale*mv.pixel_scale)**2))
             
         # Do the plotting now
         
@@ -161,8 +190,6 @@ def make_Qsize_plots(plot_name = default_plot_name,
         ax.set_xlabel(r"$r_{\mathrm{s}}/" + wf_scale_name + r"$",labelpad=10,fontsize=16)
         ax.set_ylabel(r"$(r_{\mathrm{" + wf_name + r"}}/" + wf_scale_name + ")^2$",
                       labelpad=10,fontsize=16)
-        
-        normed_sigmas = test_sigmas/wf_scale
         
         ax.plot(normed_sigmas,
                 (Qsize_scale[wf_name]*Qsizes)**2,
