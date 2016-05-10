@@ -227,6 +227,7 @@ def test_psf(image_filename,
                    fitting_record=fitting_record,
                    chip=chip,
                    obs_time=obs_time,
+                   exp_time=exp_time,
                    filename_root=filename_root)
 
     # Save stacks if desired

@@ -126,6 +126,7 @@ def report_results(test_results,
                    filename_root,
                    chip,
                    obs_time,
+                   exp_time,
                    fitting_record=None):
 
     # Set up the columns first
@@ -176,6 +177,7 @@ def report_results(test_results,
 
     tbhdu.header["CCDCHIP"] = chip
     tbhdu.header["OBS_TIME"] = obs_time
+    tbhdu.header["EXP_TIME"] = exp_time
     tbhdu.header["FOCUS"] = test_results[0][0]
     tbhdu.header["ASTIG_0"] = test_results[0][1]
     tbhdu.header["ASTIG_45"] = test_results[0][2]

@@ -34,6 +34,7 @@ def make_results_summary(results_filenames,
     image_filenames = []
     chips = []
     obs_times = []
+    exp_times = []
     focii = []
     
     X_squareds = []
@@ -85,6 +86,7 @@ def make_results_summary(results_filenames,
         
         chips.append(header['CCDCHIP'])
         obs_times.append(header['OBS_TIME'])
+        obs_times.append(header['EXP_TIME'])
 
         focii.append(header["FOCUS"])
         

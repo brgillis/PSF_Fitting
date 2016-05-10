@@ -64,6 +64,9 @@ default_seed = 151357
 colors = ("#600060","#00C0C0","#FFFF40","k")
 point_size = 4
 
+fontsize = 24
+tick_fontsize = 16
+
 Qsize_scale = {"core":5, "wings":3}
 
 star_Qsizes_pix = {"core":0.055254, "wings":0.097274}
@@ -187,9 +190,9 @@ def make_Qsize_plots(plot_name = default_plot_name,
         fig.subplots_adjust(wspace=0.5, hspace=0, bottom=0.1, right=0.95, top=0.95, left=0.12)
         
         ax = fig.add_subplot(1,1,1)
-        ax.set_xlabel(r"$r_{\mathrm{s}}/" + wf_scale_name + r"$",labelpad=10,fontsize=16)
+        ax.set_xlabel(r"$r_{\mathrm{s}}/" + wf_scale_name + r"$",labelpad=10,fontsize=fontsize)
         ax.set_ylabel(r"$(r_{\mathrm{" + wf_name + r"}}/" + wf_scale_name + ")^2$",
-                      labelpad=10,fontsize=16)
+                      labelpad=10,fontsize=fontsize)
         
         ax.plot(normed_sigmas,
                 (Qsize_scale[wf_name]*Qsizes)**2,
@@ -225,8 +228,10 @@ def make_Qsize_plots(plot_name = default_plot_name,
         ax.legend(loc='upper left')
         
         ax.set_xlim(np.min(normed_sigmas),np.max(normed_sigmas))
-        ax.set_ylim(0,
-                    1.1*np.max(noisy_quad_moment_with_dets))
+        ax.set_ylim(0,1.1*np.max(noisy_quad_moment_with_dets))
+        
+        ax.set_xticklabels(ax.get_xticks(),fontsize=tick_fontsize)
+        ax.set_yticklabels(ax.get_yticks(),fontsize=tick_fontsize)
         
         # Save the figure
         outfile_name = os.path.splitext(plot_name)[0] + "_" + wf_name + "." + file_type
@@ -253,9 +258,9 @@ def make_Qsize_plots(plot_name = default_plot_name,
         fig.subplots_adjust(wspace=0.5, hspace=0, bottom=0.1, right=0.95, top=0.95, left=0.12)
         
         ax = fig.add_subplot(1,1,1)
-        ax.set_xlabel(r"$Q_{\mathrm s}/" + wf_scale_name + "$",labelpad=10,fontsize=16)
+        ax.set_xlabel(r"$Q_{\mathrm s}/" + wf_scale_name + "$",labelpad=10,fontsize=fontsize)
         ax.set_ylabel(r"$(r_{\mathrm{" + wf_name + r"}}/" + wf_scale_name + ")^2$",
-                      labelpad=10,fontsize=16)
+                      labelpad=10,fontsize=fontsize)
         
         normed_sigmas = test_sigmas/wf_scale
         
@@ -275,6 +280,9 @@ def make_Qsize_plots(plot_name = default_plot_name,
         ax.set_xlim(np.min(Qsizes),np.max(Qsizes))
         ax.set_ylim(np.min(quad_moments),
                     1.1*np.max(quad_moment_with_dets))
+        
+        ax.set_xticklabels(ax.get_xticks(),fontsize=tick_fontsize)
+        ax.set_yticklabels(ax.get_yticks(),fontsize=tick_fontsize)
         
         # Save the figure
         outfile_name = os.path.splitext(plot_name)[0] + "_" + wf_name + "_comps." + file_type

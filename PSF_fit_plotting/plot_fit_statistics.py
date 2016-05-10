@@ -50,6 +50,7 @@ default_nbins = 20
 figsize = (8,8)
 
 base_fontsize = 12
+base_tick_fontsize = 8
 
 def make_fit_statistic_plots(summary_filename = default_summary_filename,
                              
@@ -77,7 +78,9 @@ def make_fit_statistic_plots(summary_filename = default_summary_filename,
         plot_tuples = (("chi_squared", r"\chi^2", 'r', 0),)
         gs = matplotlib.gridspec.GridSpec(1, 1)
         ymax = 120
+        yticks = [0,20,40,60,80,100,120]
         fontsize = 2*base_fontsize
+        tick_fontsize = 2*base_tick_fontsize
         bins = np.logspace(np.log10(red_X2_min),np.log10(red_X2_max),
                                             nbins+1,base=10)
         xlog=True
@@ -85,16 +88,18 @@ def make_fit_statistic_plots(summary_filename = default_summary_filename,
         dofs = summary_table["X2_dofs"]
         gs = matplotlib.gridspec.GridSpec(3, 3)
         plot_tuples = (("X_squared", r"X^2", 'r', 0),
-                        ("Qx_diff_Z2", r"Z^2(Q_{x}^{-})", 'y', 1),
-                        ("Qy_diff_Z2", r"Z^2(Q_{y}^{-})", 'y', 2),
-                        ("Qplus_sum_Z2", r"Z^2(Q_{\rm +}^{+})", 'y', 3),
-                        ("Qcross_sum_Z2", r"Z^2(Q_{\times}^{+})", 'y', 4),
-                        ("Qsize_sum_Z2", r"Z^2(Q_{\rm s}^{+})", 'y', 5),
-                        ("Qplus_diff_Z2", r"Z^2(Q_{\rm +}^{-})", 'y', 6),
-                        ("Qcross_diff_Z2", r"Z^2(Q_{\times}^{-})", 'y', 7),
-                        ("Qsize_diff_Z2", r"Z^2(Q_{\rm s}^{-})", 'y', 8),)
+                        ("Qx_diff_Z2", r"Z^2(Q_{x}^{\perp})", 'y', 1),
+                        ("Qy_diff_Z2", r"Z^2(Q_{y}^{\perp})", 'y', 2),
+                        ("Qplus_sum_Z2", r"Z^2(Q_{\rm +}^{\parallel})", 'y', 3),
+                        ("Qcross_sum_Z2", r"Z^2(Q_{\times}^{\parallel})", 'y', 4),
+                        ("Qsize_sum_Z2", r"Z^2(Q_{\rm s}^{\parallel})", 'y', 5),
+                        ("Qplus_diff_Z2", r"Z^2(Q_{\rm +}^{\perp})", 'y', 6),
+                        ("Qcross_diff_Z2", r"Z^2(Q_{\times}^{\perp})", 'y', 7),
+                        ("Qsize_diff_Z2", r"Z^2(Q_{\rm s}^{\perp})", 'y', 8),)
         ymax = 450
+        yticks = [0,100,200,300,400]
         fontsize = base_fontsize
+        tick_fontsize = base_tick_fontsize
         bins = np.logspace(np.log10(red_X2_min),np.log10(red_X2_max),
                                             nbins+1,base=10)
         xlog=True
@@ -114,12 +119,24 @@ def make_fit_statistic_plots(summary_filename = default_summary_filename,
         pyplot.hist(vals, bins=bins, facecolor=color)
         
         ax.set_ylim([0,ymax])
+        ax.set_yticks(yticks)
+        ax.set_yticklabels(yticks,fontsize=tick_fontsize)
+        
+        ax.set_xticklabels(ax.get_xticklabels(),fontsize=tick_fontsize)
         
         ax.set_xlabel(r"$" + label + r"/\nu$",fontsize=fontsize)
         ax.set_ylabel("\# of images",fontsize=fontsize,labelpad=-1)
         
         if xlog:
             ax.set_xscale("log", nonposx='clip')
+            
+        # Get and print mean and sigma for this value
+        mean = np.mean(vals)
+        sigma = np.std(vals)
+        
+        print("For parameter " + label + "/nu:\n" +
+              "mean = " + str(mean) + "\n" +
+              "sigma = " + str(sigma))
         
     # Save the figure
     outfile_name = plot_name + "." + file_type
