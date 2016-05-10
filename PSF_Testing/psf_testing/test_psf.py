@@ -37,7 +37,8 @@ from psf_testing.moments.estimate_background import get_background_level_and_noi
 from psf_testing.moments.get_Qs import get_m0_and_Qs
 from psf_testing.report_results import report_results
 from psf_testing.stacking import make_and_save_stacks
-from psf_testing.star_selection.image_info import get_chip, get_exp_time, get_gain, get_obs_time
+from psf_testing.star_selection.image_info import (get_chip, get_exp_time, get_ra, get_dec,
+                                                   get_gain, get_obs_time)
 from psf_testing.star_selection.sextractor_utility import get_stars_in_image
 from psf_testing.test_psf_for_params import test_psf_for_params
 
@@ -228,6 +229,8 @@ def test_psf(image_filename,
                    chip=chip,
                    obs_time=obs_time,
                    exp_time=exp_time,
+                   ra=get_ra(image),
+                   dec=get_dec(image),
                    filename_root=filename_root)
 
     # Save stacks if desired

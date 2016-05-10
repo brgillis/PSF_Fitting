@@ -3,6 +3,7 @@
 	<name>PSF_Testing</name>
 	<comment></comment>
 	<projects>
+		<project>cIceBRGpy</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

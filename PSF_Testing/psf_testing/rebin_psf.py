@@ -24,36 +24,54 @@
 
 from __future__ import division
 
+from copy import deepcopy
 import numpy as np
 from scipy.signal import convolve
 
 from psf_testing import magic_values as mv
 
-def rebin(subsampled_image,
+try:
+    import cIceBRGpy
+except ImportError as _e:
+    from Release import cIceBRGpy
+
+def rebin(a,
           cdf,
           x_shift=0,
           y_shift=0,
-          subsampling_factor = mv.default_subsampling_factor):
-    
-    # Get the size of the final image
-    ss_nx, ss_ny = np.shape(subsampled_image)
-    
-    rb_nx = 2 * (((ss_nx-np.abs(x_shift))//subsampling_factor - 1) // 2) + 1 
-    rb_ny = 2 * (((ss_ny-np.abs(y_shift))//subsampling_factor - 1) // 2) + 1 
-    
-    x_offset = (ss_nx - rb_nx*subsampling_factor)//2 - x_shift
-    y_offset = (ss_ny - rb_ny*subsampling_factor)//2 - y_shift
-    
-    # Shift is in star - model
-    
-    # Make the rebinned array
-    rebinned_array = np.zeros((rb_nx,rb_ny))
-    for xi in xrange(rb_nx):
-        for yi in xrange(rb_ny):
-            xm = x_offset + subsampling_factor*(xi+1) - int(subsampling_factor/2)
-            ym = y_offset + subsampling_factor*(yi+1) - int(subsampling_factor/2)
-            rebinned_array[xi,yi] = subsampled_image[xm:xm+subsampling_factor,
-                                                     ym:ym+subsampling_factor ].sum()
+          subsampling_factor = mv.default_subsampling_factor,
+          conserve=False):
+
+    # If we want to conserve, do so by operating on a copy of the array
+    if(conserve):
+        a = deepcopy(a)
+    else:
+        # Ensure it's contiguous
+        a = np.ascontiguousarray(a)
+
+    # Use the proper function for the data type
+    if a.dtype == 'float32':
+        f = cIceBRGpy.rebin_float
+    elif a.dtype == 'float64':
+        f = cIceBRGpy.rebin_double
+    elif a.dtype == 'int32':
+        f = cIceBRGpy.rebin_int
+    elif a.dtype == 'int64':
+        f = cIceBRGpy.rebin_long
+    elif a.dtype == 'uint32':
+        f = cIceBRGpy.rebin_uint
+    elif a.dtype == 'uint64':
+        f = cIceBRGpy.rebin_ulong
+    else:
+        a = np.asarray(a,dtype='float32')
+        f = cIceBRGpy.rebin_float
+
+    new_shape = f(a, x_shift, y_shift, subsampling_factor)
+
+    # Resort the new array into the proper shape
+    new_size = np.product(new_shape)
+
+    rebinned_array = np.reshape(np.ravel(a)[0:new_size], new_shape)
     
     # Convolve it with the charge diffusion kernel
     rebinned_diffused_array = convolve(rebinned_array, cdf, mode="same")

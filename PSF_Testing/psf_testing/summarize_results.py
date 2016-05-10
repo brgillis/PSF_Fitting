@@ -35,6 +35,10 @@ def make_results_summary(results_filenames,
     chips = []
     obs_times = []
     exp_times = []
+    
+    ras = []
+    decs = []
+    
     focii = []
     
     X_squareds = []
@@ -87,6 +91,9 @@ def make_results_summary(results_filenames,
         chips.append(header['CCDCHIP'])
         obs_times.append(header['OBS_TIME'])
         obs_times.append(header['EXP_TIME'])
+        
+        ras.append(header['RA_TARG'])
+        decs.append(header['DEC_TARG'])
 
         focii.append(header["FOCUS"])
         
@@ -127,6 +134,9 @@ def make_results_summary(results_filenames,
     columns = [fits.Column(name="filename", format='30A', array=image_filenames),
                fits.Column(name="chip", format='B', array=chips),
                fits.Column(name="obs_time", format='E', array=obs_times),
+               fits.Column(name="exp_time", format='E', array=exp_times),
+               fits.Column(name="ra", format='E', array=ras),
+               fits.Column(name="dec", format='E', array=decs),
                fits.Column(name="focus", format='E', array=focii),
                fits.Column(name="X_squared", format='E', array=X_squareds),
                fits.Column(name="chi_squared", format='E', array=chi_squareds),

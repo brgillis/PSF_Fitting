@@ -49,6 +49,8 @@ header_exp_time_keyword = "EXPTIME"
 header_gain_keyword = "CCDGAIN"
 header_obs_date_keyword = "DATE-OBS"
 header_obs_time_keyword = "TIME-OBS"
+header_ra_keyword = "RA_TARG"
+header_dec_keyword = "DEC_TARG"
 
 # Sextractor config/parameter filenames
 sex_field_par_filename = "hst_acs_wfc.par"
