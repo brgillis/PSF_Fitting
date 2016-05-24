@@ -359,15 +359,22 @@ def get_model_psf_for_star(star,
 
     # Get the position we'll generate the model PSF for
     psf_position = scheme.get_position_to_use(star.x_pix, star.y_pix)
+    
+    focus = round(scheme.focus,5)
+    
+    rounded_params = {}
+    
+    for param in params:
+        rounded_params[param] = round(params[param],5)
 
     subsampled_model = get_cached_subsampled_psf(tinytim_path,
                                                  tinytim_data_path,
                                                  weight_func,
                                                  psf_position,
                                                  star.chip,
-                                                 scheme.focus,
+                                                 focus,
                                                  use_cache=use_cache,
-                                                 **params)
+                                                 **rounded_params)
             
 
     # Get the charge diffusion kernel from the FITS comments

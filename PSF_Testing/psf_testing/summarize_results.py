@@ -90,7 +90,7 @@ def make_results_summary(results_filenames,
         
         chips.append(header['CCDCHIP'])
         obs_times.append(header['OBS_TIME'])
-        obs_times.append(header['EXP_TIME'])
+        exp_times.append(header['EXP_TIME'])
         
         ras.append(header['RA_TARG'])
         decs.append(header['DEC_TARG'])
