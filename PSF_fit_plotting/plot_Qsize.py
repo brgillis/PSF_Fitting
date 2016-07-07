@@ -69,8 +69,8 @@ tick_fontsize = 16
 
 Qsize_scale = {"core":5, "wings":3}
 
-star_Qsizes_pix = {"core":0.055254, "wings":0.097274}
-model_Qsizes_pix = {"core":0.04823, "wings":0.095076}
+star_Qsizes_pix = {"core":0.055599, "wings":0.097552}
+model_Qsizes_pix = {"core":0.048102, "wings":0.094873}
 
 def make_Qsize_plots(plot_name = default_plot_name,
                      noisy_plot_name = default_noisy_plot_name,

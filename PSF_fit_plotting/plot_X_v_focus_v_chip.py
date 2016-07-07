@@ -81,13 +81,13 @@ def make_X_v_focus_v_chip_plot(summary_filename = default_summary_filename,
         fitted_param = summary_table["X_squared"]/summary_table["X2_dofs"]
     ax.set_yscale("log", nonposy='clip')
 
-    chip1_mask = summary_table["chip"]==1
-    chip2_mask = ~chip1_mask
+    chip1_mask = ~np.logical_and(summary_table["chip"]==1,fitted_param>0)
+    chip2_mask = ~np.logical_and(summary_table["chip"]==2,fitted_param>0)
 
     for mask, label, color, marker in ((chip1_mask, "Chip 1", '#C00000', "o"),
                                (chip2_mask, "Chip 2", '#4040FF', "^")):
-        focii = np.ma.masked_array(summary_table["focus"],mask)
-        X2s = np.ma.masked_array(fitted_param,mask)
+        focii = np.ma.masked_array(summary_table["focus"],mask).compressed()
+        X2s = np.ma.masked_array(fitted_param,mask).compressed()
 
         pyplot.scatter(focii,X2s,edgecolors=color,label=label,alpha=1,marker=marker,facecolors='none')
     

@@ -39,18 +39,18 @@ from astropy.io import fits
 
 default_summary_filename = "/disk2/brg/git/Tiny_Tim_PSF_Fitting/PSF_Testing/psf_testing_results_summary.fits"
 
-default_plot_name = "X_v_obs_time_v_chip"
+default_plot_name = "X_v_obs_time_v_nstar"
 default_paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/PSF_Model_Testing/"
 default_file_type = "png"
 
 default_red_X2_min = 0.1
 default_red_X2_max = 10.0
 
-figsize = (6,6)
+figsize = (7,6)
 
 fontsize = 12
 
-def make_X_v_obs_time_v_chip_plot(summary_filename = default_summary_filename,
+def make_X_v_obs_time_v_nstar_plot(summary_filename = default_summary_filename,
                              
                             plot_name = default_plot_name,
                             paper_location = default_paper_location,
@@ -66,7 +66,7 @@ def make_X_v_obs_time_v_chip_plot(summary_filename = default_summary_filename,
     
     summary_table = fits.open(summary_filename)[1].data
     
-    _fig = pyplot.figure(figsize=figsize)
+    fig = pyplot.figure(figsize=figsize)
         
     gs = matplotlib.gridspec.GridSpec(1, 1)
     gs.update(wspace=0.3, hspace=0.3, left=0.1, right=0.9, bottom=0.1, top=0.9)
@@ -79,17 +79,14 @@ def make_X_v_obs_time_v_chip_plot(summary_filename = default_summary_filename,
     else:
         y_label = r"Best $X^2_{\rm red}$"
         fitted_param = summary_table["X_squared"]/summary_table["X2_dofs"]
+        
+    num_stars = (summary_table["X2_dofs"]+1)/8
+        
     ax.set_yscale("log", nonposy='clip')
+    
+    obs_times = np.ma.masked_array(summary_table["obs_time"]/(60*60*24*365.24)+1970)
 
-    chip1_mask = summary_table["chip"]==1
-    chip2_mask = ~chip1_mask
-
-    for mask, label, color, marker in ((chip1_mask, "Chip 1", '#C00000', "o"),
-                               (chip2_mask, "Chip 2", '#4040FF', "^")):
-        obs_times = np.ma.masked_array(summary_table["obs_time"]/(60*60*24*365.24)+1970,mask)
-        X2s = np.ma.masked_array(fitted_param,mask)
-
-        pyplot.scatter(obs_times,X2s,edgecolors=color,label=label,alpha=1,marker=marker,facecolors='none')
+    pyplot.scatter(obs_times,fitted_param,c=num_stars,edgecolor='none')
     
     ax.set_xlim(2009.3,2011.5)
     ax.set_xticks([2010,2011])
@@ -100,8 +97,7 @@ def make_X_v_obs_time_v_chip_plot(summary_filename = default_summary_filename,
     ax.set_xlabel("Date of Observation",fontsize=fontsize)
     ax.set_ylabel(y_label,fontsize=fontsize,labelpad=-8)
     
-    
-    ax.legend(loc="upper right")
+    pyplot.colorbar(label="\# of Stars")
         
     # Save the figure
     outfile_name = plot_name + "." + file_type
@@ -139,7 +135,7 @@ def main(argv):
     
     args = vars(parser.parse_args())
     
-    make_X_v_obs_time_v_chip_plot(**args)
+    make_X_v_obs_time_v_nstar_plot(**args)
     
     return
 
