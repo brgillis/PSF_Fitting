@@ -53,6 +53,7 @@ header_ra_keyword = "RA_TARG"
 header_dec_keyword = "DEC_TARG"
 
 # Sextractor config/parameter filenames
+sex_cmd = "sextractor "
 sex_field_par_filename = "hst_acs_wfc.par"
 sex_field_template_cfg_filename = "hst_acs_wfc.cfg"
 sex_psf_par_filename = "psf.par"
@@ -108,6 +109,16 @@ default_params = {"astigmatism_0":0.031,
                   "clover_x":0.008,
                   "clover_y":0.018,
                   "spherical_3rd":-0.025,
+                  "z12":0.,
+                  "z13":0.,
+                  "z14":0.,
+                  "z15":0.,
+                  "z16":0.,
+                  "z17":0.,
+                  "z18":0.,
+                  "z19":0.,
+                  "z20":0.,
+                  "z21":0.,
                   "spherical_5th":0.009,
                   }
 default_penalty_sigma = 0.005
