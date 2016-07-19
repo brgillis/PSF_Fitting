@@ -56,6 +56,16 @@ def make_subsampled_psf_model(filename,
                               clover_x=None,
                               clover_y=None,
                               spherical_3rd=None,
+                              z12=None,
+                              z13=None,
+                              z14=None,
+                              z15=None,
+                              z16=None,
+                              z17=None,
+                              z18=None,
+                              z19=None,
+                              z20=None,
+                              z21=None,
                               spherical_5th=None,
                               shape=None,
                               files_to_cleanup=None,
@@ -148,6 +158,36 @@ def make_subsampled_psf_model(filename,
     if spherical_3rd is not None:
         str_to_replace.append("-0.025    # Z11 = 3rd order spherical")
         replacements.append(str(spherical_3rd) + "    # Z11 = 3rd order spherical")
+    if z12 is not None:
+        str_to_replace.append("0.       # Z12 = 0 degree Spherical astigmatism")
+        replacements.append(str(z12) + "       # Z12 = 0 degree Spherical astigmatism")
+    if z13 is not None:
+        str_to_replace.append("0.       # Z13 = 45 degree Spherical astigmatism")
+        replacements.append(str(z13) + "       # Z13 = 45 degree Spherical astigmatism")
+    if z14 is not None:
+        str_to_replace.append("0.       # Z14 = X Ashtray")
+        replacements.append(str(z14) + "       # Z14 = X Ashtray")
+    if z15 is not None:
+        str_to_replace.append("0.       # Z15 = Y Ashtray")
+        replacements.append(str(z15) + "       # Z15 = Y Ashtray")
+    if z16 is not None:
+        str_to_replace.append("0.       # Z16")
+        replacements.append(str(z16) + "       # Z16")
+    if z17 is not None:
+        str_to_replace.append("0.       # Z17")
+        replacements.append(str(z17) + "       # Z17")
+    if z18 is not None:
+        str_to_replace.append("0.       # Z18")
+        replacements.append(str(z18) + "       # Z18")
+    if z19 is not None:
+        str_to_replace.append("0.       # Z19")
+        replacements.append(str(z19) + "       # Z19")
+    if z20 is not None:
+        str_to_replace.append("0.       # Z20")
+        replacements.append(str(z20) + "       # Z20")
+    if z21 is not None:
+        str_to_replace.append("0.       # Z21")
+        replacements.append(str(z21) + "       # Z21")
     if spherical_5th is not None:
         str_to_replace.append("0.009    # Z22 = 5th order spherical")
         replacements.append(str(spherical_5th) + "    # Z22 = 5th order spherical")
@@ -275,6 +315,16 @@ def get_cached_subsampled_psf(tinytim_path,
                               clover_x=None,
                               clover_y=None,
                               spherical_3rd=None,
+                              z12=None,
+                              z13=None,
+                              z14=None,
+                              z15=None,
+                              z16=None,
+                              z17=None,
+                              z18=None,
+                              z19=None,
+                              z20=None,
+                              z21=None,
                               spherical_5th=None):
 
     # Determine the name for the subsampled model PSF file
@@ -289,6 +339,16 @@ def get_cached_subsampled_psf(tinytim_path,
                            (clover_x, "clx"),
                            (clover_y, "cly"),
                            (spherical_3rd, "s3"),
+                           (z12, "z12"),
+                           (z13, "z13"),
+                           (z14, "z14"),
+                           (z15, "z15"),
+                           (z16, "z16"),
+                           (z17, "z17"),
+                           (z18, "z18"),
+                           (z19, "z19"),
+                           (z20, "z20"),
+                           (z21, "z21"),
                            (spherical_5th, "s5"),):
         if value is not None:
             subsampled_name += "_" + label + "-" + str(value)
@@ -315,6 +375,16 @@ def get_cached_subsampled_psf(tinytim_path,
                                   clover_x=clover_x,
                                   clover_y=clover_y,
                                   spherical_3rd=spherical_3rd,
+                                  z12=z12,
+                                  z13=z13,
+                                  z14=z14,
+                                  z15=z15,
+                                  z16=z16,
+                                  z17=z17,
+                                  z18=z18,
+                                  z19=z19,
+                                  z20=z20,
+                                  z21=z21,
                                   spherical_5th=spherical_5th)
 
     else:
@@ -415,6 +485,11 @@ def get_model_psf_for_star(star,
     # Determine how many subsampled pixels we'll have to shift the subsampled psf by
     x_shift = int(round(mv.default_subsampling_factor * (star_d_xc+0.5) - ss_model_d_xc - 0.5,0))
     y_shift = int(round(mv.default_subsampling_factor * (star_d_yc+0.5) - ss_model_d_yc - 0.5,0))
+    
+    # Check that the shifts are reasonable (within 2 non-subsampled pixels)
+    max_shift = np.max((np.abs(x_shift),np.abs(y_shift)))/mv.default_subsampling_factor
+    if max_shift > 2:
+        raise Exception("Star's centring is too poor; requires too extreme of a shift.")
 
     # Get the rebinned PSF model
     rebinned_model = rebin(subsampled_model.data,
@@ -425,6 +500,7 @@ def get_model_psf_for_star(star,
 
     # Get the zeroth-order moment for the rebinned psf
     _xc, _yc, _, _, _, rb_model_m0 = centre_image(rebinned_model, weight_func=weight_func)
+    
 
     scaled_model = rebinned_model * star.m0[0] / rb_model_m0
 
