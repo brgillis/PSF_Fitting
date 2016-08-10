@@ -59,7 +59,9 @@ def fit_best_focus_and_test_psf(stars,
 
                                 files_to_cleanup=None,
                                 
-                                parallelize=False):
+                                parallelize=False,
+                                
+                                norm_errors=False):
 
     # Use a set outliers mask for all tests?
     outliers_mask = []
@@ -93,7 +95,9 @@ def fit_best_focus_and_test_psf(stars,
                                             
                                             fitting_record=fitting_record,
                                             
-                                            parallelize=parallelize)
+                                            parallelize=parallelize,
+                                            
+                                            norm_errors=norm_errors)
         
         # Use 0 as a flag to impose no penalty
         if focus_penalty_sigma==0:
@@ -138,6 +142,8 @@ def fit_best_focus_and_test_psf(stars,
                                             
                                             fitting_record=None,
                                             
-                                            parallelize=parallelize)
+                                            parallelize=parallelize,
+                                            
+                                            norm_errors=norm_errors)
 
     return test_results, fitting_record

@@ -24,6 +24,7 @@
 
 import os
 
+import numpy as np
 from astropy.io import fits
 
 from psf_testing import magic_values as mv
@@ -49,6 +50,8 @@ def test_psf(image_filename,
              min_class_star=mv.default_min_class_star,
              min_star_mag=mv.default_min_star_mag,
              max_star_mag=mv.default_max_star_mag,
+             min_star_size = mv.default_min_star_size,
+             max_star_size = mv.default_min_star_size,
              min_lowest_separation=mv.default_min_lowest_separation,
              min_star_snr=mv.default_min_star_snr,
 
@@ -73,19 +76,32 @@ def test_psf(image_filename,
              cleanup_tinytim_files=False,
              force_update=False,
              save_stacks=True,
+             refresh_only=False,
              
-             parallelize=False):
+             parallelize=False,
+             
+             norm_errors=False):
         
     logger = get_default_logger()
-    
-    logger.info("Testing " + image_filename + ".")
 
     # Mark that we need an update if we're forcing an update
     if force_update:
         make_update_marker()
 
+    filename_root = image_filename.replace(mv.image_extension, "")
+        
+    # If refreshing only, check if we can skip this
+    if refresh_only:
+        if os.path.isfile(filename_root+mv.results_tail):
+            logger.info(filename_root+mv.results_tail + " already exists, so skipping.")
+            return
+    
+    logger.info("Testing " + image_filename + ".")
+
     # Start by inspecting the image and getting needed details about it
     image = fits.open(image_filename)[0]
+    
+    
 
     chip = get_chip(image)
     exp_time = get_exp_time(image)
@@ -101,6 +117,8 @@ def test_psf(image_filename,
                                min_class_star=min_class_star,
                                min_star_mag=min_star_mag,
                                max_star_mag=max_star_mag,
+                               min_star_size=min_star_size,
+                               max_star_size=max_star_size,
                                min_lowest_separation=min_lowest_separation,
                                min_star_snr=min_star_snr,
                                sex_data_path=sex_data_path,
@@ -129,9 +147,24 @@ def test_psf(image_filename,
         try:
             star.xc, star.yc, star.x_array, star.y_array, star.prim_weight_mask, star.m0 = \
                 centre_image(image=star.stamp, weight_func=prim_weight_func)
+            
+            # Check the star's centring is good enough
+            x_shift = np.abs( star.xc - (np.shape(star.stamp)[0]-1)/2 )
+            y_shift = np.abs( star.yc - (np.shape(star.stamp)[1]-1)/2 )
+            max_shift = np.max((np.abs(x_shift),np.abs(y_shift)))
+            if max_shift > 2:
+                star.valid = False
+                continue
         except AssertionError as _e:
             star.valid = False
             continue
+        except Exception as e:
+            if "cannot be centred" in str(e):
+                star.valid = False
+                continue
+            else:
+                raise
+                
 
         (star.m0, star.Qxy, star.Qpcs) = \
             get_m0_and_Qs(image=star.stamp,
@@ -170,6 +203,8 @@ def test_psf(image_filename,
                                                     files_to_cleanup=files_to_cleanup,
                                           
                                                     parallelize=parallelize,
+                                          
+                                                    norm_errors=norm_errors,
                                                     
                                                     **mv.default_params)
     elif test_single_focus:
@@ -191,7 +226,9 @@ def test_psf(image_filename,
                                           save_models=save_stacks,
                                           files_to_cleanup=files_to_cleanup,
                                           
-                                          parallelize=parallelize)
+                                          parallelize=parallelize,
+                                          
+                                          norm_errors=norm_errors)
         fitting_record = None
     # Otherwise, call the fitting function
     else:
@@ -219,9 +256,9 @@ def test_psf(image_filename,
                                                     save_models=save_stacks,
                                                     files_to_cleanup=files_to_cleanup,
                                           
-                                                    parallelize=parallelize)
-
-    filename_root = image_filename.replace(mv.image_extension, "")
+                                                    parallelize=parallelize,
+                                          
+                                                    norm_errors=norm_errors)
 
     # Report the results
     report_results(test_results=test_results,

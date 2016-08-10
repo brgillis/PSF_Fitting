@@ -56,11 +56,15 @@ def centre_image(image,
         # Get coordinate arrays
         x_array, y_array = get_x_and_y_of_array(nx, ny, xc, yc)
         
-        if not (xc>=0 or xc<0):
-            pass
-        
         # Make the weight mask
-        weight_mask = make_weight_mask(weight_func, nx, ny, xc, yc, x_array, y_array)
+        try:
+            weight_mask = make_weight_mask(weight_func, nx, ny, xc, yc, x_array, y_array)
+        except Exception as e:
+            if "sums to zero" in e:
+                raise Exception("Image cannot be centred: weight sums to exactly zero.")
+        
+        if weight_mask.sum() < 0:
+            raise Exception("Image cannot be centred: weight sums to less than zero.")
         
         # Get the dipole moments
         m0 = (image*weight_mask).sum()
@@ -75,6 +79,10 @@ def centre_image(image,
         # If we're under the precision, break
         if(d<precision):
             break
+        
+        # Check if we're moving far too much
+        if d > max((nx,ny))//2:
+            raise Exception("Image cannot be centred: dipoles are too large")
         
         # Move the centroid
         xc += dx

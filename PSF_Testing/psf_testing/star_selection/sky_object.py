@@ -48,6 +48,7 @@ class SkyObj(object):
             self.class_star = None
             
             self.mag = None
+            self.size = None
             self.flux = None
             
             self.snr = None
@@ -63,6 +64,8 @@ class SkyObj(object):
             
             self.ra = float(properties[3])
             self.dec = float(properties[4])
+            
+            self.size = float(properties[15])
             
             self.class_star = float(properties[16])
             

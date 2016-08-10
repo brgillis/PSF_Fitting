@@ -114,7 +114,7 @@ def test_star(i,
                       sec_weight_func=sec_weight_func)
 
     # Now, get a noisy psf and test it (so we can test for noise bias)
-    model_psf_noise = np.sqrt(model_psf / gain + np.square(star.background_noise))
+    model_psf_noise = np.sqrt(np.abs(model_psf) / gain + np.square(star.background_noise))
 
     ny, nx = np.shape(model_psf)
 
@@ -165,6 +165,8 @@ def test_psf_for_params(stars,
                        
                        parallelize=False,
                        
+                       norm_errors=False,
+                       
                        **params):
 
     if outliers_mask is None:
@@ -193,7 +195,7 @@ def test_psf_for_params(stars,
 
     # Get results for each star
     num_stars = len(stars)
-    if get_num_valid_stars(stars) <= 1:
+    if get_num_valid_stars(stars) < 10:
         raise Exception("Too few usable stars in image.")
             
     if not parallelize:
@@ -211,7 +213,7 @@ def test_psf_for_params(stars,
                       save_models,
                       **params)
     else:
-        pool = multiprocessing.Pool(processes=multiprocessing.cpu_count(),maxtasksperchild=1)
+        pool = multiprocessing.Pool(processes=multiprocessing.cpu_count(),maxtasksperchild=100)
         new_stars = pool.map(test_star_caller(stars,
                                               model_scheme,
                                               prim_weight_func,
@@ -223,10 +225,13 @@ def test_psf_for_params(stars,
                                               num_stars,
                                               save_models,
                                               **params),
-                             range(num_stars))
+                             range(num_stars),
+                             chunksize=1)
+        pool.close()
+        pool.join()
         for i in range(num_stars):
             stars[i] = new_stars[i]
-        del(new_stars)
+        del(new_stars,pool)
         
     for i in range(num_stars):
             
@@ -303,6 +308,9 @@ def test_psf_for_params(stars,
     
     num_good_stars = len(star_props["masked_m0_diff"][~m0_omask])//2
     
+    if num_good_stars < 5:
+        raise Exception("Too few usable stars in image.")
+    
     corr_factor = np.sqrt(num_good_stars/(num_good_stars-1))
     
     star_props["unmasked_m0_diff"] = np.reshape(star_props["masked_m0_diff"][~m0_omask],
@@ -359,8 +367,12 @@ def test_psf_for_params(stars,
         for comb in ("_sum","_diff"):
             star_props[prop + comb + "_mean"] = np.mean(star_props[prop + comb + "s"],axis=0)
             star_props[prop + comb + "_err"] = np.std(star_props[prop + comb + "s"],axis=0)*corr_factor
-            star_props[prop + comb + "_Zs"] = (star_props[prop + comb + "s"]/
-                                               star_props[prop + comb + "s_err"])
+            if norm_errors:
+                star_props[prop + comb + "_err"] = np.ones_like(star_props[prop + comb + "_err"])
+                errors = np.ones_like(star_props[prop + comb + "s_err"])
+            else:
+                errors = star_props[prop + comb + "s_err"]
+            star_props[prop + comb + "_Zs"] = (star_props[prop + comb + "s"]/errors)
             star_props[prop + comb + "_Z2s"] = np.sum(np.square(star_props[prop + comb + "_Zs"]),axis=0)
   
     X2 = np.sum(star_props["Qxy_diff_diff_Z2s"]) + \
@@ -388,9 +400,9 @@ def test_psf_for_params(stars,
     test_params = deepcopy(mv.default_params)
     for param in params:
         test_params[param] = params[param]
+    test_params["focus"] = test_focus
     
-    test_results = ((test_focus, test_params["astigmatism_0"], test_params["astigmatism_45"],
-                     test_params["spherical_3rd"], test_params["spherical_5th"]),
+    test_results = (test_params,
             (X2, X2_dof, chi2, chi2_dof),
             ((star_props["m0_diff_diff_mean"], (star_props["Qxy_diff_diff_mean"][0],
                                                 star_props["Qxy_diff_diff_mean"][1],

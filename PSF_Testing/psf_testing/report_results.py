@@ -31,11 +31,10 @@ from psf_testing.smart_logging import get_default_logger
 
 def save_fitting_record(fitting_record,
                         filename_root):
-    focii = []
-    astigmatism_0s = []
-    astigmatism_45s = []
-    spherical_3rds = []
-    spherical_5ths = []
+    params = {}
+    for param in mv.default_params:
+        params[param] = []
+    params["focus"] = []
     X_squareds = []
     chi_squareds = []
     
@@ -58,11 +57,9 @@ def save_fitting_record(fitting_record,
         
     for test_results in fitting_record:
         
-        focii.append(test_results[0][0])
-        astigmatism_0s.append(test_results[0][1])
-        astigmatism_45s.append(test_results[0][2])
-        spherical_3rds.append(test_results[0][3])
-        spherical_5ths.append(test_results[0][4])
+        for param in mv.default_params:
+            params[param].append(test_results[0][param])
+        params["focus"].append(test_results[0]["focus"])
         
         X_squareds.append(test_results[1][0])
         chi_squareds.append(test_results[1][2])
@@ -83,15 +80,16 @@ def save_fitting_record(fitting_record,
                               range(10)):
             Qs[Q_label + "_DIF"].append(np.mean(test_results[11][j]))
     
-    columns = [fits.Column(name="focus", format='E', array=focii),
-               fits.Column(name="astigmatism_0", format='E', array=astigmatism_0s),
-               fits.Column(name="astigmatism_45", format='E', array=astigmatism_45s),
-               fits.Column(name="spherical_3rd", format='E', array=spherical_3rds),
-               fits.Column(name="spherical_5th", format='E', array=spherical_5ths),
-               fits.Column(name="X_squared", format='E', array=X_squareds),
-               fits.Column(name="chi_squared", format='E', array=chi_squareds),
-               fits.Column(name="m0_diff", format='E', array=m0_diffs),
-               fits.Column(name="m0_Z2", format='E', array=m0_Zs)]
+    columns = []
+    
+    columns.append(fits.Column(name="focus", format='E', array=params["focus"]))
+    for param in mv.default_params:
+        columns.append(fits.Column(name=param, format='E', array=params[param]))
+        
+    columns.append(fits.Column(name="X_squared", format='E', array=X_squareds))
+    columns.append(fits.Column(name="chi_squared", format='E', array=chi_squareds))
+    columns.append(fits.Column(name="m0_diff", format='E', array=m0_diffs))
+    columns.append(fits.Column(name="m0_Z2", format='E', array=m0_Zs))
     
     for Q_label, colname in zip(("QXD", "QYD", "QPS", "QCS", "QSS", "QPD", "QCD", "QSD"), 
                                 ("Qx_diff", "Qy_diff", "Qplus_sum", "Qcross_sum", "Qsize_sum",
@@ -182,11 +180,28 @@ def report_results(test_results,
     tbhdu.header["EXP_TIME"] = exp_time
     tbhdu.header["RA_TARG"] = ra
     tbhdu.header["DEC_TARG"] = dec
-    tbhdu.header["FOCUS"] = test_results[0][0]
-    tbhdu.header["ASTIG_0"] = test_results[0][1]
-    tbhdu.header["ASTIG_45"] = test_results[0][2]
-    tbhdu.header["SPHERE_3"] = test_results[0][3]
-    tbhdu.header["SPHERE_5"] = test_results[0][4]
+    tbhdu.header["FOCUS"] = test_results[0]["focus"]
+    tbhdu.header["Z2"] = test_results[0]["z2"]
+    tbhdu.header["Z3"] = test_results[0]["z3"]
+    tbhdu.header["ASTIG_0"] = test_results[0]["astigmatism_0"]
+    tbhdu.header["ASTIG_45"] = test_results[0]["astigmatism_45"]
+    tbhdu.header["COMA_X"] = test_results[0]["coma_x"]
+    tbhdu.header["COMA_X"] = test_results[0]["coma_x"]
+    tbhdu.header["CLOVER_X"] = test_results[0]["clover_x"]
+    tbhdu.header["CLOVER_Y"] = test_results[0]["clover_y"]
+    tbhdu.header["SPHERE_3"] = test_results[0]["spherical_3rd"]
+    tbhdu.header["Z12"] = test_results[0]["z12"]
+    tbhdu.header["Z13"] = test_results[0]["z13"]
+    tbhdu.header["Z14"] = test_results[0]["z14"]
+    tbhdu.header["Z15"] = test_results[0]["z15"]
+    tbhdu.header["Z16"] = test_results[0]["z16"]
+    tbhdu.header["Z17"] = test_results[0]["z17"]
+    tbhdu.header["Z18"] = test_results[0]["z18"]
+    tbhdu.header["Z19"] = test_results[0]["z19"]
+    tbhdu.header["Z20"] = test_results[0]["z20"]
+    tbhdu.header["Z21"] = test_results[0]["z21"]
+    tbhdu.header["SPHERE_5"] = test_results[0]["spherical_5th"]
+    tbhdu.header["KERN_ADJ"] = test_results[0]["kernel_adjustment"]
     tbhdu.header["X_SQR"] = test_results[1][0]
     tbhdu.header["XDOF"] = test_results[1][1]
     tbhdu.header["CHI_SQR"] = test_results[1][2]
@@ -217,13 +232,11 @@ def report_results(test_results,
     
     # Print summary
     logger = get_default_logger()
-    logger.info("X^2 for focus " + str(tbhdu.header["FOCUS"]) + ", " +
-                "astigmatism_0 " + str(tbhdu.header["ASTIG_0"]) + ", " +
-                "astigmatism_45 " + str(tbhdu.header["ASTIG_45"]) + ", " +
-                "spherical_3rd " + str(tbhdu.header["SPHERE_3"]) + ", " +
-                "spherical_5th " + str(tbhdu.header["SPHERE_5"]) + 
-          " = " + str(tbhdu.header["X_SQR"]) + ", for " + str(tbhdu.header["XDOF"]) +
+    log_string = ("X^2 = " + str(tbhdu.header["X_SQR"]) + " for " + str(tbhdu.header["XDOF"]) +
           " degrees of freedom.")
+    for param in test_results[0]:
+        log_string += "\n" + param + " = " + str(test_results[0][param])
+    logger.info(log_string)
     logger.info("chi^2  = " + str(tbhdu.header["CHI_SQR"]) + ", for " + str(tbhdu.header["CDOF"]) +
           " degrees of freedom.")
     

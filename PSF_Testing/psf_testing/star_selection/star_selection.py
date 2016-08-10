@@ -47,6 +47,8 @@ def get_stars(objects,
               min_class_star=mv.default_min_class_star,
               min_star_mag=mv.default_min_star_mag,
               max_star_mag=mv.default_max_star_mag,
+              min_star_size=mv.default_min_star_size,
+              max_star_size=mv.default_max_star_size,
               min_star_snr=mv.default_min_star_snr):
     stars = []
 
@@ -57,6 +59,10 @@ def get_stars(objects,
         if obj.mag > max_star_mag:
             continue
         if obj.mag < min_star_mag:
+            continue
+        if obj.size > max_star_size:
+            continue
+        if obj.size < min_star_size:
             continue
         if obj.snr < min_star_snr:
             continue

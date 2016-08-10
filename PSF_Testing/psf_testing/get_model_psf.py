@@ -49,6 +49,8 @@ def make_subsampled_psf_model(filename,
                               subsampling_factor=mv.default_subsampling_factor,
                               weight_func=mv.default_prim_weight_func,
                               tinytim_path=mv.default_tinytim_path,
+                              z2=None,
+                              z3=None,
                               astigmatism_0=None,
                               astigmatism_45=None,
                               coma_x=None,
@@ -137,6 +139,12 @@ def make_subsampled_psf_model(filename,
     # Edit the parameter file to adjust coma and astigmatism if necessary
     str_to_replace = []
     replacements = []
+    if z2 is not None:
+        str_to_replace.append("0.       # Z2 = X (V2) tilt")
+        replacements.append(str(z2) + "       # Z2 = X (V2) tilt")
+    if z3 is not None:
+        str_to_replace.append("0.       # Z3 = Y (V3) tilt")
+        replacements.append(str(z3) + "       # Z3 = Y (V3) tilt")
     if astigmatism_0 is not None:
         str_to_replace.append("0.031    # Z5 = 0 degree astigmatism")
         replacements.append(str(astigmatism_0) + "    # Z5 = 0 degree astigmatism")
@@ -300,7 +308,7 @@ def make_subsampled_psf_model(filename,
 
     return subsampled_image[0]
 
-@lru_cache(64)
+@lru_cache(96)
 def get_cached_subsampled_psf(tinytim_path,
                               tinytim_data_path,
                               weight_func,
@@ -308,50 +316,38 @@ def get_cached_subsampled_psf(tinytim_path,
                               chip,
                               focus,
                               use_cache,
-                              astigmatism_0=None,
-                              astigmatism_45=None,
-                              coma_x=None,
-                              coma_y=None,
-                              clover_x=None,
-                              clover_y=None,
-                              spherical_3rd=None,
-                              z12=None,
-                              z13=None,
-                              z14=None,
-                              z15=None,
-                              z16=None,
-                              z17=None,
-                              z18=None,
-                              z19=None,
-                              z20=None,
-                              z21=None,
-                              spherical_5th=None):
+                              **params):
 
     # Determine the name for the subsampled model PSF file
-    subsampled_name = os.path.join(tinytim_data_path, "subsampled_psf_x-" + str(psf_position[0]) + \
-                        "_y-" + str(psf_position[1]) + "_f-" + str(focus) + \
-                        "_c-" + str(chip))
+    subsampled_name = os.path.join(tinytim_data_path, "ssp_x" + str(psf_position[0]) + \
+                        "y" + str(psf_position[1]) + "f" + str(focus) + \
+                        "c" + str(chip))
     
-    for (value, label) in ((astigmatism_0, "a0"),
-                           (astigmatism_45, "a45"),
-                           (coma_x, "cx"),
-                           (coma_y, "cy"),
-                           (clover_x, "clx"),
-                           (clover_y, "cly"),
-                           (spherical_3rd, "s3"),
-                           (z12, "z12"),
-                           (z13, "z13"),
-                           (z14, "z14"),
-                           (z15, "z15"),
-                           (z16, "z16"),
-                           (z17, "z17"),
-                           (z18, "z18"),
-                           (z19, "z19"),
-                           (z20, "z20"),
-                           (z21, "z21"),
-                           (spherical_5th, "s5"),):
-        if value is not None:
-            subsampled_name += "_" + label + "-" + str(value)
+    for (key, label) in (("z2", "z02"),
+                           ("z3", "z03"),
+                           ("astigmatism_0", "a0"),
+                           ("astigmatism_45", "a45"),
+                           ("coma_x", "cx"),
+                           ("coma_y", "cy"),
+                           ("clover_x", "clx"),
+                           ("clover_y", "cly"),
+                           ("spherical_3rd", "s3"),
+                           ("z12", "z12"),
+                           ("z13", "z13"),
+                           ("z14", "z14"),
+                           ("z15", "z15"),
+                           ("z16", "z16"),
+                           ("z17", "z17"),
+                           ("z18", "z18"),
+                           ("z19", "z19"),
+                           ("z20", "z20"),
+                           ("z21", "z21"),
+                           ("spherical_5th", "s5"),):
+        if key not in params:
+            continue
+        value = params[key]
+        if (value is not None) and not (value == mv.default_params[key]):
+            subsampled_name += label + str(100*value)
     
     subsampled_name +=  mv.image_extension
 
@@ -368,24 +364,7 @@ def get_cached_subsampled_psf(tinytim_path,
                                   chip=chip,
                                   weight_func=weight_func,
                                   tinytim_path=tinytim_path,
-                                  astigmatism_0=astigmatism_0,
-                                  astigmatism_45=astigmatism_45,
-                                  coma_x=coma_x,
-                                  coma_y=coma_y,
-                                  clover_x=clover_x,
-                                  clover_y=clover_y,
-                                  spherical_3rd=spherical_3rd,
-                                  z12=z12,
-                                  z13=z13,
-                                  z14=z14,
-                                  z15=z15,
-                                  z16=z16,
-                                  z17=z17,
-                                  z18=z18,
-                                  z19=z19,
-                                  z20=z20,
-                                  z21=z21,
-                                  spherical_5th=spherical_5th)
+                                  **params)
 
     else:
 
@@ -395,12 +374,14 @@ def get_cached_subsampled_psf(tinytim_path,
         except IOError as _e:
             # File is corrupt, so we'll regenerate it
             subsampled_model = make_subsampled_psf_model(filename=subsampled_name,
-                                      xp=psf_position[0],
-                                      yp=psf_position[1],
-                                      focus=focus,
-                                      chip=chip,
-                                      weight_func=weight_func,
-                                      tinytim_path=tinytim_path)
+                                  xp=psf_position[0],
+                                  yp=psf_position[1],
+                                  focus=focus,
+                                  use_cache=use_cache,
+                                  chip=chip,
+                                  weight_func=weight_func,
+                                  tinytim_path=tinytim_path,
+                                  **params)
             
     return subsampled_model
 
@@ -409,6 +390,7 @@ def get_model_psf_for_star(star,
                            weight_func=mv.default_prim_weight_func,
                            tinytim_path=mv.default_tinytim_path,
                            tinytim_data_path=mv.default_tinytim_data_path,
+                           kernel_adjustment=mv.default_params["kernel_adjustment"],
                            **params):
     """ Gets a model psf for a given star and the chip it was detected on
 
@@ -435,7 +417,8 @@ def get_model_psf_for_star(star,
     rounded_params = {}
     
     for param in params:
-        rounded_params[param] = round(params[param],5)
+        if not param=="kernel_adjustement":
+            rounded_params[param] = round(params[param],5)
 
     subsampled_model = get_cached_subsampled_psf(tinytim_path,
                                                  tinytim_data_path,
@@ -490,10 +473,15 @@ def get_model_psf_for_star(star,
     max_shift = np.max((np.abs(x_shift),np.abs(y_shift)))/mv.default_subsampling_factor
     if max_shift > 2:
         raise Exception("Star's centring is too poor; requires too extreme of a shift.")
+    
+    # Get the adjusted kernel
+    adjusted_kernel = kernel_adjustment*kernel
+    adjusted_kernel[1,1] = 0
+    adjusted_kernel[1,1] = 1 - adjusted_kernel.sum()
 
     # Get the rebinned PSF model
     rebinned_model = rebin(subsampled_model.data,
-                           kernel,
+                           adjusted_kernel,
                            x_shift=x_shift,
                            y_shift=y_shift,
                            subsampling_factor=mv.default_subsampling_factor)

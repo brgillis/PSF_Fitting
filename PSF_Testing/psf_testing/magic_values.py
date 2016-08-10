@@ -73,6 +73,8 @@ default_sex_data_path = "./data"
 default_min_class_star = 0.95
 default_min_star_mag = 21.0
 default_max_star_mag = 27.0
+default_min_star_size = 0.8
+default_max_star_size = 5.0
 default_min_lowest_separation = 1.0
 default_min_star_snr = 50.0
 
@@ -102,7 +104,9 @@ default_focus_precision = 0.1
 default_num_grid_points = (8, 4) # (x,y) in fits ordering, (y,x) in C ordering
 
 # Param fitting values
-default_params = {"astigmatism_0":0.031,
+default_params = {"z2":0.,
+                  "z3":0.,
+                  "astigmatism_0":0.031,
                   "astigmatism_45":0.028,
                   "coma_x":0.003,
                   "coma_y":0.001,
@@ -120,6 +124,7 @@ default_params = {"astigmatism_0":0.031,
                   "z20":0.,
                   "z21":0.,
                   "spherical_5th":0.009,
+                  "kernel_adjustment":1.,
                   }
 default_penalty_sigma = 0.005
 default_focus_penalty_sigma = 10

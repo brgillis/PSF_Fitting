@@ -59,7 +59,8 @@ def make_weight_mask(weight_func,
     
     weight_mask = weight_func(x_array,y_array)
     
-    assert weight_mask.sum() > 0
+    if weight_mask.sum() == 0:
+        raise Exception("Weight mask sums to zero, and so cannot be normalized.")
     
     # Normalize it
     weight_mask = weight_mask/weight_mask.sum()

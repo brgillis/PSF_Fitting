@@ -101,7 +101,7 @@ def run_sextractor(image_filename, sex_cfg_filename, sex_cat_name=None):
         sbp.call(cmd, shell=True)
     
     # Call SExtractor
-    cmd = "sex " + image_filename + " -c " + sex_cfg_filename
+    cmd = mv.sex_cmd + image_filename + " -c " + sex_cfg_filename
     sbp.call(cmd, shell=True)
     
     if(sex_cat_name is not None):
@@ -115,6 +115,8 @@ def get_stars_in_image(image_filename,
                        min_class_star=mv.default_min_class_star,
                        min_star_mag=mv.default_min_star_mag,
                        max_star_mag=mv.default_max_star_mag,
+                       min_star_size=mv.default_min_star_size,
+                       max_star_size=mv.default_max_star_size,
                        min_lowest_separation=None,
                        min_star_snr=mv.default_min_star_snr,
                        sex_data_path=mv.default_sex_data_path,
@@ -157,7 +159,8 @@ def get_stars_in_image(image_filename,
     objects_in_image = get_objects_from_cat(sex_cat_filename)
     
     # Get a list of those which are stars in the right magnitude range
-    stars = get_stars(objects_in_image,min_class_star,min_star_mag,max_star_mag,min_star_snr)
+    stars = get_stars(objects_in_image,min_class_star,min_star_mag,max_star_mag,
+                      min_star_size,max_star_size,min_star_snr)
     
     # Get only isolated stars
     isolated_stars = get_isolated_stars(stars,objects_in_image,min_lowest_separation)
