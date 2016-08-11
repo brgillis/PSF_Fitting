@@ -80,7 +80,9 @@ def test_psf(image_filename,
              
              parallelize=False,
              
-             norm_errors=False):
+             norm_errors=False,
+             
+             seed=None):
         
     logger = get_default_logger()
 
@@ -179,86 +181,48 @@ def test_psf(image_filename,
         if star.m0[0] <= 0:
             star.valid = False
             continue
+        
+    # Set up kwargs to pass along regardless of function called
+    kwargs = {"stars":stars,
+
+              "image_filename":image_filename,
+              "image":image,
+
+              "num_grid_points":num_grid_points,
+
+              "prim_weight_func":prim_weight_func,
+              "sec_weight_func":sec_weight_func,
+
+              "tinytim_path":tinytim_path,
+              "tinytim_data_path":tinytim_data_path,
+
+              "gain":gain,
+              "save_models":save_stacks,
+              "files_to_cleanup":files_to_cleanup,
+              
+              "parallelize":parallelize,
+              
+              "norm_errors":norm_errors}
 
     # If we're testing a single focus value, do that now
     if fit_all_params:
-        test_results, fitting_record = fit_best_params_and_test_psf(stars=stars,
-
-                                                    image_filename=image_filename,
-                                                    image=image,
-
-                                                    focus_penalty_sigma=focus_penalty_sigma,
-                                                    penalty_sigma=penalty_sigma,
-                                                    
-                                                    num_grid_points=num_grid_points,
-
-                                                    prim_weight_func=prim_weight_func,
-                                                    sec_weight_func=sec_weight_func,
-
-                                                    tinytim_path=tinytim_path,
-                                                    tinytim_data_path=tinytim_data_path,
-
-                                                    gain=gain,
-                                                    save_models=save_stacks,
-                                                    files_to_cleanup=files_to_cleanup,
-                                          
-                                                    parallelize=parallelize,
-                                          
-                                                    norm_errors=norm_errors,
-                                                    
-                                                    **mv.default_params)
+        test_results, fitting_record = fit_best_params_and_test_psf(focus_penalty_sigma=focus_penalty_sigma,
+                                                                    penalty_sigma=penalty_sigma,
+                                                                    **(kwargs+mv.default_params))
     elif test_single_focus:
-        test_results = test_psf_for_params(stars=stars,
-
-                                          image_filename=image_filename,
-                                          image=image,
-
-                                          test_focus=test_focus,
-                                          num_grid_points=num_grid_points,
-
-                                          prim_weight_func=prim_weight_func,
-                                          sec_weight_func=sec_weight_func,
-
-                                          tinytim_path=tinytim_path,
-                                          tinytim_data_path=tinytim_data_path,
-
-                                          gain=gain,
-                                          save_models=save_stacks,
-                                          files_to_cleanup=files_to_cleanup,
-                                          
-                                          parallelize=parallelize,
-                                          
-                                          norm_errors=norm_errors)
+        test_results = test_psf_for_params(test_focus=test_focus,
+                                           **kwargs)
         fitting_record = None
     # Otherwise, call the fitting function
     else:
-        test_results, fitting_record = fit_best_focus_and_test_psf(stars=stars,
+        test_results, fitting_record = fit_best_focus_and_test_psf(focus_penalty_sigma=focus_penalty_sigma,
 
-                                                    image_filename=image_filename,
-                                                    image=image,
-                                                    
-                                                    focus_penalty_sigma=focus_penalty_sigma,
-
-                                                    min_test_focus=min_test_focus,
-                                                    max_test_focus=max_test_focus,
-                                                    test_focus_samples=test_focus_samples,
-                                                    test_focus_precision=test_focus_precision,
-
-                                                    num_grid_points=num_grid_points,
-
-                                                    prim_weight_func=prim_weight_func,
-                                                    sec_weight_func=sec_weight_func,
-
-                                                    tinytim_path=tinytim_path,
-                                                    tinytim_data_path=tinytim_data_path,
-
-                                                    gain=gain,
-                                                    save_models=save_stacks,
-                                                    files_to_cleanup=files_to_cleanup,
-                                          
-                                                    parallelize=parallelize,
-                                          
-                                                    norm_errors=norm_errors)
+                                                                  min_test_focus=min_test_focus,
+                                                                  max_test_focus=max_test_focus,
+                                                                  test_focus_samples=test_focus_samples,
+                                                                  test_focus_precision=test_focus_precision,
+                
+                                                                  **kwargs)
 
     # Report the results
     report_results(test_results=test_results,

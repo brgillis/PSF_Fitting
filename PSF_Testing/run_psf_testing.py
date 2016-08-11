@@ -125,6 +125,8 @@ def main(argv):
                         help="Level of logging info to display. Default 'info'.")
     
     # Other options
+    parser.add_argument("--seed", type=int, default=None,
+                        help="Base seed for random number generation.")
     parser.add_argument("--refresh_only", action="store_true",
                         help="Only run for images if the results file doesn't already exist.")
     parser.add_argument("--normalize_errors", action="store_true",
@@ -147,41 +149,22 @@ def main(argv):
         debugging = True
     except ImportError:
         debugging = False
+        
+    # Set up kwargs used for all versions
+    kwargs = vars(args)
+    
+    del (kwargs["focus_sample_x_points"],kwargs["focus_sample_y_points"])
+    kwargs["num_grid_points"] = (args.focus_sample_x_points, args.focus_sample_y_points)
+    
+    del (kwargs["image_filename"], kwargs["image_list_filename"])
     
     # Pass the cline-args to the test_psf function, which carries out the testing
     
     if args.image_filename is not None:
-        test_psf_caller(min_class_star = args.min_class_star,
-                 min_star_mag = args.min_mag,
-                 max_star_mag = args.max_mag,
-                 min_star_size = args.min_size,
-                 max_star_size = args.max_size,
-                 min_lowest_separation = args.min_lowest_separation,
-                            
-                 fit_all_params=args.fit_all_params,
-                 focus_penalty_sigma=args.focus_penalty_sigma,
-                 penalty_sigma=args.penalty_sigma,
-                 
-                 test_single_focus = test_single_focus,
-                 test_focus = args.focus,
-                 min_test_focus = args.min_focus,
-                 max_test_focus = args.max_focus,
-                 test_focus_samples = args.focus_samples,
-                 test_focus_precision = args.focus_precision,
-                 num_grid_points = (args.focus_sample_x_points,
-                                    args.focus_sample_y_points),
-                    
-                 sex_data_path = args.sex_data_path,
-                 cleanup_sex_files = args.cleanup_sex_files,
-                    
-                 tinytim_path = args.tinytim_path,
-                 tinytim_data_path = args.tinytim_data_path,
-                 cleanup_tinytim_files = args.cleanup_tinytim_files,
-                 force_update = args.update,
+        test_psf_caller(
                  parallelize = (not debugging),
                  # parallelize = (not debugging) and (not args.fit_all_params),
-                 norm_errors = args.normalize_errors,
-                 refresh_only = args.refresh_only )(args.image_filename)
+                 **kwargs )(args.image_filename)
         image_filenames = [args.image_filename]
     else:
         # We'll test a list of images
@@ -201,70 +184,16 @@ def main(argv):
         
         if nproc == 1:
             for image_filename in image_filenames:
-                test_psf_caller(min_class_star = args.min_class_star,
-                     min_star_mag = args.min_mag,
-                     max_star_mag = args.max_mag,
-                     min_star_size = args.min_size,
-                     max_star_size = args.max_size,
-                     min_lowest_separation = args.min_lowest_separation,
-                                
-                     fit_all_params=args.fit_all_params,
-                     focus_penalty_sigma=args.focus_penalty_sigma,
-                     penalty_sigma=args.penalty_sigma,
-                     
-                     test_single_focus = test_single_focus,
-                     test_focus = args.focus,
-                     min_test_focus = args.min_focus,
-                     max_test_focus = args.max_focus,
-                     test_focus_samples = args.focus_samples,
-                     test_focus_precision = args.focus_precision,
-                     num_grid_points = (args.focus_sample_x_points,
-                                        args.focus_sample_y_points),
-                        
-                     sex_data_path = args.sex_data_path,
-                     cleanup_sex_files = args.cleanup_sex_files,
-                        
-                     tinytim_path = args.tinytim_path,
-                     tinytim_data_path = args.tinytim_data_path,
-                     cleanup_tinytim_files = args.cleanup_tinytim_files,
-                     force_update = args.update,
-                     parallelize = parallelize_each_image,
-                     norm_errors = args.normalize_errors,
-                     refresh_only = args.refresh_only )(image_filename)
+                test_psf_caller(parallelize = parallelize_each_image,
+                                **kwargs )(image_filename)
         else:
         
             pool = Pool(processes=nproc,maxtasksperchild=1)
-            _ = pool.map(test_psf_caller(min_class_star = args.min_class_star,
-                             min_star_mag = args.min_mag,
-                             max_star_mag = args.max_mag,
-                             min_star_size = args.min_size,
-                             max_star_size = args.max_size,
-                             min_lowest_separation = args.min_lowest_separation,
-                             
-                             fit_all_params=args.fit_all_params,
-                             focus_penalty_sigma=args.focus_penalty_sigma,
-                             penalty_sigma=args.penalty_sigma,
-                             
-                             test_single_focus = test_single_focus,
-                             test_focus = args.focus,
-                             min_test_focus = args.min_focus,
-                             max_test_focus = args.max_focus,
-                             test_focus_samples = args.focus_samples,
-                             test_focus_precision = args.focus_precision,
-                             num_grid_points = (args.focus_sample_x_points,
-                                                args.focus_sample_y_points),
-                             
-                             sex_data_path = args.sex_data_path,
-                             cleanup_sex_files = args.cleanup_sex_files,
-                             
-                             tinytim_path = args.tinytim_path,
-                             tinytim_data_path = args.tinytim_data_path,
-                             cleanup_tinytim_files = args.cleanup_tinytim_files,
-                             force_update = args.update,
-                             parallelize = False,
-                             norm_errors = args.normalize_errors,
-                             refresh_only = args.refresh_only ),
+            _ = pool.map(test_psf_caller(parallelize = False,
+                                         **kwargs ),
                      image_filenames,chunksize=1)
+            pool.join()
+            pool.close()
     
     logger.info("Execution complete.")
 

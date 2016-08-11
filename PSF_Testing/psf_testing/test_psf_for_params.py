@@ -166,8 +166,12 @@ def test_psf_for_params(stars,
                        parallelize=False,
                        
                        norm_errors=False,
+                                
+                       seed=None,
                        
                        **params):
+    
+    # TODO: Pass seed to adding noise to noisy images
 
     if outliers_mask is None:
         outliers_mask = []

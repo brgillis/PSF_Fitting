@@ -41,9 +41,6 @@ def tunneling_mcmc_minimize(func,
     if param_steps is None:
         param_steps = np.ones(ndim)
         
-    if seed is not None:
-        random.seed(seed)
-        
     best_in = init_params
     best_out = func(init_params,*args,**kwargs)
     
@@ -51,8 +48,10 @@ def tunneling_mcmc_minimize(func,
     current_out = best_out
     current_fstun = 1 - np.exp(gamma*(best_out-current_out))
     
-    for _i in range(nsteps):
+    for i in range(nsteps):
         
+        if seed is not None:
+            random.seed(nsteps*seed+i)
         test_in = current_in + param_steps*random.randn(ndim)
         
         # Check test_in against mins and maxes

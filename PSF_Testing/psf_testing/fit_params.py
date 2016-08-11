@@ -85,6 +85,8 @@ def fit_best_params_and_test_psf(stars,
                                           
                                 norm_errors=False,
                                 
+                                seed=None,
+                                
                                 **params):
 
     # Use a set outliers mask for all tests?
@@ -123,6 +125,7 @@ def fit_best_params_and_test_psf(stars,
                                                 parallelize=parallelize,
                                                 
                                                 norm_errors=norm_errors,
+                                                seed=seed,
                                                 
                                                 z2 = param_scale*(test_param_array[1]-1),
                                                 z3 = param_scale*(test_param_array[2]-1),
@@ -213,14 +216,13 @@ def fit_best_params_and_test_psf(stars,
     param_mins = param_array - 5.*steps
     param_maxes = param_array + 5.*steps
     
-    for i in range(10):
-        test_tuple = tunneling_mcmc_minimize(get_X2_for_params, param_array,
-                                             steps,
-                                             param_mins,
-                                             param_maxes,
-                                             100, seed=i)
-        if best_tuple is None or test_tuple[1]<best_tuple[1]:
-            best_tuple = test_tuple
+    test_tuple = tunneling_mcmc_minimize(get_X2_for_params, param_array,
+                                         steps,
+                                         param_mins,
+                                         param_maxes,
+                                         100, seed=seed)
+    if best_tuple is None or test_tuple[1]<best_tuple[1]:
+        best_tuple = test_tuple
 
     best_param_array = minimize(get_X2_for_params, best_tuple[0], method='Nelder-Mead',
                                 options={'xtol':0.01,'ftol':100}).x
