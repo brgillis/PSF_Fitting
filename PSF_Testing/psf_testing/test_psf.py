@@ -60,12 +60,12 @@ def test_psf(image_filename,
              penalty_sigma=mv.default_penalty_sigma,
              
              test_single_focus=False,
-             test_focus=None,
+             focus=None,
              
-             min_test_focus=mv.default_min_test_focus,
-             max_test_focus=mv.default_max_test_focus,
-             test_focus_samples=mv.default_focus_samples,
-             test_focus_precision=mv.default_focus_precision,
+             min_focus=mv.default_min_test_focus,
+             max_focus=mv.default_max_test_focus,
+             focus_samples=mv.default_focus_samples,
+             focus_precision=mv.default_focus_precision,
              num_grid_points=mv.default_num_grid_points,
 
              sex_data_path=mv.default_sex_data_path,
@@ -202,25 +202,28 @@ def test_psf(image_filename,
               
               "parallelize":parallelize,
               
-              "norm_errors":norm_errors}
+              "norm_errors":norm_errors,
+              "seed":seed}
 
     # If we're testing a single focus value, do that now
     if fit_all_params:
+        kwargs_and_params = kwargs.copy()
+        kwargs_and_params.update(mv.default_params)
         test_results, fitting_record = fit_best_params_and_test_psf(focus_penalty_sigma=focus_penalty_sigma,
                                                                     penalty_sigma=penalty_sigma,
-                                                                    **(kwargs+mv.default_params))
+                                                                    **kwargs_and_params)
     elif test_single_focus:
-        test_results = test_psf_for_params(test_focus=test_focus,
+        test_results = test_psf_for_params(focus=focus,
                                            **kwargs)
         fitting_record = None
     # Otherwise, call the fitting function
     else:
         test_results, fitting_record = fit_best_focus_and_test_psf(focus_penalty_sigma=focus_penalty_sigma,
 
-                                                                  min_test_focus=min_test_focus,
-                                                                  max_test_focus=max_test_focus,
-                                                                  test_focus_samples=test_focus_samples,
-                                                                  test_focus_precision=test_focus_precision,
+                                                                  min_focus=min_focus,
+                                                                  max_focus=max_focus,
+                                                                  focus_samples=focus_samples,
+                                                                  focus_precision=focus_precision,
                 
                                                                   **kwargs)
 

@@ -143,7 +143,7 @@ def test_psf_for_params(stars,
                        image_filename,
                        image=None,
 
-                       test_focus=mv.default_test_focus,
+                       focus=mv.default_test_focus,
                        
                        num_grid_points=mv.default_num_grid_points,
 
@@ -193,7 +193,7 @@ def test_psf_for_params(stars,
     image_shape = image_shape[1], image_shape[0]
 
     # Set up the focus generating scheme
-    model_scheme = psf_model_scheme(focus=test_focus,
+    model_scheme = psf_model_scheme(focus=focus,
                                     num_grid_points=num_grid_points,
                                     image_shape=image_shape)
 
@@ -217,7 +217,7 @@ def test_psf_for_params(stars,
                       save_models,
                       **params)
     else:
-        pool = multiprocessing.Pool(processes=multiprocessing.cpu_count(),maxtasksperchild=100)
+        pool = multiprocessing.Pool(processes=multiprocessing.cpu_count(),maxtasksperchild=1)
         new_stars = pool.map(test_star_caller(stars,
                                               model_scheme,
                                               prim_weight_func,
@@ -233,9 +233,11 @@ def test_psf_for_params(stars,
                              chunksize=1)
         pool.close()
         pool.join()
+        pool.terminate()
         for i in range(num_stars):
             stars[i] = new_stars[i]
         del(new_stars,pool)
+        import gc; gc.collect()
         
     for i in range(num_stars):
             
@@ -372,7 +374,6 @@ def test_psf_for_params(stars,
             star_props[prop + comb + "_mean"] = np.mean(star_props[prop + comb + "s"],axis=0)
             star_props[prop + comb + "_err"] = np.std(star_props[prop + comb + "s"],axis=0)*corr_factor
             if norm_errors:
-                star_props[prop + comb + "_err"] = np.ones_like(star_props[prop + comb + "_err"])
                 errors = np.ones_like(star_props[prop + comb + "s_err"])
             else:
                 errors = star_props[prop + comb + "s_err"]
@@ -404,7 +405,7 @@ def test_psf_for_params(stars,
     test_params = deepcopy(mv.default_params)
     for param in params:
         test_params[param] = params[param]
-    test_params["focus"] = test_focus
+    test_params["focus"] = focus
     
     test_results = (test_params,
             (X2, X2_dof, chi2, chi2_dof),

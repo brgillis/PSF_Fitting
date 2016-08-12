@@ -41,10 +41,10 @@ def fit_best_focus_and_test_psf(stars,
                                 
                                 focus_penalty_sigma=mv.default_focus_penalty_sigma,
 
-                                min_test_focus=mv.default_min_test_focus,
-                                max_test_focus=mv.default_max_test_focus,
-                                test_focus_samples=mv.default_focus_samples,
-                                test_focus_precision=mv.default_focus_precision,
+                                min_focus=mv.default_min_test_focus,
+                                max_focus=mv.default_max_test_focus,
+                                focus_samples=mv.default_focus_samples,
+                                focus_precision=mv.default_focus_precision,
 
                                 num_grid_points=mv.default_num_grid_points,
 
@@ -115,10 +115,10 @@ def fit_best_focus_and_test_psf(stars,
     # Initialize the test
 
     best_focus = bf_minimize(get_X2_for_focus,
-                min_input=min_test_focus,
-                max_input=max_test_focus,
-                test_points=test_focus_samples,
-                precision=test_focus_precision)
+                min_input=min_focus,
+                max_input=max_focus,
+                test_points=focus_samples,
+                precision=focus_precision)
 
     test_results = test_psf_for_params(stars=stars,
 

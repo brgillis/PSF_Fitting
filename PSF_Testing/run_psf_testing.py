@@ -28,6 +28,7 @@ import sys
 import argparse
 from os.path import join
 from multiprocessing import Pool, cpu_count
+from copy import deepcopy
 
 from psf_testing import magic_values as mv
 from psf_testing.test_psf import test_psf
@@ -62,17 +63,17 @@ def main(argv):
     # Star selection
     parser.add_argument("--min_class_star", type=float, default=mv.default_min_class_star,
                         help="The minimum class_star value for an object to be categorized as a star.")
-    parser.add_argument("--min_mag", type=float, default=mv.default_min_star_mag,
+    parser.add_argument("--min_star_mag", type=float, default=mv.default_min_star_mag,
                         help="The minimum magnitude for stars to be tested.")
-    parser.add_argument("--max_mag", type=float, default=mv.default_max_star_mag,
+    parser.add_argument("--max_star_mag", type=float, default=mv.default_max_star_mag,
                         help="The minimum magnitude for stars to be tested.")
-    parser.add_argument("--min_size", type=float, default=mv.default_min_star_size,
+    parser.add_argument("--min_star_size", type=float, default=mv.default_min_star_size,
                         help="The minimum size for stars to be tested (FWHM in arcsec).")
-    parser.add_argument("--max_size", type=float, default=mv.default_max_star_size,
+    parser.add_argument("--max_star_size", type=float, default=mv.default_max_star_size,
                         help="The minimum size for stars to be tested (FWHM in arcsec).")
     parser.add_argument("--min_lowest_separation", type=float, default=None,
                         help="The minimum required separation of a star from any other object in arcsec.")
-    parser.add_argument("--min_snr", type=float, default=mv.default_min_star_snr,
+    parser.add_argument("--min_star_snr", type=float, default=mv.default_min_star_snr,
                         help="The minimum signal-to-noise ratio for this star to be tested")
     
     # Focus fitting
@@ -118,7 +119,7 @@ def main(argv):
                         help="Cleanup generated TinyTim PSFs after execution. Note that enabling this" +
                              " can greatly slow down repeated runs.")
     
-    parser.add_argument("--update", action="store_true",
+    parser.add_argument("--force_update", action="store_true",
                         help="Force update of Sextractor catalogues and TinyTim PSFs.")
     
     parser.add_argument("--logging_level", type=str, default=mv.default_logging_level,
@@ -129,7 +130,7 @@ def main(argv):
                         help="Base seed for random number generation.")
     parser.add_argument("--refresh_only", action="store_true",
                         help="Only run for images if the results file doesn't already exist.")
-    parser.add_argument("--normalize_errors", action="store_true",
+    parser.add_argument("--norm_errors", action="store_true",
                         help="Normalize errors - X^2 will no longer weight differently depending on scatter.")
     
     # Execute command-line parsing
@@ -151,19 +152,19 @@ def main(argv):
         debugging = False
         
     # Set up kwargs used for all versions
-    kwargs = vars(args)
+    kwargs = deepcopy(vars(args))
     
     del (kwargs["focus_sample_x_points"],kwargs["focus_sample_y_points"])
     kwargs["num_grid_points"] = (args.focus_sample_x_points, args.focus_sample_y_points)
     
-    del (kwargs["image_filename"], kwargs["image_list_filename"])
+    del (kwargs["image_filename"], kwargs["image_list_filename"], kwargs["image_dir"], kwargs["logging_level"])
     
     # Pass the cline-args to the test_psf function, which carries out the testing
     
     if args.image_filename is not None:
         test_psf_caller(
-                 parallelize = (not debugging),
-                 # parallelize = (not debugging) and (not args.fit_all_params),
+                 # parallelize = (not debugging),
+                 parallelize = (not debugging) and (not args.fit_all_params),
                  **kwargs )(args.image_filename)
         image_filenames = [args.image_filename]
     else:
@@ -192,8 +193,8 @@ def main(argv):
             _ = pool.map(test_psf_caller(parallelize = False,
                                          **kwargs ),
                      image_filenames,chunksize=1)
-            pool.join()
             pool.close()
+            pool.join()
     
     logger.info("Execution complete.")
 

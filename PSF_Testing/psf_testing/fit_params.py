@@ -92,8 +92,8 @@ def fit_best_params_and_test_psf(stars,
     # Use a set outliers mask for all tests?
     outliers_mask = []
     
-    # Keep a record of the results for all tests
-    fitting_record = []
+    # Don't store fitting record just yet
+    fitting_record = None
 
     # Define a function that we can use for fitting the focus
     def get_X2_for_params(test_param_array):
@@ -104,7 +104,7 @@ def fit_best_params_and_test_psf(stars,
                                                 image_filename=image_filename,
                                                 image=image,
     
-                                                test_focus=test_focus,
+                                                focus=test_focus,
                                                 
                                                 num_grid_points=num_grid_points,
     
@@ -148,7 +148,7 @@ def fit_best_params_and_test_psf(stars,
                                                 z21 = param_scale*(test_param_array[19]-1),
                                                 spherical_5th = param_scale*(test_param_array[20]-1),
                                                 kernel_adjustment = 1.5-param_scale*test_param_array[21])
-            return get_X2_of_test_results(test_results) + \
+            X2 = get_X2_of_test_results(test_results) + \
                 get_params_penalty(test_focus,focus_penalty_sigma=focus_penalty_sigma,
                                    penalty_sigma=penalty_sigma,
                                     z2 = param_scale*(test_param_array[1]-1),
@@ -174,7 +174,10 @@ def fit_best_params_and_test_psf(stars,
                                     kernel_adjustment = 1.5-param_scale*test_param_array[21],)
         except Exception as _e:
             # Return a near-infinite value on exception
-            return 1.0e100
+            X2 = 1.0e100
+        
+        print("X2 = " + str(X2))
+        return X2
     
     # Initialize the test
     param_array = np.empty(22)
@@ -220,10 +223,14 @@ def fit_best_params_and_test_psf(stars,
                                          steps,
                                          param_mins,
                                          param_maxes,
-                                         100, seed=seed)
+                                         100,
+                                         seed=seed)
     if best_tuple is None or test_tuple[1]<best_tuple[1]:
         best_tuple = test_tuple
 
+    # Store fitting record now
+    fitting_record = []
+    
     best_param_array = minimize(get_X2_for_params, best_tuple[0], method='Nelder-Mead',
                                 options={'xtol':0.01,'ftol':100}).x
 
