@@ -102,8 +102,6 @@ def test_psf(image_filename,
 
     # Start by inspecting the image and getting needed details about it
     image = fits.open(image_filename)[0]
-    
-    
 
     chip = get_chip(image)
     exp_time = get_exp_time(image)
@@ -228,6 +226,10 @@ def test_psf(image_filename,
                                                                   **kwargs)
 
     # Report the results
+    results_root = filename_root
+    if seed is not None:
+        results_root += "_" + str(seed)
+    
     report_results(test_results=test_results,
                    fitting_record=fitting_record,
                    chip=chip,
@@ -235,12 +237,12 @@ def test_psf(image_filename,
                    exp_time=exp_time,
                    ra=get_ra(image),
                    dec=get_dec(image),
-                   filename_root=filename_root)
+                   filename_root=results_root)
 
     # Save stacks if desired
     if save_stacks:
         make_and_save_stacks(stars=stars,
-                             filename_root=filename_root,
+                             filename_root=results_root,
                              stack_size=(2 * mv.default_weight_rmax + 1))
 
     # Remove all files in the cleanup list
