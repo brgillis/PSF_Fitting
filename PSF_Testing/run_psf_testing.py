@@ -132,6 +132,8 @@ def main(argv):
                         help="Only run for images if the results file doesn't already exist.")
     parser.add_argument("--norm_errors", action="store_true",
                         help="Normalize errors - X^2 will no longer weight differently depending on scatter.")
+    parser.add_argument("--disable_parallelization", action="store_true",
+                        help="If set, will not use multiprocessing at any point.")
     
     # Execute command-line parsing
     args = parser.parse_args()
@@ -163,8 +165,7 @@ def main(argv):
     
     if args.image_filename is not None:
         test_psf_caller(
-                 # parallelize = (not debugging),
-                 parallelize = (not debugging) and (not args.fit_all_params),
+                 parallelize = (not debugging) and (not args.disable_parallelization),
                  **kwargs )(args.image_filename)
         image_filenames = [args.image_filename]
     else:
@@ -178,12 +179,12 @@ def main(argv):
         
         if args.refresh_only:
             nproc = 1
-            parallelize_each_image = not debugging
+            parallelize_each_image = (not debugging) and (not args.disable_parallelization)
         else:
             nproc = max((cpu_count()-1,1))
             parallelize_each_image = False
         
-        if nproc == 1:
+        if (nproc == 1) or (args.disable_parallelization):
             for image_filename in image_filenames:
                 test_psf_caller(parallelize = parallelize_each_image,
                                 **kwargs )(image_filename)
