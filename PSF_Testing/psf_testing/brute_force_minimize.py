@@ -30,8 +30,8 @@ from psf_testing import magic_values as mv
 def bf_minimize(func,
                 args=[],
                 kwargs={},
-                min_input=mv.default_min_test_focus,
-                max_input=mv.default_max_test_focus,
+                min_input=mv.default_min_focus,
+                max_input=mv.default_max_focus,
                 test_points=mv.default_focus_samples,
                 precision=mv.default_focus_precision,
                 max_iter=100):

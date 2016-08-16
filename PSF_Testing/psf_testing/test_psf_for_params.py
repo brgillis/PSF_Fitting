@@ -143,7 +143,7 @@ def test_psf_for_params(stars,
                        image_filename,
                        image=None,
 
-                       focus=mv.default_test_focus,
+                       focus=mv.default_focus,
                        
                        num_grid_points=mv.default_num_grid_points,
 

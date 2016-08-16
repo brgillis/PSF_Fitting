@@ -79,9 +79,9 @@ def main(argv):
     # Focus fitting
     parser.add_argument("--focus", type=float, default=None,
                         help="If given, will only test this focus value. Otherwise will fit best focus.")
-    parser.add_argument("--min_focus", type=float, default=mv.default_min_test_focus,
+    parser.add_argument("--min_focus", type=float, default=mv.default_min_focus,
                         help="Minimum focus value to test.")
-    parser.add_argument("--max_focus", type=float, default=mv.default_max_test_focus,
+    parser.add_argument("--max_focus", type=float, default=mv.default_max_focus,
                         help="Maximum focus value to test.")
     parser.add_argument("--focus_samples", type=float, default=mv.default_focus_samples,
                         help="Initial number of focus values to test between min and max before trying " +

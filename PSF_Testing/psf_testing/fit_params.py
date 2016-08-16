@@ -51,7 +51,7 @@ def get_params_penalty(focus,
     if focus_penalty_sigma==0:
         penalty = 0
     else:
-        penalty = ((focus-mv.default_init_test_focus)/focus_penalty_sigma)**2
+        penalty = ((focus-mv.default_init_focus)/focus_penalty_sigma)**2
     
     if penalty_sigma > 0:
         for param in params:
@@ -64,7 +64,7 @@ def fit_best_params_and_test_psf(stars,
                                 image_filename,
                                 image=None,
 
-                                test_focus=mv.default_init_test_focus,
+                                focus=mv.default_init_focus,
                                 penalty_sigma=mv.default_penalty_sigma,
                                 focus_penalty_sigma=mv.default_focus_penalty_sigma,
                                 
@@ -98,13 +98,13 @@ def fit_best_params_and_test_psf(stars,
     # Define a function that we can use for fitting the focus
     def get_X2_for_params(test_param_array):
         try:
-            test_focus = focus_scale*(test_param_array[0]-1)
+            focus = focus_scale*(test_param_array[0]-1)
             test_results = test_psf_for_params(stars=stars,
     
                                                 image_filename=image_filename,
                                                 image=image,
     
-                                                focus=test_focus,
+                                                focus=focus,
                                                 
                                                 num_grid_points=num_grid_points,
     
@@ -149,7 +149,7 @@ def fit_best_params_and_test_psf(stars,
                                                 spherical_5th = param_scale*(test_param_array[20]-1),
                                                 kernel_adjustment = 1.5-param_scale*test_param_array[21])
             X2 = get_X2_of_test_results(test_results) + \
-                get_params_penalty(test_focus,focus_penalty_sigma=focus_penalty_sigma,
+                get_params_penalty(focus,focus_penalty_sigma=focus_penalty_sigma,
                                    penalty_sigma=penalty_sigma,
                                     z2 = param_scale*(test_param_array[1]-1),
                                     z3 = param_scale*(test_param_array[2]-1),
@@ -181,7 +181,7 @@ def fit_best_params_and_test_psf(stars,
     
     # Initialize the test
     param_array = np.empty(22)
-    param_array[0] = test_focus/focus_scale + 1
+    param_array[0] = focus/focus_scale + 1
     param_array[1] = params["z2"]/param_scale + 1
     param_array[2] = params["z3"]/param_scale + 1
     param_array[3] = params["astigmatism_0"]/param_scale + 1
@@ -219,14 +219,15 @@ def fit_best_params_and_test_psf(stars,
     param_mins = param_array - 5.*steps
     param_maxes = param_array + 5.*steps
     
-    test_tuple = tunneling_mcmc_minimize(get_X2_for_params, param_array,
-                                         steps,
-                                         param_mins,
-                                         param_maxes,
-                                         100,
-                                         seed=seed)
-    if best_tuple is None or test_tuple[1]<best_tuple[1]:
-        best_tuple = test_tuple
+    for i in range(10):
+        test_tuple = tunneling_mcmc_minimize(get_X2_for_params, param_array,
+                                             steps,
+                                             param_mins,
+                                             param_maxes,
+                                             100,
+                                             seed=i)
+        if best_tuple is None or test_tuple[1]<best_tuple[1]:
+            best_tuple = test_tuple
 
     # Store fitting record now
     fitting_record = []
@@ -263,7 +264,7 @@ def fit_best_params_and_test_psf(stars,
                                             image_filename=image_filename,
                                             image=image,
 
-                                            test_focus=best_focus,
+                                            focus=best_focus,
                                             num_grid_points=num_grid_points,
 
                                             prim_weight_func=prim_weight_func,

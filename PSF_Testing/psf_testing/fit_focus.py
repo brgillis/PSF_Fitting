@@ -41,8 +41,8 @@ def fit_best_focus_and_test_psf(stars,
                                 
                                 focus_penalty_sigma=mv.default_focus_penalty_sigma,
 
-                                min_focus=mv.default_min_test_focus,
-                                max_focus=mv.default_max_test_focus,
+                                min_focus=mv.default_min_focus,
+                                max_focus=mv.default_max_focus,
                                 focus_samples=mv.default_focus_samples,
                                 focus_precision=mv.default_focus_precision,
 
@@ -72,13 +72,13 @@ def fit_best_focus_and_test_psf(stars,
 
     # Define a function that we can use for fitting the focus
     @memoize
-    def get_X2_for_focus(test_focus):
+    def get_X2_for_focus(focus):
         test_results = test_psf_for_params(stars=stars,
 
                                             image_filename=image_filename,
                                             image=image,
 
-                                            test_focus=test_focus,
+                                            focus=focus,
                                             
                                             num_grid_points=num_grid_points,
 
@@ -105,12 +105,12 @@ def fit_best_focus_and_test_psf(stars,
         if focus_penalty_sigma==0:
             penalty = 0
         else:
-            penalty = ((test_focus-mv.default_init_test_focus)/focus_penalty_sigma)**2
+            penalty = ((focus-mv.default_init_focus)/focus_penalty_sigma)**2
         return get_X2_of_test_results(test_results) + penalty
     
     # Calculate (and cache) the value for focus 0 first, so we'll always use the
     # outliers list for that
-    get_X2_for_focus(mv.default_init_test_focus)
+    get_X2_for_focus(mv.default_init_focus)
 
     # Initialize the test
 
@@ -125,7 +125,7 @@ def fit_best_focus_and_test_psf(stars,
                                             image_filename=image_filename,
                                             image=image,
 
-                                            test_focus=best_focus,
+                                            focus=best_focus,
                                             num_grid_points=num_grid_points,
 
                                             prim_weight_func=prim_weight_func,

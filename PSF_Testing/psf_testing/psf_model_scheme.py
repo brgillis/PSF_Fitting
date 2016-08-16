@@ -30,7 +30,7 @@ class psf_model_scheme(object):
     """
 
 
-    def __init__(self, focus = mv.default_test_focus,
+    def __init__(self, focus = mv.default_focus,
                        num_grid_points = mv.default_num_grid_points,
                        image_shape = mv.default_image_shape):
         """ Optional: focus <float> (focus value for the model)

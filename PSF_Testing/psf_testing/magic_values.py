@@ -95,10 +95,10 @@ sex_cat_yp_max_col = 8
 sex_cat_num_cols = 24
 
 # Focus fitting values
-default_test_focus = 0.0
-default_init_test_focus = -1.0
-default_min_test_focus = -6.0
-default_max_test_focus = 6.0
+default_focus = 0.0
+default_init_focus = -1.0
+default_min_focus = -6.0
+default_max_focus = 6.0
 default_focus_samples = 4
 default_focus_precision = 0.1
 default_num_grid_points = (8, 4) # (x,y) in fits ordering, (y,x) in C ordering
