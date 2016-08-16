@@ -159,7 +159,8 @@ def main(argv):
     del (kwargs["focus_sample_x_points"],kwargs["focus_sample_y_points"])
     kwargs["num_grid_points"] = (args.focus_sample_x_points, args.focus_sample_y_points)
     
-    del (kwargs["image_filename"], kwargs["image_list_filename"], kwargs["image_dir"], kwargs["logging_level"])
+    del (kwargs["image_filename"], kwargs["image_list_filename"], kwargs["image_dir"], kwargs["logging_level"],
+         kwargs["disable_parallelization"])
     
     # Pass the cline-args to the test_psf function, which carries out the testing
     
