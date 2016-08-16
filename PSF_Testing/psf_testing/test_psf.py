@@ -59,7 +59,6 @@ def test_psf(image_filename,
              focus_penalty_sigma=mv.default_focus_penalty_sigma,
              penalty_sigma=mv.default_penalty_sigma,
              
-             test_single_focus=False,
              focus=None,
              
              min_focus=mv.default_min_focus,
@@ -210,7 +209,7 @@ def test_psf(image_filename,
         test_results, fitting_record = fit_best_params_and_test_psf(focus_penalty_sigma=focus_penalty_sigma,
                                                                     penalty_sigma=penalty_sigma,
                                                                     **kwargs_and_params)
-    elif test_single_focus:
+    elif focus is not None:
         test_results = test_psf_for_params(focus=focus,
                                            **kwargs)
         fitting_record = None
