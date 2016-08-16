@@ -25,8 +25,8 @@ def extract_stamp_for_star(star, image):
     stamp_size = 2*star.SkyObj.stamp_size + 1
     
     # Swap x/y due to fits ordering
-    x1=star.SkyObj.y_pix-star.SkyObj.stamp_size
-    y1=star.SkyObj.x_pix-star.SkyObj.stamp_size
+    x1=int(star.SkyObj.y_pix-star.SkyObj.stamp_size)
+    y1=int(star.SkyObj.x_pix-star.SkyObj.stamp_size)
     
     image_nx, image_ny = np.shape(image.data)
     

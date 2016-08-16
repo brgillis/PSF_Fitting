@@ -101,8 +101,8 @@ def get_Qsize(image,
     if(xc is None) or (yc is None):
         xc, yc, _, _, _, _ = centre_image(image, prim_weight_func)
         
-    xc = np.round(xc,0)
-    yc = np.round(yc,0)
+    xc = int(np.round(xc,0))
+    yc = int(np.round(yc,0))
         
     x_array, y_array, _, _, _ = get_coords_of_array(nx=nx, ny=ny, xc=xc, yc=yc)
 
