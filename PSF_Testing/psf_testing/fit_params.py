@@ -219,13 +219,15 @@ def fit_best_params_and_test_psf(stars,
     param_mins = param_array - 5.*steps
     param_maxes = param_array + 5.*steps
     
-    for i in range(10):
+    num_trials = len(param_array)
+    
+    for i in range(num_trials):
         test_tuple = tunneling_mcmc_minimize(get_X2_for_params, param_array,
                                              steps,
                                              param_mins,
                                              param_maxes,
                                              100,
-                                             seed=i)
+                                             seed=num_trials*seed+i)
         if best_tuple is None or test_tuple[1]<best_tuple[1]:
             best_tuple = test_tuple
 
