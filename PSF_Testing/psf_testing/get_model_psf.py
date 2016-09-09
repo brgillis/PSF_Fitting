@@ -26,6 +26,7 @@ import time
 import os
 
 from astropy.io import fits
+from scipy import fftpack as fp
 
 import numpy as np
 from psf_testing.function_cache import lru_cache
@@ -35,6 +36,18 @@ from psf_testing.io import replace_multiple_in_file
 from psf_testing.moments.centre_image import centre_image
 from psf_testing.rebin_psf import rebin
 import subprocess as sbp
+
+def fft_convolve_deconvolve(im1,im2,im3):
+
+    im1_fft = fp.fftn(im1)
+    im2_fft = fp.ifftshift(fp.fftn(im2))
+    im3_fft = fp.ifftshift(fp.fftn(im3))
+    
+    im_fft = im1_fft*im2_fft/im3_fft
+    
+    res = fp.ifftn(im_fft)
+    
+    return res
 
 
 def make_subsampled_psf_model(filename,
@@ -391,6 +404,7 @@ def get_model_psf_for_star(star,
                            tinytim_path=mv.default_tinytim_path,
                            tinytim_data_path=mv.default_tinytim_data_path,
                            kernel_adjustment=mv.default_params["kernel_adjustment"],
+                           kernel_adjustment_ratio=mv.default_params["kernel_adjustment_ratio"],
                            **params):
     """ Gets a model psf for a given star and the chip it was detected on
 
@@ -473,18 +487,29 @@ def get_model_psf_for_star(star,
     max_shift = np.max((np.abs(x_shift),np.abs(y_shift)))/mv.default_subsampling_factor
     if max_shift > 2:
         raise Exception("Star's centring is too poor; requires too extreme of a shift.")
-    
-    # Get the adjusted kernel
-    adjusted_kernel = kernel_adjustment*kernel
-    adjusted_kernel[1,1] = 0
-    adjusted_kernel[1,1] = 1 - adjusted_kernel.sum()
 
     # Get the rebinned PSF model
     rebinned_model = rebin(subsampled_model.data,
-                           adjusted_kernel,
+                           kernel,
                            x_shift=x_shift,
                            y_shift=y_shift,
                            subsampling_factor=mv.default_subsampling_factor)
+    
+    # Deconvolve/reconvolve to adjust size
+    if not kernel_adjustment == 1:
+        scale = np.abs(kernel_adjustment - 1.)
+        x, y = np.indices(np.shape(rebinned_model),dtype=np.complex64)
+        x -= np.shape(rebinned_model)[0]/2.-1
+        y -= np.shape(rebinned_model)[1]/2.-1
+        r = np.sqrt(x*x+y*y)
+        gaus = np.exp(-r*r/(2*scale*np.abs(kernel_adjustment_ratio)))
+        exp = np.exp(-r/scale)
+        
+        if kernel_adjustment > 1:
+            rebinned_model = np.abs(fft_convolve_deconvolve(rebinned_model,gaus,exp))
+        else:
+            rebinned_model = np.abs(fft_convolve_deconvolve(rebinned_model,exp,gaus))
+            
 
     # Get the zeroth-order moment for the rebinned psf
     _xc, _yc, _, _, _, rb_model_m0 = centre_image(rebinned_model, weight_func=weight_func)

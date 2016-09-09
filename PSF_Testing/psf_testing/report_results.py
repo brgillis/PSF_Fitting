@@ -113,8 +113,8 @@ def save_fitting_record(fitting_record,
 
     tbhdu = fits.BinTableHDU.from_columns(columns)
     
-    tbhdu.header["XDOF"] = test_results[1][1]
-    tbhdu.header["CDOF"] = test_results[1][3]
+    tbhdu.header["NSTAR"] = test_results[1][1]
+    tbhdu.header["DOF"] = test_results[1][3]
 
     fitting_record_filename = filename_root + "_fitting_record" + mv.table_extension
 
@@ -203,9 +203,9 @@ def report_results(test_results,
     tbhdu.header["SPHERE_5"] = test_results[0]["spherical_5th"]
     tbhdu.header["KERN_ADJ"] = test_results[0]["kernel_adjustment"]
     tbhdu.header["X_SQR"] = test_results[1][0]
-    tbhdu.header["XDOF"] = test_results[1][1]
     tbhdu.header["CHI_SQR"] = test_results[1][2]
-    tbhdu.header["CDOF"] = test_results[1][3]
+    tbhdu.header["DOF"] = test_results[1][3]
+    tbhdu.header["NSTAR"] = test_results[1][1]
 
     tbhdu.header["M0D_DIF"] = test_results[2][0][0]
     tbhdu.header["M0D_Z2"] = test_results[3][0][0]
@@ -232,12 +232,13 @@ def report_results(test_results,
     
     # Print summary
     logger = get_default_logger()
-    log_string = ("X^2 = " + str(tbhdu.header["X_SQR"]) + " for " + str(tbhdu.header["XDOF"]) +
+    logger.info(str(tbhdu.header["NSTAR"]) + " stars tested.")
+    log_string = ("X^2 = " + str(tbhdu.header["X_SQR"]) + " for " + str(tbhdu.header["DOF"]) +
           " degrees of freedom.")
     for param in test_results[0]:
         log_string += "\n" + param + " = " + str(test_results[0][param])
     logger.info(log_string)
-    logger.info("chi^2  = " + str(tbhdu.header["CHI_SQR"]) + ", for " + str(tbhdu.header["CDOF"]) +
+    logger.info("chi^2  = " + str(tbhdu.header["CHI_SQR"]) + ", for " + str(tbhdu.header["DOF"]) +
           " degrees of freedom.")
     
     if fitting_record is not None:

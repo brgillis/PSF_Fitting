@@ -124,13 +124,22 @@ default_params = {"z2":0.,
                   "z20":0.,
                   "z21":0.,
                   "spherical_5th":0.009,
-                  "kernel_adjustment":1.,
+                  "kernel_adjustment":1.0,
+                  "kernel_adjustment_ratio":1.0,
                   }
 default_penalty_sigma = 0.005
 default_focus_penalty_sigma = 10
 
 default_image_shape = (4096, 2048) # (x,y) in fits ordering, (y,x) in C ordering
 default_logging_level = "info"
+
+# Relative weights of Q values
+rel_weights = {"m0_diff": np.array([1.]),
+               "Qxy_diff": np.array([1/0.2,1/0.2]),
+               "Qpcs_diff": np.array([1/0.04,1/0.04,1/0.08]),
+               "noisy_m0_diff": np.array([1.]),
+               "noisy_Qxy_diff": np.array([1/0.2,1/0.2]),
+               "noisy_Qpcs_diff": np.array([1/0.04,1/0.04,1/0.08])}
 
 # Default weight function for measuring star/model moments
 default_weight_sigma = 3.0 # Pixels

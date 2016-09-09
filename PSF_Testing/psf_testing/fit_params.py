@@ -147,7 +147,8 @@ def fit_best_params_and_test_psf(stars,
                                                 z20 = param_scale*(test_param_array[18]-1),
                                                 z21 = param_scale*(test_param_array[19]-1),
                                                 spherical_5th = param_scale*(test_param_array[20]-1),
-                                                kernel_adjustment = 1.5-param_scale*test_param_array[21])
+                                                kernel_adjustment = 1.5-param_scale*test_param_array[21],
+                                                kernel_adjustment_ratio = 1.5-param_scale*test_param_array[22])
             X2 = get_X2_of_test_results(test_results) + \
                 get_params_penalty(focus,focus_penalty_sigma=focus_penalty_sigma,
                                    penalty_sigma=penalty_sigma,
@@ -171,7 +172,8 @@ def fit_best_params_and_test_psf(stars,
                                     z20 = param_scale*(test_param_array[18]-1),
                                     z21 = param_scale*(test_param_array[19]-1),
                                     spherical_5th = param_scale*(test_param_array[20]-1),
-                                    kernel_adjustment = 1.5-param_scale*test_param_array[21],)
+                                    kernel_adjustment = 1.5-param_scale*test_param_array[21],
+                                    kernel_adjustment_ratio = 1.5-param_scale*test_param_array[22],)
         except Exception as _e:
             # Return a near-infinite value on exception
             X2 = 1.0e100
@@ -180,7 +182,7 @@ def fit_best_params_and_test_psf(stars,
         return X2
     
     # Initialize the test
-    param_array = np.empty(22)
+    param_array = np.empty(23)
     param_array[0] = focus/focus_scale + 1
     param_array[1] = params["z2"]/param_scale + 1
     param_array[2] = params["z3"]/param_scale + 1
@@ -203,6 +205,7 @@ def fit_best_params_and_test_psf(stars,
     param_array[19] = params["z21"]/param_scale + 1
     param_array[20] = params["spherical_5th"]/param_scale + 1
     param_array[21] = (1.5 - params["kernel_adjustment"])/param_scale
+    param_array[22] = (1.5 - params["kernel_adjustment_ratio"])/param_scale
     
     # Calculate (and cache) the value for init params first, so we'll always use the
     # outliers list for that
@@ -260,6 +263,7 @@ def fit_best_params_and_test_psf(stars,
     best_params["z21"] = param_scale*(best_param_array[19]-1)
     best_params["spherical_5th"] = param_scale*(best_param_array[20]-1)
     best_params["kernel_adjustment"] = 1.5-param_scale*best_param_array[21]
+    best_params["kernel_adjustment_ratio"] = 1.5-param_scale*best_param_array[22]
 
     test_results = test_psf_for_params(stars=stars,
 
@@ -309,6 +313,7 @@ def fit_best_params_and_test_psf(stars,
                                             z20 = param_scale*(best_param_array[18]-1),
                                             z21 = param_scale*(best_param_array[19]-1),
                                             spherical_5th = param_scale*(best_param_array[20]-1),
-                                            kernel_adjustment = 1.5-param_scale*best_param_array[21],)
+                                            kernel_adjustment = 1.5-param_scale*best_param_array[21],
+                                            kernel_adjustment_ratio = 1.5-param_scale*best_param_array[22],)
 
     return test_results, fitting_record

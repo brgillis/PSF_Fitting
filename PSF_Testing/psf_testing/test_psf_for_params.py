@@ -374,11 +374,13 @@ def test_psf_for_params(stars,
             star_props[prop + comb + "_mean"] = np.mean(star_props[prop + comb + "s"],axis=0)
             star_props[prop + comb + "_err"] = np.std(star_props[prop + comb + "s"],axis=0)*corr_factor
             if norm_errors:
-                errors = np.ones_like(star_props[prop + comb + "s_err"])
+                star_props[prop + comb + "_Zs"] = ( mv.rel_weights[prop]
+                                                    * star_props[prop + comb + "_mean"]
+                                                    * np.sum(star_props[prop + "_err"],axis=-1) )
+                star_props[prop + comb + "_Z2s"] = np.square(star_props[prop + comb + "_Zs"])
             else:
-                errors = star_props[prop + comb + "s_err"]
-            star_props[prop + comb + "_Zs"] = (star_props[prop + comb + "s"]/errors)
-            star_props[prop + comb + "_Z2s"] = np.sum(np.square(star_props[prop + comb + "_Zs"]),axis=0)
+                star_props[prop + comb + "_Zs"] = star_props[prop + comb + "s"]/star_props[prop + comb + "s_err"]
+                star_props[prop + comb + "_Z2s"] = np.sum(np.square(star_props[prop + comb + "_Zs"]),axis=0)
   
     X2 = np.sum(star_props["Qxy_diff_diff_Z2s"]) + \
         np.sum(star_props["Qpcs_diff_diff_Z2s"][0:2]) + \
@@ -392,15 +394,11 @@ def test_psf_for_params(stars,
                 np.sum(star_props["noisy_Qpcs_diff_sum_Z2s"][2])
         chi2 += np.square(star_props["noisy_Qpcs_diff_diff_mean"][2]/star_props["noisy_Qpcs_diff_diff_err"][2]) + \
                 np.square(star_props["noisy_Qpcs_diff_diff_mean"][2]/star_props["noisy_Qpcs_diff_diff_err"][2])
-                
-    chi2 *= num_good_stars
 
     if ignore_size:
-        X2_dof = 6 * num_good_stars - fitted_params
-        chi2_dof = 6 - fitted_params
+        dof = 6 - fitted_params
     else:
-        X2_dof = 8 * num_good_stars - fitted_params
-        chi2_dof = 8 - fitted_params
+        dof = 8 - fitted_params
     
     test_params = deepcopy(mv.default_params)
     for param in params:
@@ -408,7 +406,7 @@ def test_psf_for_params(stars,
     test_params["focus"] = focus
     
     test_results = (test_params,
-            (X2, X2_dof, chi2, chi2_dof),
+            (X2, num_good_stars, chi2, dof),
             ((star_props["m0_diff_diff_mean"], (star_props["Qxy_diff_diff_mean"][0],
                                                 star_props["Qxy_diff_diff_mean"][1],
                                                 star_props["Qpcs_diff_sum_mean"][0],
@@ -425,7 +423,7 @@ def test_psf_for_params(stars,
                                                     star_props["noisy_Qpcs_diff_diff_mean"][0],
                                                     star_props["noisy_Qpcs_diff_diff_mean"][1],
                                                     star_props["noisy_Qpcs_diff_diff_mean"][2]))),
-            ((star_props["m0_diff_diff_Z2s"], (star_props["Qxy_diff_diff_Z2s"][0],
+            ((star_props["m0_diff_diff_Z2s"][0], (star_props["Qxy_diff_diff_Z2s"][0],
                                                 star_props["Qxy_diff_diff_Z2s"][1],
                                                 star_props["Qpcs_diff_sum_Z2s"][0],
                                                 star_props["Qpcs_diff_sum_Z2s"][1],
@@ -433,7 +431,7 @@ def test_psf_for_params(stars,
                                                 star_props["Qpcs_diff_diff_Z2s"][0],
                                                 star_props["Qpcs_diff_diff_Z2s"][1],
                                                 star_props["Qpcs_diff_diff_Z2s"][2])),
-             (star_props["noisy_m0_diff_diff_Z2s"], (star_props["noisy_Qxy_diff_diff_Z2s"][0],
+             (star_props["noisy_m0_diff_diff_Z2s"][0], (star_props["noisy_Qxy_diff_diff_Z2s"][0],
                                                     star_props["noisy_Qxy_diff_diff_Z2s"][1],
                                                     star_props["noisy_Qpcs_diff_sum_Z2s"][0],
                                                     star_props["noisy_Qpcs_diff_sum_Z2s"][1],
