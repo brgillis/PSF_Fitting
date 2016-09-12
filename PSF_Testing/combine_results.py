@@ -29,7 +29,7 @@ from os.path import join
 import argparse
 
 from psf_testing.smart_logging import get_default_logger
-from psf_testing.summarize_results import make_results_summary
+from psf_testing.summarize_results import make_results_summary, make_stack_stacks
 from psf_testing import magic_values as mv
 
 def main(argv):
@@ -43,6 +43,8 @@ def main(argv):
                         help="The directory where images can be found.")
     parser.add_argument("--out",type=str, default="psf_testing_results_summary.fits",
                         help="The desired output filename, containing the results summary.")
+    parser.add_argument("--stack_root",type=str, default="psf_testing",
+                        help="The desired root of stacks of stacks.")
     
     args = parser.parse_args()
         
@@ -54,14 +56,17 @@ def main(argv):
                      "at the command-line. eg. ' python combine_results.py --image_list_filename " +
                      " /path/to/my_list.dat --image_dir /path/to/images/'.")
         
-    results_filenames = []
+    results_filename_roots = []
     with open(args.image_list_filename) as fi:
         for line in fi:
             for word in line.split():
-                image_filename = join(args.image_dir, word).replace(mv.image_extension,mv.results_tail)
-                results_filenames.append(image_filename)
+                image_filename = join(args.image_dir, word).replace(mv.image_extension,"")
+                results_filename_roots.append(image_filename)
                 
-    make_results_summary(results_filenames=results_filenames,
+    make_stack_stacks(results_filename_roots=results_filename_roots,
+                         stack_stack_filename_root=args.stack_root)
+                
+    make_results_summary(results_filename_roots=results_filename_roots,
                          summary_filename=args.out)
     
     logger.info("Execution complete.")
