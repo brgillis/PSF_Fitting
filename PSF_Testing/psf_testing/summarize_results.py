@@ -28,7 +28,7 @@ import numpy as np
 from psf_testing import smart_logging
 from psf_testing import magic_values as mv
 
-def make_results_summary(results_filenames,
+def make_results_summary(results_filename_roots,
                          summary_filename):
     
     image_filenames = []
@@ -44,8 +44,8 @@ def make_results_summary(results_filenames,
     X_squareds = []
     chi_squareds = []
     
-    X2_dofs = []
-    chi2_dofs = []
+    num_stars = []
+    dofs = []
     
     m0_diff_diffs = []
     m0_Zs = []
@@ -72,7 +72,8 @@ def make_results_summary(results_filenames,
                 Qs[weight_label+label+Q_label + "_mean"] = []
                 
     
-    for results_filename in results_filenames:
+    for results_filename_root in results_filename_roots:
+        results_filename = results_filename_root + mv.results_tail
         try:
             results_file = fits.open(results_filename)
             _ = results_file[1].header["QXC_DIF"]
@@ -100,8 +101,14 @@ def make_results_summary(results_filenames,
         X_squareds.append(header["X_SQR"])
         chi_squareds.append(header["CHI_SQR"])
         
-        X2_dofs.append(header["XDOF"])
-        chi2_dofs.append(header["CDOF"])
+        try:
+            num_stars.append(header["NSTAR"])
+            dofs.append(header["DOF"])
+        except KeyError as _e:
+            dof = header["CDOF"]+1
+            num_stars.append((header["XDOF"]+1)/dof)
+            dofs.append(dof)
+            
         
         m0_diff_diffs.append(header["M0D_DIF"])
         m0_Zs.append(header["M0D_Z2"])
@@ -140,8 +147,8 @@ def make_results_summary(results_filenames,
                fits.Column(name="focus", format='E', array=focii),
                fits.Column(name="X_squared", format='E', array=X_squareds),
                fits.Column(name="chi_squared", format='E', array=chi_squareds),
-               fits.Column(name="X2_dofs", format='E', array=X2_dofs),
-               fits.Column(name="chi2_dofs", format='E', array=chi2_dofs),
+               fits.Column(name="num_stars", format='E', array=num_stars),
+               fits.Column(name="dofs", format='E', array=dofs),
                fits.Column(name="m0_diff_diff", format='E', array=m0_diff_diffs),
                fits.Column(name="m0_Z2", format='E', array=m0_Zs)]
     
@@ -184,6 +191,7 @@ def make_results_summary(results_filenames,
     
     return
         
+
 def make_stack_stacks(results_filename_roots,
                       stack_stack_filename_root):
     
@@ -227,3 +235,4 @@ def make_stack_stacks(results_filename_roots,
         logger.info("Stack of " + stack_type + " stacks saved to " + output_filename + ".")
         
     return
+        
