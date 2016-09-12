@@ -184,4 +184,46 @@ def make_results_summary(results_filenames,
     
     return
         
+def make_stack_stacks(results_filename_roots,
+                      stack_stack_filename_root):
+    
+    logger = smart_logging.get_default_logger()
+    
+    stack_types = ["star", "model", "noisy_model", "residual"]
+    
+    stacks = {}
+    
+    for stack_type in stack_types:
+            
+        num_good = 0
         
+        # Combine all stacks of this type together
+        for results_filename_root in results_filename_roots:
+            
+            # Get the filename
+            filename = results_filename_root + "_" + stack_type + "_stack" + mv.image_extension
+            try:
+                image = fits.open(filename)[0].data
+            except IOError as _e:
+                logger.warn("File " + filename + " cannot be opened and will be skipped.")
+                continue
+            
+            if stack_type in stacks:
+                # Presently assuming all will be the same size
+                stacks[stack_type] += image
+            else:
+                stacks[stack_type] = image
+                
+            num_good += 1
+                
+        # Normalize
+        stacks[stack_type] /= num_good
+        
+        # Save it
+        output_filename = stack_stack_filename_root + "_" + stack_type + "_full_stack" + mv.image_extension
+        
+        fits.writeto(output_filename, stacks[stack_type], clobber=True)
+        
+        logger.info("Stack of " + stack_type + " stacks saved to " + output_filename + ".")
+        
+    return
