@@ -30,7 +30,7 @@ from psf_testing import magic_values as mv
 
 def centre_image(image,
                  weight_func = lambda x,y: np.ones_like(x),
-                 precision = 0.01):
+                 precision = 1e-9):
     """ Get the centroid of an image for a given weight function.
     
         Requires: image <ndarray>
@@ -87,6 +87,9 @@ def centre_image(image,
         # Move the centroid
         xc += dx
         yc += dy
+        
+    if not d<precision:
+        raise Exception("Image cannot be centred: Too many iterations required")
         
     # Return the results 
     return (xc,

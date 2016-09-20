@@ -31,7 +31,7 @@ def extract_stamp_for_star(star, image):
     image_nx, image_ny = np.shape(image.data)
     
     # Check that the stamp isn't too close to an edge
-    assert((x1>1) and (y1>1) and (x1+stamp_size-1<image_nx) and (y1+stamp_size-1<image_ny))
+    assert((x1>0) and (y1>0) and (x1+stamp_size-1<image_nx) and (y1+stamp_size-1<image_ny))
 
     # Create the stamp data
     stamp = image.data[x1-1:x1+stamp_size-1,

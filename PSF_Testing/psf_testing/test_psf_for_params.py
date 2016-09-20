@@ -28,6 +28,7 @@ import multiprocessing
 
 from psf_testing import magic_values as mv
 from psf_testing.get_model_psf import get_model_psf_for_star
+from psf_testing.moments.centre_image import centre_image
 from psf_testing.moments.get_Qs import get_m0_and_Qs
 from psf_testing.psf_model_scheme import psf_model_scheme
 from psf_testing.remove_outliers import remove_outliers
@@ -107,11 +108,23 @@ def test_star(i,
                                        tinytim_path=tinytim_path,
                                        tinytim_data_path=tinytim_data_path,
                                        **params)
+    
+    # Use the star's precise centre, adjusted to the pixel coord of the psf's centre
+    
+    star_x_offset = star.xc-int(star.xc+0.5)
+    star_y_offset = star.yc-int(star.yc+0.5)
+    
+    star.model_xc, star.model_yc = centre_image(model_psf,prim_weight_func)[0:2]
+    
+    psf_x_offset = star.model_xc - int(star.model_xc+0.5)
+    psf_y_offset = star.model_yc - int(star.model_yc+0.5)
 
     (star.model_m0, star.model_Qxy, star.model_Qpcs) = \
         get_m0_and_Qs(image=model_psf,
                       prim_weight_func=prim_weight_func,
-                      sec_weight_func=sec_weight_func)
+                      sec_weight_func=sec_weight_func,
+                      xc=star.model_xc-psf_x_offset+star_x_offset,
+                      yc=star.model_yc-psf_y_offset+star_y_offset)
 
     # Now, get a noisy psf and test it (so we can test for noise bias)
     model_psf_noise = np.sqrt(np.abs(model_psf) / gain + np.square(star.background_noise))
@@ -123,11 +136,21 @@ def test_star(i,
     noisy_model_psf = model_psf + model_psf_noise * np.random.randn(ny, nx)
 
     try:
+    
+        star.noisy_model_xc, star.noisy_model_yc = centre_image(noisy_model_psf,prim_weight_func)[0:2]
+        
+        noisy_psf_x_offset = star.noisy_model_xc - int(star.model_xc+0.5)
+        noisy_psf_y_offset = star.noisy_model_yc - int(star.noisy_model_yc+0.5)
+        
         (star.noisy_model_m0, star.noisy_model_Qxy, star.noisy_model_Qpcs ) = \
             get_m0_and_Qs(image=noisy_model_psf,
                           prim_weight_func=prim_weight_func,
-                          sec_weight_func=sec_weight_func)
+                          sec_weight_func=sec_weight_func,
+                          xc=star.noisy_model_xc-noisy_psf_x_offset+star_x_offset,
+                          yc=star.noisy_model_yc-noisy_psf_y_offset+star_y_offset)
+            
     except AssertionError as _e:
+        
         (star.noisy_model_m0, star.noisy_model_Qxy, star.noisy_model_Qpcs, ) = \
             (star.model_m0, star.model_Qxy, star.model_Qpcs, )
 
@@ -199,7 +222,7 @@ def test_psf_for_params(stars,
 
     # Get results for each star
     num_stars = len(stars)
-    if get_num_valid_stars(stars) < 10:
+    if get_num_valid_stars(stars) < 5:
         raise Exception("Too few usable stars in image.")
             
     if not parallelize:

@@ -66,12 +66,16 @@ def rebin(a,
         a = np.asarray(a,dtype='float32')
         f = cIceBRGpy.rebin_float
 
-    new_shape = f(a, x_shift, y_shift, subsampling_factor)
+    new_shape = f(a, y_shift, x_shift, subsampling_factor) # Note swap of indices here
 
     # Resort the new array into the proper shape
     new_size = np.product(new_shape)
 
     rebinned_array = np.reshape(np.ravel(a)[0:new_size], new_shape)
+    
+    if np.any(np.isnan(rebinned_array)):
+        pass
+    assert(not np.any(np.isnan(rebinned_array)))
     
     # Convolve it with the charge diffusion kernel
     rebinned_diffused_array = convolve(rebinned_array, cdf, mode="same")

@@ -42,11 +42,14 @@ def get_gain(image):
     return image.header[mv.header_gain_keyword]
 
 def get_obs_time(image):
-    date_string = image.header[mv.header_obs_date_keyword]
-    time_string = image.header[mv.header_obs_time_keyword]
-    
-    time_sec = mktime((int(date_string[0:4]),int(date_string[5:7]),int(date_string[8:10]), # Year, month, day
-                       int(time_string[0:2]),int(time_string[3:5]),int(time_string[6:8]), # Hour, minute, second
-                       0,1,-1))
+    try:
+        date_string = image.header[mv.header_obs_date_keyword]
+        time_string = image.header[mv.header_obs_time_keyword]
+        
+        time_sec = mktime((int(date_string[0:4]),int(date_string[5:7]),int(date_string[8:10]), # Year, month, day
+                           int(time_string[0:2]),int(time_string[3:5]),int(time_string[6:8]), # Hour, minute, second
+                           0,1,-1))
+    except TypeError:
+        time_sec = -1.
     
     return time_sec

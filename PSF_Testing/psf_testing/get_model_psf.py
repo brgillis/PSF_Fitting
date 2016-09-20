@@ -35,6 +35,7 @@ from psf_testing.check_updates import file_needs_update
 from psf_testing.io import replace_multiple_in_file
 from psf_testing.moments.centre_image import centre_image
 from psf_testing.rebin_psf import rebin
+from psf_testing.psf_model_scheme import psf_model_scheme
 import subprocess as sbp
 
 def fft_convolve_deconvolve(im1,im2,im3):
@@ -256,18 +257,6 @@ def make_subsampled_psf_model(filename,
         else:
             subsampled_image = fits.open(process_filename_base + mv.subsampled_model_tail)
             
-
-    # Define a modified weight function to work on subsampled pixels
-    def ss_weight_func(x, y):
-        return weight_func(x/subsampling_factor, y/subsampling_factor)
-
-    # Get the centre of this image
-    ss_xc, ss_yc, _ss_x_array, _ss_y_array, _ss_weight_mask, ss_m0 = \
-            centre_image(image=subsampled_image[0].data, weight_func=ss_weight_func)
-
-    subsampled_image[0].header[mv.ss_model_xc_label] = ss_xc
-    subsampled_image[0].header[mv.ss_model_yc_label] = ss_yc
-    subsampled_image[0].header[mv.ss_model_m0_label] = ss_m0
     
     if shape is not None:
         full_shape = np.shape(subsampled_image[0].data)
@@ -285,9 +274,50 @@ def make_subsampled_psf_model(filename,
             subsampled_image[0].data = subsampled_image[0].data[1:,:]
         if full_shape[1] > shape[1]:
             subsampled_image[0].data = subsampled_image[0].data[:,1:]
+
+    # Define a modified weight function to work on subsampled pixels
+    def ss_weight_func(x, y):
+        return weight_func(x/subsampling_factor, y/subsampling_factor)
+
+    # Get the centre of this image
+    ss_xc, ss_yc, _ss_x_array, _ss_y_array, _ss_weight_mask, ss_m0 = \
+            centre_image(image=subsampled_image[0].data, weight_func=ss_weight_func)
+
+    subsampled_image[0].header[mv.ss_model_xc_label] = ss_xc
+    subsampled_image[0].header[mv.ss_model_yc_label] = ss_yc
+    subsampled_image[0].header[mv.ss_model_m0_label] = ss_m0
             
     # Normalize the image
-    subsampled_image[0].data /= subsampled_image[0].data.sum()
+    subsampled_image[0].data /= ss_m0
+    
+    # Rebin it to get the rebinning offset in x and y
+    
+    fits_comments = subsampled_image[0].header['COMMENT']
+    for test_i, s in enumerate(fits_comments):
+        if 'following kernel' in s:
+            i = test_i
+            break
+    if i == -1:
+        raise Exception("Cannot find charge-diffusion kernel in fits file passed to " +
+                        "read_kernel_from_fits")
+
+    # kernel parameters are located in the three lines following to that index
+    kernel = []
+    for j in fits_comments[i + 1:i + 4]:
+        kernel.append([float(x) for x in j.split()])
+
+    # Convert to an ndarray
+    kernel = np.asarray(kernel)
+        
+    rb_psf = rebin(subsampled_image[0].data,kernel,0,0,conserve=True)
+    rb_shape = np.shape(rb_psf)
+    rb_xc, rb_yc, _, _, _, _ = centre_image(rb_psf,weight_func=weight_func)
+    d_rb_xc = rb_xc - (rb_shape[0]-1.)/2
+    d_rb_yc = rb_yc - (rb_shape[1]-1.)/2
+    
+    subsampled_image[0].header[mv.ss_model_rb_x_offset_label] = d_rb_xc
+    subsampled_image[0].header[mv.ss_model_rb_y_offset_label] = d_rb_yc
+
 
     # Write the image out to the proper filename
     if use_cache:
@@ -328,7 +358,8 @@ def get_cached_subsampled_psf(tinytim_path,
                               psf_position,
                               chip,
                               focus,
-                              use_cache,
+                              subsampling_factor=mv.default_subsampling_factor,
+                              use_cache=True,
                               **params):
 
     # Determine the name for the subsampled model PSF file
@@ -377,6 +408,7 @@ def get_cached_subsampled_psf(tinytim_path,
                                   chip=chip,
                                   weight_func=weight_func,
                                   tinytim_path=tinytim_path,
+                                  subsampling_factor=subsampling_factor,
                                   **params)
 
     else:
@@ -399,13 +431,8 @@ def get_cached_subsampled_psf(tinytim_path,
     return subsampled_model
 
 def get_model_psf_for_star(star,
-                           scheme,
-                           weight_func=mv.default_prim_weight_func,
-                           tinytim_path=mv.default_tinytim_path,
-                           tinytim_data_path=mv.default_tinytim_data_path,
-                           kernel_adjustment=mv.default_params["kernel_adjustment"],
-                           kernel_adjustment_ratio=mv.default_params["kernel_adjustment_ratio"],
-                           **params):
+                           *args,
+                           **kwargs):
     """ Gets a model psf for a given star and the chip it was detected on
 
         Requires: star <star>
@@ -419,27 +446,66 @@ def get_model_psf_for_star(star,
         Returns: model_psf <star> (with m_err, Q values, and Q errors not yet determined)
     """
     
-    use_cache = True
-#     if len(params) > 0:
-#         use_cache = False
+    return get_model_psf(star.x_pix,
+                         star.y_pix,
+                         star_nx=np.shape(star.stamp)[0],
+                         star_ny=np.shape(star.stamp)[1],
+                         star_xc=star.xc,
+                         star_yc=star.yc,
+                         star_m0=star.m0[0],
+                         *args,
+                         **kwargs)
+
+def get_model_psf(x_pix,
+                   y_pix,
+                   scheme=None,
+                   star_nx=None,
+                   star_ny=None,
+                   star_xc=None,
+                   star_yc=None,
+                   star_m0=1.,
+                   weight_func=mv.default_prim_weight_func,
+                   tinytim_params=None,
+                   kernel_adjustment=mv.default_params["kernel_adjustment"],
+                   kernel_adjustment_ratio=mv.default_params["kernel_adjustment_ratio"],
+                   use_cache=True,
+                   subsampling_factor=mv.default_subsampling_factor,
+                   **params):
+    
+    if scheme is None:
+        scheme = psf_model_scheme()
+    if tinytim_params is None:
+        tinytim_params = mv.default_tinytim_params
+
+    # Get the offset for the star's postage stamp if we have it
+    if star_xc is not None:
+        star_d_xc = star_xc - (star_nx - 1.) / 2
+    else:
+        star_d_xc = x_pix - int(x_pix)
+    if star_yc is not None:
+        star_d_yc = star_yc - (star_ny - 1.) / 2
+    else:
+        star_d_yc = y_pix - int(y_pix)
 
     # Get the position we'll generate the model PSF for
-    psf_position = scheme.get_position_to_use(star.x_pix, star.y_pix)
+    psf_position = scheme.get_position_to_use(int(x_pix)+star_d_xc, int(y_pix)+star_d_yc)
     
     focus = round(scheme.focus,5)
     
     rounded_params = {}
     
     for param in params:
-        if not param=="kernel_adjustement":
-            rounded_params[param] = round(params[param],5)
+        if param in mv.default_params:
+            if not param=="kernel_adjustment" and not param=="kernel_adjustment_ratio":
+                rounded_params[param] = round(params[param],5)
 
-    subsampled_model = get_cached_subsampled_psf(tinytim_path,
-                                                 tinytim_data_path,
+    subsampled_model = get_cached_subsampled_psf(tinytim_params["tinytim_path"],
+                                                 tinytim_params["tinytim_data_path"],
                                                  weight_func,
                                                  psf_position,
-                                                 star.chip,
+                                                 tinytim_params["chip"],
                                                  focus,
+                                                 subsampling_factor=subsampling_factor,
                                                  use_cache=use_cache,
                                                  **rounded_params)
             
@@ -467,21 +533,13 @@ def get_model_psf_for_star(star,
     else:
         kernel = np.array([[0.,0.,0.],[0.,1.,0.],[0.,0.,0.]])
 
-    # Determine how far off the centre of the subsampled image is from the centre
-    ss_ny, ss_nx = np.shape(subsampled_model.data)
-
-    ss_model_d_xc = subsampled_model.header[mv.ss_model_xc_label] - (ss_nx - 1.) / 2
-    ss_model_d_yc = subsampled_model.header[mv.ss_model_yc_label] - (ss_ny - 1.) / 2
-
-    # Get the same for the star's postage stamp
-    star_ny, star_nx = np.shape(star.stamp)
-
-    star_d_xc = star.xc - (star_nx - 1.) / 2
-    star_d_yc = star.yc - (star_ny - 1.) / 2
+    # Determine how far off the centre of the subsampled image is from the centre when rebinned with shift 0
+    ss_model_rb_x_offset = subsampled_model.header[mv.ss_model_rb_x_offset_label]
+    ss_model_rb_y_offset = subsampled_model.header[mv.ss_model_rb_y_offset_label]
 
     # Determine how many subsampled pixels we'll have to shift the subsampled psf by
-    x_shift = int(round(mv.default_subsampling_factor * (star_d_xc+0.5) - ss_model_d_xc - 0.5,0))
-    y_shift = int(round(mv.default_subsampling_factor * (star_d_yc+0.5) - ss_model_d_yc - 0.5,0))
+    x_shift = int(round(mv.default_subsampling_factor * (star_d_xc - ss_model_rb_x_offset),0))
+    y_shift = int(round(mv.default_subsampling_factor * (star_d_yc - ss_model_rb_y_offset),0))
     
     # Check that the shifts are reasonable (within 2 non-subsampled pixels)
     max_shift = np.max((np.abs(x_shift),np.abs(y_shift)))/mv.default_subsampling_factor
@@ -495,7 +553,7 @@ def get_model_psf_for_star(star,
                            y_shift=y_shift,
                            subsampling_factor=mv.default_subsampling_factor)
     
-    # Deconvolve/reconvolve to adjust size
+    # Deconvolve/reconvolve to adjust size if desired
     if not kernel_adjustment == 1:
         scale = np.abs(kernel_adjustment - 1.)
         x, y = np.indices(np.shape(rebinned_model),dtype=np.complex64)
@@ -513,8 +571,7 @@ def get_model_psf_for_star(star,
 
     # Get the zeroth-order moment for the rebinned psf
     _xc, _yc, _, _, _, rb_model_m0 = centre_image(rebinned_model, weight_func=weight_func)
-    
-
-    scaled_model = rebinned_model * star.m0[0] / rb_model_m0
+ 
+    scaled_model = rebinned_model * star_m0 / rb_model_m0
 
     return scaled_model

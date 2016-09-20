@@ -46,32 +46,53 @@ def make_stacks(stars, stack_size=int(2 * mv.default_weight_rmax + 1),
 
             image = eval("star." + image_name)
             image_shape = np.shape(image)
+            
+            # Center it around the proper central pixel
+            xc = int(star.xc+0.5)
+            yc = int(star.yc+0.5)
+            
+            # Correct if this is for the model
+            if not "star" in stack_name:
+                xc += (image_shape[0]-np.shape(star.stamp)[0])//2
+                yc += (image_shape[1]-np.shape(star.stamp)[1])//2
+                
+                # Check this is right
+                from psf_testing.moments.centre_image import centre_image
+                xc_check, yc_check, _, _, _, _ = centre_image(image)
+                
+                if np.abs(xc_check-xc)>=0.5 or np.abs(yc_check-yc)>=0.5:
+                    pass
+            
+            image_radius = np.min((xc,image_shape[0]-xc-1,yc,image_shape[1]-yc-1))
+            image_view = image[xc-image_radius:xc+image_radius+1,yc-image_radius:yc+image_radius+1]
+            
+            image_view_shape = np.shape(image_view)
 
-            dx = (image_shape[0] - stack_size) // 2
-            dy = (image_shape[1] - stack_size) // 2
+            dx = (image_view_shape[0] - stack_size) // 2
+            dy = (image_view_shape[1] - stack_size) // 2
             
             if dx > 0:
-                image = image[dx:-dx,:]
+                image_view = image_view[dx:-dx,:]
             if dy > 0:
-                image = image[:,dy:-dy]
+                image_view = image_view[:,dy:-dy]
                 
-            image = image/star.m0[0]
+            image_view = image_view/star.m0[0]
 
             if (dx >= 0) and (dy >= 0):
-                stack += image
+                stack += image_view
             elif (dx < 0) and (dy < 0):
-                stack[-dx:dx, -dy:dy] += image
+                stack[-dx:dx, -dy:dy] += image_view
             elif (dx >= 0) and (dy < 0):
-                stack[:, -dy:dy] += image
+                stack[:, -dy:dy] += image_view
             elif (dx < 0) and (dy >= 0):
-                stack[-dx:dx, :] += image
+                stack[-dx:dx, :] += image_view
 
             num_stars += 1
 
         assert num_stars > 0
         
         # Subtract off any lingering background
-        stack -= get_background_level(image)
+        stack -= get_background_level(stack)
         
         # Normalize the stack by its number of stars
         stack /= num_stars
