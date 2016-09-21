@@ -238,12 +238,11 @@ def test_psf_for_params(stars,
     
     # If we're parallelizing and using a grid scheme, get possible psfs in parallel
     if parallelize and use_cache:
-        points = []
-        for ix in range(num_grid_points[0]):
-            for iy in range(num_grid_points[1]):
-                new_point = model_scheme.get_position_to_use((ix+0.5)*model_scheme.grid_stepx,
-                                                                 (iy+0.5)*model_scheme.grid_stepy)
-                points.append(new_point)
+        points = set()
+        for star in stars:
+            new_point = model_scheme.get_position_to_use(star.x_pix,star.y_pix)
+        points.add(new_point)
+        
         pool = multiprocessing.Pool(processes=multiprocessing.cpu_count(),maxtasksperchild=1)
         pool.map(get_psf_caller(tinytim_path=tinytim_params["tinytim_path"],
                                 tinytim_data_path=tinytim_params["tinytim_data_path"],
