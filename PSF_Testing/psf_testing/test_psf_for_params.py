@@ -241,7 +241,8 @@ def test_psf_for_params(stars,
         points = set()
         for star in stars:
             new_point = model_scheme.get_position_to_use(star.x_pix,star.y_pix)
-        points.add(new_point)
+            points.add(new_point)
+        points = list(points)
         
         pool = multiprocessing.Pool(processes=multiprocessing.cpu_count(),maxtasksperchild=1)
         pool.map(get_psf_caller(tinytim_path=tinytim_params["tinytim_path"],
