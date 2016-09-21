@@ -48,20 +48,12 @@ def make_stacks(stars, stack_size=int(2 * mv.default_weight_rmax + 1),
             image_shape = np.shape(image)
             
             # Center it around the proper central pixel
-            xc = int(star.xc+0.5)
-            yc = int(star.yc+0.5)
-            
-            # Correct if this is for the model
-            if not "star" in stack_name:
-                xc += (image_shape[0]-np.shape(star.stamp)[0])//2
-                yc += (image_shape[1]-np.shape(star.stamp)[1])//2
-                
-                # Check this is right
-                from psf_testing.moments.centre_image import centre_image
-                xc_check, yc_check, _, _, _, _ = centre_image(image)
-                
-                if np.abs(xc_check-xc)>=0.5 or np.abs(yc_check-yc)>=0.5:
-                    pass
+            if "star" in stack_name:
+                xc = int(star.xc+0.5)
+                yc = int(star.yc+0.5)
+            else:
+                xc = int(eval("star."+stack_name+"_xc")+0.5)
+                yc = int(eval("star."+stack_name+"_yc")+0.5)
             
             image_radius = np.min((xc,image_shape[0]-xc-1,yc,image_shape[1]-yc-1))
             image_view = image[xc-image_radius:xc+image_radius+1,yc-image_radius:yc+image_radius+1]
@@ -105,21 +97,25 @@ def make_stacks(stars, stack_size=int(2 * mv.default_weight_rmax + 1),
 
     return stacks
 
-def save_stacks(stacks, filename_root):
+def save_stacks(stacks, filename_root, header=None):
 
     for stack_name in stacks:
         filename = filename_root + "_" + stack_name + "_stack" + mv.image_extension
 
         hdu = fits.PrimaryHDU(stacks[stack_name])
+        
+        if header is not None:
+            for key in header:
+                hdu.header[key] = header[key]
 
         hdu.writeto(filename, clobber=True)
 
     return
 
-def make_and_save_stacks(stars, filename_root, stack_size=(2 * mv.default_weight_rmax + 1)):
+def make_and_save_stacks(stars, filename_root, stack_size=(2 * mv.default_weight_rmax + 1), header=None):
 
     stacks = make_stacks(stars, stack_size)
 
-    save_stacks(stacks, filename_root)
+    save_stacks(stacks, filename_root, header)
 
     return stacks

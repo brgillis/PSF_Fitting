@@ -257,7 +257,7 @@ def make_subsampled_psf_model(filename,
         else:
             subsampled_image = fits.open(process_filename_base + mv.subsampled_model_tail)
             
-    
+    # Get the centre position of the subsampled image
     if shape is not None:
         full_shape = np.shape(subsampled_image[0].data)
         dx, dy = np.subtract(full_shape,shape) // 2
@@ -363,7 +363,7 @@ def get_cached_subsampled_psf(tinytim_path,
                               **params):
 
     # Determine the name for the subsampled model PSF file
-    subsampled_name = os.path.join(tinytim_data_path, "ssp_x" + str(psf_position[0]) + \
+    subsampled_name = os.path.join(tinytim_data_path, "ss" + str(subsampling_factor) + "p_x" + str(psf_position[0]) + \
                         "y" + str(psf_position[1]) + "f" + str(focus) + \
                         "c" + str(chip))
     
@@ -512,7 +512,7 @@ def get_model_psf(x_pix,
 
     # Get the charge diffusion kernel from the FITS comments
 
-    if(mv.default_subsampling_factor > 1):
+    if(subsampling_factor > 1):
         fits_comments = subsampled_model.header['COMMENT']
     
         for test_i, s in enumerate(fits_comments):
@@ -538,11 +538,11 @@ def get_model_psf(x_pix,
     ss_model_rb_y_offset = subsampled_model.header[mv.ss_model_rb_y_offset_label]
 
     # Determine how many subsampled pixels we'll have to shift the subsampled psf by
-    x_shift = int(round(mv.default_subsampling_factor * (star_d_xc - ss_model_rb_x_offset),0))
-    y_shift = int(round(mv.default_subsampling_factor * (star_d_yc - ss_model_rb_y_offset),0))
+    x_shift = int(round(subsampling_factor * (star_d_xc - ss_model_rb_x_offset),0))
+    y_shift = int(round(subsampling_factor * (star_d_yc - ss_model_rb_y_offset),0))
     
     # Check that the shifts are reasonable (within 2 non-subsampled pixels)
-    max_shift = np.max((np.abs(x_shift),np.abs(y_shift)))/mv.default_subsampling_factor
+    max_shift = np.max((np.abs(x_shift),np.abs(y_shift)))/subsampling_factor
     if max_shift > 2:
         raise Exception("Star's centring is too poor; requires too extreme of a shift.")
 
@@ -551,7 +551,7 @@ def get_model_psf(x_pix,
                            kernel,
                            x_shift=x_shift,
                            y_shift=y_shift,
-                           subsampling_factor=mv.default_subsampling_factor)
+                           subsampling_factor=subsampling_factor)
     
     # Deconvolve/reconvolve to adjust size if desired
     if not kernel_adjustment == 1:

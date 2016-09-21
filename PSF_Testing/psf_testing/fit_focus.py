@@ -53,6 +53,7 @@ def fit_best_focus_and_test_psf(stars,
 
                                 tinytim_path=mv.default_tinytim_path,
                                 tinytim_data_path=mv.default_tinytim_data_path,
+                                subsampling_factor=mv.default_subsampling_factor,
 
                                 gain=mv.gain,
                                 save_models=True,
@@ -87,6 +88,7 @@ def fit_best_focus_and_test_psf(stars,
 
                                             tinytim_path=tinytim_path,
                                             tinytim_data_path=tinytim_data_path,
+                                            subsampling_factor=subsampling_factor,
 
                                             gain=gain,
                                             save_models=False,
@@ -117,7 +119,7 @@ def fit_best_focus_and_test_psf(stars,
     best_focus = bf_minimize(get_X2_for_focus,
                 min_input=min_focus,
                 max_input=max_focus,
-                test_points=focus_samples,
+                num_test_points=focus_samples,
                 precision=focus_precision)
 
     test_results = test_psf_for_params(stars=stars,
@@ -133,6 +135,7 @@ def fit_best_focus_and_test_psf(stars,
 
                                             tinytim_path=tinytim_path,
                                             tinytim_data_path=tinytim_data_path,
+                                            subsampling_factor=subsampling_factor,
 
                                             gain=gain,
                                             save_models=save_models,

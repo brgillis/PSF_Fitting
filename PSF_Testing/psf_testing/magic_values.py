@@ -130,8 +130,8 @@ default_params = {"z2":0.,
                   "kernel_adjustment":1.0,
                   "kernel_adjustment_ratio":1.0,
                   }
-default_penalty_sigma = 0.005
-default_focus_penalty_sigma = 10
+default_penalty_sigma = 0
+default_focus_penalty_sigma = 0
 
 default_image_shape = (4096, 2048) # (x,y) in fits ordering, (y,x) in C ordering
 default_logging_level = "info"
@@ -184,3 +184,4 @@ ss_model_yc_label = "YP_CEN"
 ss_model_rb_x_offset_label = "RBX_OFF"
 ss_model_rb_y_offset_label = "RBY_OFF"
 ss_model_m0_label = "M0"
+ss_model_ss_factor_label = "SSFACTOR"

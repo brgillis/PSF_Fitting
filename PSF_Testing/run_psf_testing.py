@@ -83,7 +83,7 @@ def main(argv):
                         help="Minimum focus value to test.")
     parser.add_argument("--max_focus", type=float, default=mv.default_max_focus,
                         help="Maximum focus value to test.")
-    parser.add_argument("--focus_samples", type=float, default=mv.default_focus_samples,
+    parser.add_argument("--focus_samples", type=int, default=mv.default_focus_samples,
                         help="Initial number of focus values to test between min and max before trying " +
                              "to find the precise value.")
     parser.add_argument("--focus_precision", type=float, default=mv.default_focus_precision,
@@ -118,6 +118,8 @@ def main(argv):
     parser.add_argument("--cleanup_tinytim_files", action="store_true",
                         help="Cleanup generated TinyTim PSFs after execution. Note that enabling this" +
                              " can greatly slow down repeated runs.")
+    parser.add_argument("--subsampling_factor",type=int,default=mv.default_subsampling_factor,
+                        help="The subsampling factor to use for TinyTim PSFs.")
     
     parser.add_argument("--force_update", action="store_true",
                         help="Force update of Sextractor catalogues and TinyTim PSFs.")

@@ -82,7 +82,7 @@ def make_control_field(image_filename,
         if num_grid_points == (0,0):
             use_cache=False
         else:
-            use_cache=(subsampling_factor==mv.default_subsampling_factor)
+            use_cache=True
         
         psf_data = get_model_psf(xp,yp,
                                  scheme=scheme,

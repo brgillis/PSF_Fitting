@@ -88,8 +88,8 @@ def centre_image(image,
         xc += dx
         yc += dy
         
-    if not d<precision:
-        raise Exception("Image cannot be centred: Too many iterations required")
+#     if not d<precision:
+#         raise Exception("Image cannot be centred: Too many iterations required")
         
     # Return the results 
     return (xc,

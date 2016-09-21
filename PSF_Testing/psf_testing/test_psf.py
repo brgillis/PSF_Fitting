@@ -76,6 +76,7 @@ def test_psf(image_filename,
              force_update=False,
              save_stacks=True,
              refresh_only=False,
+             subsampling_factor=mv.default_subsampling_factor,
              
              parallelize=False,
              
@@ -196,6 +197,7 @@ def test_psf(image_filename,
               "gain":gain,
               "save_models":save_stacks,
               "files_to_cleanup":files_to_cleanup,
+              "subsampling_factor":subsampling_factor,
               
               "parallelize":parallelize,
               
@@ -242,7 +244,9 @@ def test_psf(image_filename,
     if save_stacks:
         make_and_save_stacks(stars=stars,
                              filename_root=results_root,
-                             stack_size=(2 * mv.default_weight_rmax + 1))
+                             stack_size=(2 * mv.default_weight_rmax + 1),
+                             header={"NSTAR":test_results[1][1],
+                                     "FOCUS":test_results[0]["focus"]})
 
     # Remove all files in the cleanup list
     if cleanup_tinytim_files:

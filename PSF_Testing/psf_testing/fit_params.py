@@ -75,6 +75,7 @@ def fit_best_params_and_test_psf(stars,
 
                                 tinytim_path=mv.default_tinytim_path,
                                 tinytim_data_path=mv.default_tinytim_data_path,
+                                subsampling_factor=mv.default_subsampling_factor,
 
                                 gain=mv.gain,
                                 save_models=True,
@@ -113,6 +114,7 @@ def fit_best_params_and_test_psf(stars,
     
                                                 tinytim_path=tinytim_path,
                                                 tinytim_data_path=tinytim_data_path,
+                                                subsampling_factor=subsampling_factor,
     
                                                 gain=gain,
                                                 save_models=False,
@@ -278,6 +280,7 @@ def fit_best_params_and_test_psf(stars,
 
                                             tinytim_path=tinytim_path,
                                             tinytim_data_path=tinytim_data_path,
+                                            subsampling_factor=subsampling_factor,
 
                                             gain=gain,
                                             save_models=save_models,

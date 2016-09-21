@@ -203,7 +203,7 @@ def make_stack_stacks(results_filename_roots,
     
     for stack_type in stack_types:
             
-        num_good = 0
+        tot_num_stars = 0
         
         # Combine all stacks of this type together
         for results_filename_root in results_filename_roots:
@@ -211,21 +211,27 @@ def make_stack_stacks(results_filename_roots,
             # Get the filename
             filename = results_filename_root + "_" + stack_type + "_stack" + mv.image_extension
             try:
-                image = fits.open(filename)[0].data
+                hdu = fits.open(filename)[0]
+                image = hdu.data
             except IOError as _e:
                 logger.warn("File " + filename + " cannot be opened and will be skipped.")
                 continue
             
+            if "NSTAR" in hdu.header:
+                num_stars = hdu.header["NSTAR"]
+            else:
+                num_stars = 1
+            
             if stack_type in stacks:
                 # Presently assuming all will be the same size
-                stacks[stack_type] += image
+                stacks[stack_type] += image*num_stars
             else:
-                stacks[stack_type] = image
+                stacks[stack_type] = image*num_stars
                 
-            num_good += 1
+            tot_num_stars += num_stars
                 
         # Normalize
-        stacks[stack_type] /= num_good
+        stacks[stack_type] /= tot_num_stars
         
         # Save it
         output_filename = stack_stack_filename_root + "_" + stack_type + "_full_stack" + mv.image_extension

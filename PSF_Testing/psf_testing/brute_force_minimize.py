@@ -32,18 +32,18 @@ def bf_minimize(func,
                 kwargs={},
                 min_input=mv.default_min_focus,
                 max_input=mv.default_max_focus,
-                test_points=mv.default_focus_samples,
+                num_test_points=mv.default_focus_samples,
                 precision=mv.default_focus_precision,
                 max_iter=100):
 
     assert precision > 0
     assert max_input > min_input
-    assert test_points > 0
+    assert num_test_points > 0
 
     # Set up test points
     test_points = np.linspace(start=min_input,
                               stop=max_input,
-                              num=test_points)
+                              num=num_test_points)
 
     step_size = test_points[1] - test_points[0]
 
