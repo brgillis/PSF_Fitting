@@ -351,7 +351,7 @@ def make_subsampled_psf_model(filename,
 
     return subsampled_image[0]
 
-@lru_cache(96)
+@lru_cache(128)
 def get_cached_subsampled_psf(tinytim_path,
                               tinytim_data_path,
                               weight_func,
