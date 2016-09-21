@@ -51,9 +51,7 @@ def fit_best_focus_and_test_psf(stars,
                                 prim_weight_func=mv.default_prim_weight_func,
                                 sec_weight_func=mv.default_sec_weight_func,
 
-                                tinytim_path=mv.default_tinytim_path,
-                                tinytim_data_path=mv.default_tinytim_data_path,
-                                subsampling_factor=mv.default_subsampling_factor,
+                                tinytim_params=None,
 
                                 gain=mv.gain,
                                 save_models=True,
@@ -86,9 +84,7 @@ def fit_best_focus_and_test_psf(stars,
                                             prim_weight_func=prim_weight_func,
                                             sec_weight_func=sec_weight_func,
 
-                                            tinytim_path=tinytim_path,
-                                            tinytim_data_path=tinytim_data_path,
-                                            subsampling_factor=subsampling_factor,
+                                            tinytim_params=tinytim_params,
 
                                             gain=gain,
                                             save_models=False,
@@ -133,9 +129,7 @@ def fit_best_focus_and_test_psf(stars,
                                             prim_weight_func=prim_weight_func,
                                             sec_weight_func=sec_weight_func,
 
-                                            tinytim_path=tinytim_path,
-                                            tinytim_data_path=tinytim_data_path,
-                                            subsampling_factor=subsampling_factor,
+                                            tinytim_params=tinytim_params,
 
                                             gain=gain,
                                             save_models=save_models,

@@ -469,7 +469,6 @@ def get_model_psf(x_pix,
                    kernel_adjustment=mv.default_params["kernel_adjustment"],
                    kernel_adjustment_ratio=mv.default_params["kernel_adjustment_ratio"],
                    use_cache=True,
-                   subsampling_factor=mv.default_subsampling_factor,
                    **params):
     
     if scheme is None:
@@ -498,6 +497,8 @@ def get_model_psf(x_pix,
         if param in mv.default_params:
             if not param=="kernel_adjustment" and not param=="kernel_adjustment_ratio":
                 rounded_params[param] = round(params[param],5)
+                
+    subsampling_factor = tinytim_params["subsampling_factor"]
 
     subsampled_model = get_cached_subsampled_psf(tinytim_params["tinytim_path"],
                                                  tinytim_params["tinytim_data_path"],

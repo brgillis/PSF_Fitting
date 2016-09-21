@@ -171,7 +171,8 @@ default_filter = "f606w"
 default_subsampling_factor = 6
 default_tinytim_params = {"tinytim_data_path":default_tinytim_data_path,
                           "tinytim_path":default_tinytim_path,
-                          "chip":1}
+                          "chip":1,
+                          "subsampling_factor":default_subsampling_factor}
 
 undistorted_model_tail = "00_psf.fits"
 subsampled_model_tail = "00.fits"

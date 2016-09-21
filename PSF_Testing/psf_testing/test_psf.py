@@ -181,6 +181,11 @@ def test_psf(image_filename,
             continue
         
     # Set up kwargs to pass along regardless of function called
+    tinytim_params = {"tinytim_path":tinytim_path,
+                      "tinytim_data_path":tinytim_data_path,
+                      "subsampling_factor":subsampling_factor,
+                      "chip":chip}
+    
     kwargs = {"stars":stars,
 
               "image_filename":image_filename,
@@ -191,13 +196,11 @@ def test_psf(image_filename,
               "prim_weight_func":prim_weight_func,
               "sec_weight_func":sec_weight_func,
 
-              "tinytim_path":tinytim_path,
-              "tinytim_data_path":tinytim_data_path,
+              "tinytim_params":tinytim_params,
 
               "gain":gain,
               "save_models":save_stacks,
               "files_to_cleanup":files_to_cleanup,
-              "subsampling_factor":subsampling_factor,
               
               "parallelize":parallelize,
               

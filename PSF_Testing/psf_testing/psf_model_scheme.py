@@ -44,8 +44,8 @@ class psf_model_scheme(object):
         self.focus = focus
         
         if num_grid_points is None:
-            self.grid_stepx = 0
-            self.grid_stepy = 0
+            self.grid_stepx = 1
+            self.grid_stepy = 1
         else:
             
             if num_grid_points[0] == 0:

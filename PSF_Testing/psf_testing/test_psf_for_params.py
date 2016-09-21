@@ -27,7 +27,7 @@ import numpy as np
 import multiprocessing
 
 from psf_testing import magic_values as mv
-from psf_testing.get_model_psf import get_model_psf_for_star
+from psf_testing.get_model_psf import get_model_psf_for_star, get_cached_subsampled_psf
 from psf_testing.moments.centre_image import centre_image
 from psf_testing.moments.get_Qs import get_m0_and_Qs
 from psf_testing.psf_model_scheme import psf_model_scheme
@@ -83,15 +83,21 @@ class test_star_caller(object):
         self.kwargs = kwargs
     def __call__(self, x):
         return test_star(x, *self.args, **self.kwargs)
+
+class get_psf_caller(object):
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+    def __call__(self, x):
+        return get_cached_subsampled_psf(psf_position=x, *self.args, **self.kwargs)
     
 def test_star(i,
               stars,
               model_scheme,
               prim_weight_func,
               sec_weight_func,
-              tinytim_path,
-              tinytim_data_path,
-              subsampling_factor,
+              tinytim_params,
+              use_cache,
               gain,
               seed_factor,
               num_stars,
@@ -106,9 +112,8 @@ def test_star(i,
     model_psf = get_model_psf_for_star(star=star,
                                        scheme=model_scheme,
                                        weight_func=prim_weight_func,
-                                       tinytim_path=tinytim_path,
-                                       tinytim_data_path=tinytim_data_path,
-                                       subsampling_factor=subsampling_factor,
+                                       tinytim_params=tinytim_params,
+                                       use_cache=use_cache,
                                        **params)
     
     # Use the star's precise centre, adjusted to the pixel coord of the psf's centre
@@ -175,9 +180,7 @@ def test_psf_for_params(stars,
                        prim_weight_func=mv.default_prim_weight_func,
                        sec_weight_func=mv.default_sec_weight_func,
 
-                       tinytim_path=mv.default_tinytim_path,
-                       tinytim_data_path=mv.default_tinytim_data_path,
-                       subsampling_factor=mv.default_subsampling_factor,
+                       tinytim_params=None,
                        
                        seed_factor=0,
                        gain=mv.gain,
@@ -201,6 +204,9 @@ def test_psf_for_params(stars,
 
     if outliers_mask is None:
         outliers_mask = []
+        
+    if tinytim_params is None:
+        tinytim_params = mv.default_tinytim_params
 
     if image is None:
         from astropy.io import fits
@@ -227,17 +233,38 @@ def test_psf_for_params(stars,
     num_stars = len(stars)
     if get_num_valid_stars(stars) < 5:
         raise Exception("Too few usable stars in image.")
+    
+    use_cache = (num_grid_points != (0,0))
+    
+    # If we're parallelizing and using a grid scheme, get possible psfs in parallel
+    if parallelize and use_cache:
+        points = []
+        for ix in range(num_grid_points[0]):
+            for iy in range(num_grid_points[1]):
+                new_point = model_scheme.get_position_to_use((ix+0.5)*model_scheme.grid_stepx,
+                                                                 (iy+0.5)*model_scheme.grid_stepy)
+                points.append(new_point)
+        pool = multiprocessing.Pool(processes=multiprocessing.cpu_count(),maxtasksperchild=1)
+        pool.map(get_psf_caller(tinytim_path=tinytim_params["tinytim_path"],
+                                tinytim_data_path=tinytim_params["tinytim_data_path"],
+                                weight_func=prim_weight_func,
+                                chip=tinytim_params["chip"],
+                                focus=focus,
+                                subsampling_factor=tinytim_params["subsampling_factor"],
+                                use_cache=use_cache),points,chunksize=1)
+        pool.close()
+        pool.join()
+        pool.terminate()
             
-    if not parallelize:
+    if (not parallelize) or use_cache:
         for i in range(num_stars):
             stars[i] = test_star(i,
                       stars,
                       model_scheme,
                       prim_weight_func,
                       sec_weight_func,
-                      tinytim_path,
-                      tinytim_data_path,
-                      subsampling_factor,
+                      tinytim_params,
+                      use_cache,
                       gain,
                       seed_factor,
                       num_stars,
@@ -249,9 +276,8 @@ def test_psf_for_params(stars,
                                               model_scheme,
                                               prim_weight_func,
                                               sec_weight_func,
-                                              tinytim_path,
-                                              tinytim_data_path,
-                                              subsampling_factor,
+                                              tinytim_params,
+                                              use_cache,
                                               gain,
                                               seed_factor,
                                               num_stars,
