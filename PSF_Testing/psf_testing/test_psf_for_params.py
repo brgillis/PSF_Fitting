@@ -35,7 +35,7 @@ from psf_testing.remove_outliers import remove_outliers
 from psf_testing.smart_logging import get_default_logger
 
 # Magic value toggles
-ignore_size = False
+ignore_size = True
 
 def get_num_valid_stars(stars):
     
@@ -234,6 +234,7 @@ def test_psf_for_params(stars,
     if get_num_valid_stars(stars) < 5:
         raise Exception("Too few usable stars in image.")
     
+    # Only use the cache if we aren't determining a separate model PSF for each star
     use_cache = (num_grid_points != (0,0))
     
     # If we're parallelizing and using a grid scheme, get possible psfs in parallel
@@ -242,7 +243,6 @@ def test_psf_for_params(stars,
         for star in stars:
             new_point = model_scheme.get_position_to_use(star.x_pix,star.y_pix)
             points.add(new_point)
-        points = list(points)
         
         pool = multiprocessing.Pool(processes=multiprocessing.cpu_count(),maxtasksperchild=1)
         pool.map(get_psf_caller(tinytim_path=tinytim_params["tinytim_path"],
@@ -255,7 +255,9 @@ def test_psf_for_params(stars,
         pool.close()
         pool.join()
         pool.terminate()
-            
+    
+    # Go through and test the model PSF for each star. If parallelizing and not using the cache, this
+    # is where we'll break it up into parallel processes
     if (not parallelize) or use_cache:
         for i in range(num_stars):
             stars[i] = test_star(i,
@@ -292,7 +294,8 @@ def test_psf_for_params(stars,
             stars[i] = new_stars[i]
         del(new_stars,pool)
         import gc; gc.collect()
-        
+    
+    # Compile data on the tests into lists
     for i in range(num_stars):
             
         star = stars[i]
