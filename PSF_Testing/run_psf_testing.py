@@ -60,6 +60,12 @@ def main(argv):
     parser.add_argument("--image_dir",type=str, default=None,
                         help="The directory where images can be found.")
     
+    # What to do with results
+    parser.add_argument("--results_dir",type=str, default=None,
+                        help="The directory to store results data in.")
+    parser.add_argument("--results_tag",type=str, default=None,
+                        help="A tag to add to results filenames.")
+    
     # Star selection
     parser.add_argument("--min_class_star", type=float, default=mv.default_min_class_star,
                         help="The minimum class_star value for an object to be categorized as a star.")

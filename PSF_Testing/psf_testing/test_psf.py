@@ -46,6 +46,8 @@ from psf_testing.test_psf_for_params import test_psf_for_params
 def test_psf(image_filename,
 
              results_filename=None,
+             results_dir=None,
+             results_tag=None,
 
              min_class_star=mv.default_min_class_star,
              min_star_mag=mv.default_min_star_mag,
@@ -229,11 +231,20 @@ def test_psf(image_filename,
                 
                                                                   **kwargs)
 
-    # Report the results
-    results_root = filename_root
+    # Set up the filename root for the results
+    
+    if results_dir is None:
+        results_root = filename_root
+    else:
+        results_root = os.path.join(results_dir,os.path.split(filename_root,"/")[1])
+    
+    if results_tag is not None:
+        results_root += "_" + results_tag
+        
     if seed is not None:
         results_root += "_" + str(seed)
     
+    # Report the results
     report_results(test_results=test_results,
                    fitting_record=fitting_record,
                    chip=chip,
