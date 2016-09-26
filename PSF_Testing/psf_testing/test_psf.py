@@ -236,7 +236,7 @@ def test_psf(image_filename,
     if results_dir is None:
         results_root = filename_root
     else:
-        results_root = os.path.join(results_dir,os.path.split(filename_root,"/")[1])
+        results_root = os.path.join(results_dir,os.path.split(filename_root)[-1])
     
     if results_tag is not None:
         results_root += "_" + results_tag
