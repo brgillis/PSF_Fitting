@@ -56,6 +56,8 @@ def main(argv):
     ss_factors = np.linspace(1, 10, 10, endpoint=True).astype(int)
 
     X2s = np.zeros_like(ss_factors, dtype=float)
+    Qx_diff_Z2s = np.zeros_like(ss_factors, dtype=float)
+    Qy_diff_Z2s = np.zeros_like(ss_factors, dtype=float)
     Qp_sum_Z2s = np.zeros_like(ss_factors, dtype=float)
     Qp_diff_Z2s = np.zeros_like(ss_factors, dtype=float)
     Qc_sum_Z2s = np.zeros_like(ss_factors, dtype=float)
@@ -70,12 +72,14 @@ def main(argv):
         header = fits.open(filename)[1].header
 
         X2s[ssf - 1] = header["X_SQR"]
+        Qx_diff_Z2s[ssf - 1] = header["QXD_Z2"] / np.square(rel_weights["Qxy_diff"][0])
+        Qy_diff_Z2s[ssf - 1] = header["QYD_Z2"] / np.square(rel_weights["Qxy_diff"][1])
         Qp_sum_Z2s[ssf - 1] = header["QPS_Z2"] / np.square(rel_weights["Qpcs_diff"][0])
         Qp_diff_Z2s[ssf - 1] = header["QPD_Z2"] / np.square(rel_weights["Qpcs_diff"][0])
         Qc_sum_Z2s[ssf - 1] = header["QPS_Z2"] / np.square(rel_weights["Qpcs_diff"][1])
         Qc_diff_Z2s[ssf - 1] = header["QPD_Z2"] / np.square(rel_weights["Qpcs_diff"][1])
-        Qs_sum_Z2s[ssf - 1] = header["QSS_Z2"] / np.square(rel_weights["Qpcs_diff"][2])
-        Qs_diff_Z2s[ssf - 1] = header["QSD_Z2"] / np.square(rel_weights["Qpcs_diff"][2])
+        Qs_sum_Z2s[ssf - 1] = header["QSSNZ2"] / np.square(rel_weights["Qpcs_diff"][2])
+        Qs_diff_Z2s[ssf - 1] = header["QSDNZ2"] / np.square(rel_weights["Qpcs_diff"][2])
 
     # Plot it up
     _fig = pyplot.figure(figsize=figsize)
@@ -86,6 +90,8 @@ def main(argv):
     ax = pyplot.subplot(gs[0])
 
     ax.plot(ss_factors, X2s, label="X2")
+    ax.plot(ss_factors, Qx_diff_Z2s, label="Qx diff Z2")
+    ax.plot(ss_factors, Qy_diff_Z2s, label="Qy diff Z2")
     ax.plot(ss_factors, Qp_sum_Z2s, label="Qp sum Z2")
     ax.plot(ss_factors, Qp_diff_Z2s, label="Qp diff Z2")
     ax.plot(ss_factors, Qc_sum_Z2s, label="Qc sum Z2")
