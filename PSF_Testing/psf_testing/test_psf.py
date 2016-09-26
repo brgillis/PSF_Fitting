@@ -53,7 +53,7 @@ def test_psf(image_filename,
              min_star_mag=mv.default_min_star_mag,
              max_star_mag=mv.default_max_star_mag,
              min_star_size = mv.default_min_star_size,
-             max_star_size = mv.default_min_star_size,
+             max_star_size = mv.default_max_star_size,
              min_lowest_separation=mv.default_min_lowest_separation,
              min_star_snr=mv.default_min_star_snr,
 

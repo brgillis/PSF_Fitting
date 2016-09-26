@@ -292,22 +292,25 @@ def make_subsampled_psf_model(filename,
     
     # Rebin it to get the rebinning offset in x and y
     
-    fits_comments = subsampled_image[0].header['COMMENT']
-    for test_i, s in enumerate(fits_comments):
-        if 'following kernel' in s:
-            i = test_i
-            break
-    if i == -1:
-        raise Exception("Cannot find charge-diffusion kernel in fits file passed to " +
-                        "read_kernel_from_fits")
-
-    # kernel parameters are located in the three lines following to that index
-    kernel = []
-    for j in fits_comments[i + 1:i + 4]:
-        kernel.append([float(x) for x in j.split()])
-
-    # Convert to an ndarray
-    kernel = np.asarray(kernel)
+    if subsampling_factor > 1:
+        fits_comments = subsampled_image[0].header['COMMENT']
+        for test_i, s in enumerate(fits_comments):
+            if 'following kernel' in s:
+                i = test_i
+                break
+        if i == -1:
+            raise Exception("Cannot find charge-diffusion kernel in fits file passed to " +
+                            "read_kernel_from_fits")
+    
+        # kernel parameters are located in the three lines following to that index
+        kernel = []
+        for j in fits_comments[i + 1:i + 4]:
+            kernel.append([float(x) for x in j.split()])
+    
+        # Convert to an ndarray
+        kernel = np.asarray(kernel)
+    else:
+        kernel = np.array([[1]])
         
     rb_psf = rebin(subsampled_image[0].data,kernel,0,0,conserve=True)
     rb_shape = np.shape(rb_psf)
