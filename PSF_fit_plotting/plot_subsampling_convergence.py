@@ -53,21 +53,21 @@ def main(argv):
 
     results_root = os.path.join(data_dir, results_file_root)
 
-    ss_factors = np.linspace(1, 10, 10, endpoint=False)
+    ss_factors = np.linspace(1, 10, 10, endpoint=True).astype(int)
 
-    X2s = np.zeros_like(ss_factors)
-    Qs_sum_Z2s = np.zeros_like(ss_factors)
-    Qs_diff_Z2s = np.zeros_like(ss_factors)
+    X2s = np.zeros_like(ss_factors,dtype=float)
+    Qs_sum_Z2s = np.zeros_like(ss_factors,dtype=float)
+    Qs_diff_Z2s = np.zeros_like(ss_factors,dtype=float)
 
     for ssf in ss_factors:
 
         filename = results_root + "_ss" + str(ssf) + "_results.fits"
 
-        header = fits.open(filename)[0].header
+        header = fits.open(filename)[1].header
 
-        X2s[ssf] = header["X_SQR"]
-        Qs_sum_Z2s[ssf] = header["QSS_Z2"]
-        Qs_diff_Z2s[ssf] = header["QSD_Z2"]
+        X2s[ssf-1] = header["X_SQR"]
+        Qs_sum_Z2s[ssf-1] = header["QSS_Z2"]
+        Qs_diff_Z2s[ssf-1] = header["QSD_Z2"]
 
     # Plot it up
     _fig = pyplot.figure(figsize=figsize)
@@ -77,9 +77,14 @@ def main(argv):
 
     ax = pyplot.subplot(gs[0])
 
-    ax.scatter(ssf, X2s, label="X2")
-    ax.scatter(ssf, Qs_sum_Z2s, label="Qs_sum_Z2")
-    ax.scatter(ssf, Qs_diff_Z2s, label="Qs_diff_Z2")
+    ax.plot(ss_factors, X2s, label="X2")
+    ax.plot(ss_factors, Qs_sum_Z2s/100, label="Qs sum Z2")
+    ax.plot(ss_factors, Qs_diff_Z2s/100, label="Qs diff Z2")
+    
+    ax.set_xlim([0.5,10.5])
+    ax.set_ylim([0,0.002])
+    
+    ax.legend(loc="upper right")
 
     pyplot.show()
 
