@@ -29,6 +29,7 @@ import multiprocessing
 from psf_testing import magic_values as mv
 from psf_testing.get_model_psf import get_model_psf_for_star, get_cached_subsampled_psf
 from psf_testing.moments.centre_image import centre_image
+from psf_testing.moments.estimate_background import get_background_level
 from psf_testing.moments.get_Qs import get_m0_and_Qs
 from psf_testing.psf_model_scheme import psf_model_scheme
 from psf_testing.remove_outliers import remove_outliers
@@ -115,6 +116,9 @@ def test_star(i,
                                        tinytim_params=tinytim_params,
                                        use_cache=use_cache,
                                        **params)
+    
+    # Subtract the background from the model psf for consistency with how we treat stars
+    model_psf -= get_background_level(model_psf,weight_func=prim_weight_func)
     
     # Use the star's precise centre, adjusted to the pixel coord of the psf's centre
     
@@ -245,12 +249,9 @@ def test_psf_for_params(stars,
             points.add(new_point)
         
         pool = multiprocessing.Pool(processes=multiprocessing.cpu_count(),maxtasksperchild=1)
-        pool.map(get_psf_caller(tinytim_path=tinytim_params["tinytim_path"],
-                                tinytim_data_path=tinytim_params["tinytim_data_path"],
+        pool.map(get_psf_caller(tinytim_params_set=frozenset(tinytim_params.items()),
                                 weight_func=prim_weight_func,
-                                chip=tinytim_params["chip"],
                                 focus=focus,
-                                subsampling_factor=tinytim_params["subsampling_factor"],
                                 use_cache=use_cache),points,chunksize=1)
         pool.close()
         pool.join()

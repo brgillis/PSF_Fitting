@@ -358,13 +358,17 @@ def make_subsampled_psf_model(filename,
     return subsampled_image[0]
 
 @lru_cache(128)
-def get_cached_subsampled_psf(tinytim_params,
+def get_cached_subsampled_psf(tinytim_params_set,
                               weight_func,
                               psf_position,
                               focus,
-                              spec_type,
+                              spec_type=mv.default_model_psf_spec_type,
                               use_cache=True,
                               **params):
+    
+    tinytim_params = {}
+    for i in tinytim_params_set:
+        tinytim_params[i[0]] = i[1]
 
     # Determine the name for the subsampled model PSF file
     subsampled_name = os.path.join(tinytim_params["tinytim_data_path"],
@@ -512,7 +516,7 @@ def get_model_psf(x_pix,
             if not param=="kernel_adjustment" and not param=="kernel_adjustment_ratio":
                 rounded_params[param] = round(params[param],5)
 
-    subsampled_model = get_cached_subsampled_psf(tinytim_params,
+    subsampled_model = get_cached_subsampled_psf(frozenset(tinytim_params.items()),
                                                  weight_func,
                                                  psf_position,
                                                  focus,

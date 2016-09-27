@@ -23,27 +23,37 @@
 """
 
 import numpy as np
+from psf_testing import magic_values as mv
 from psf_testing.remove_outliers import remove_outliers
+from psf_testing.moments.centre_image import centre_image
 
-def get_background_level_and_noise(image):
-    """ Get the background level and noise of an image by sampling pixels around the edge
-        and removing outliers.
+def get_background_level_and_noise(image,
+                                   rmin=mv.min_stamp_size,
+                                   rmax=mv.min_stamp_size+2,
+                                   weight_func=mv.default_prim_weight_func):
+    """ Get the background level and noise of an image by sampling pixels sufficiently distant from the centre
+        and removing outliers
     
         Requires: image <2d array>
         
         Returns: background_level <float>, background_noise <float> (as standard deviation)
     """
     
-    # Get pixels around the edge of the image
-    edge_pixels = np.concatenate((image[0,:],image[-1,:],image[1:-2,0],image[1:-2,-1]))
+    x_array, y_array = centre_image(image,weight_func)[2:4]
     
-    masked_edge_pixels = remove_outliers(edge_pixels)
+    r_array = np.sqrt(x_array**2+y_array**2)
+    
+    # Get pixels around the edge of the image
+    edge_pixels = np.logical_and(r_array.ravel() > rmin, r_array.ravel() <= rmax)
+    edge_pixel_values = image.ravel()[edge_pixels]
+    
+    masked_edge_pixels = remove_outliers(edge_pixel_values)
     
     good_pixels = masked_edge_pixels[~masked_edge_pixels.mask]
     
     return np.mean(good_pixels), np.std(good_pixels)
 
-def get_background_level(image):
+def get_background_level(image,*args,**kwargs):
     """ Get the background level of an image by sampling pixels around the edge
         and removing outliers.
     
@@ -52,9 +62,9 @@ def get_background_level(image):
         Returns: background_level <float>
     """
     
-    return get_background_level_and_noise(image)[0]
+    return get_background_level_and_noise(image,*args,**kwargs)[0]
 
-def get_background_noise(image):
+def get_background_noise(image,*args,**kwargs):
     """ Get the background noise of an image by sampling pixels around the edge
         and removing outliers.
     
@@ -63,4 +73,4 @@ def get_background_noise(image):
         Returns: background_noise <float> (as standard deviation)
     """
     
-    return get_background_level_and_noise(image)[1]
+    return get_background_level_and_noise(image,*args,**kwargs)[1]

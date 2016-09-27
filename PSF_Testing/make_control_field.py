@@ -34,7 +34,8 @@ def main(argv):
                        random_seed=3,num_grid_points=(0,0),
                        sky_level=0.,read_noise=50,
                        suppress_noise=True,num_stars=1000,
-                       subsampling_factor=10)
+                       subsampling_factor=10,
+                       randomize_spectral_type=False)
     pass
 
 if __name__ == "__main__":
