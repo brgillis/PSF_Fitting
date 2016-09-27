@@ -86,10 +86,11 @@ def make_control_field(image_filename,
         
         # Choose a random spectral type if desired
         if randomize_spectral_type:
-            spec_type = (1,int(round(spec_f())))
+            st = int(round(spec_f()))
+            st = max(1,min(17,st))
+            spec_type = (1,st)
         else:
             spec_type = mv.default_model_psf_spec_type
-            _ = u() # Advance the deviate to keep seeding the same
         
         # Calculate the flux for this star given its magnitude
         flux = 10.0**(0.4*(im_zeropoint-mag))
@@ -148,7 +149,7 @@ def make_control_field(image_filename,
     
     # Add noise to the image
     if not suppress_noise:
-        image.addNoise(galsim.CCDNoise(rng, gain=gain, read_noise=read_noise, sky_level=sky_level))
+        image.addNoise(galsim.CCDNoise(galsim.BaseDeviate(random_seed+2), gain=gain, read_noise=read_noise, sky_level=sky_level))
 
     # Output the image
     image.write(image_filename,clobber=True)    

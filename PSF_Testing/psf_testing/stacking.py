@@ -27,6 +27,7 @@ from astropy.io import fits
 import numpy as np
 from psf_testing import magic_values as mv
 from psf_testing.moments.estimate_background import get_background_level
+from psf_testing.moments.centre_image import centre_image
 
 
 def make_stacks(stars, stack_size=int(2 * mv.default_weight_rmax + 1),
