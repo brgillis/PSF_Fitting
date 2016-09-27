@@ -4,9 +4,6 @@
 
     Created 26 Sep 2016
 
-    This script is used to plot star/PSF/residual stacks which are
-    generated as a result of running PSFit.
-
     ---------------------------------------------------------------------
 
     Copyright (C) 2016  Bryan R. Gillis
@@ -38,8 +35,6 @@ import numpy as np
 matplotlib.rcParams['ps.useafm'] = True
 matplotlib.rcParams['pdf.use14corefonts'] = True
 matplotlib.rcParams['text.usetex'] = True
-
-from psf_testing.magic_values import rel_weights
 
 data_dir = "/disk2/brg/Data/HST_Fields/subsampling_convergence_testing"
 results_file_root = "jb6v09shq_sci2_cor"
