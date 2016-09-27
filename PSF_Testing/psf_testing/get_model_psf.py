@@ -472,6 +472,11 @@ def get_model_psf(x_pix,
                    kernel_adjustment=mv.default_params["kernel_adjustment"],
                    kernel_adjustment_ratio=mv.default_params["kernel_adjustment_ratio"],
                    use_cache=True,
+                   n = [0],
+                   sum_d_d_xc = [0.],
+                   sum_d_d_yc = [0.],
+                   sum_d_d_xc_sq = [0.],
+                   sum_d_d_yc_sq = [0.],
                    **params):
     
     if scheme is None:
@@ -488,6 +493,8 @@ def get_model_psf(x_pix,
         star_d_yc = star_yc - (star_ny - 1.) / 2
     else:
         star_d_yc = y_pix - int(y_pix)
+    star_d_xc = star_d_xc - round(star_d_xc)
+    star_d_yc = star_d_yc - round(star_d_yc)
 
     # Get the position we'll generate the model PSF for
     psf_position = scheme.get_position_to_use(int(x_pix)+star_d_xc, int(y_pix)+star_d_yc)
@@ -540,42 +547,58 @@ def get_model_psf(x_pix,
     # Determine how far off the centre of the subsampled image is from the centre when rebinned with shift 0
     ss_model_rb_x_offset = subsampled_model.header[mv.ss_model_rb_x_offset_label]
     ss_model_rb_y_offset = subsampled_model.header[mv.ss_model_rb_y_offset_label]
+    
+    ss_model_rb_x_offset -= round(ss_model_rb_x_offset)
+    ss_model_rb_y_offset -= round(ss_model_rb_y_offset)
 
     # Determine how many subsampled pixels we'll have to shift the subsampled psf by
     x_shift = int(round(subsampling_factor * (star_d_xc - ss_model_rb_x_offset),0))
     y_shift = int(round(subsampling_factor * (star_d_yc - ss_model_rb_y_offset),0))
     
-    # Check that the shifts are reasonable (within 2 non-subsampled pixels)
-    max_shift = np.max((np.abs(x_shift),np.abs(y_shift)))/subsampling_factor
-    if max_shift > 2:
-        raise Exception("Star's centring is too poor; requires too extreme of a shift.")
-
-    # Get the rebinned PSF model
-    rebinned_model = rebin(subsampled_model.data,
-                           kernel,
-                           x_shift=x_shift,
-                           y_shift=y_shift,
-                           subsampling_factor=subsampling_factor)
-    
-    # Deconvolve/reconvolve to adjust size if desired
-    if not kernel_adjustment == 1:
-        scale = np.abs(kernel_adjustment - 1.)
-        x, y = np.indices(np.shape(rebinned_model),dtype=np.complex64)
-        x -= np.shape(rebinned_model)[0]/2.-1
-        y -= np.shape(rebinned_model)[1]/2.-1
-        r = np.sqrt(x*x+y*y)
-        gaus = np.exp(-r*r/(2*scale*np.abs(kernel_adjustment_ratio)))
-        exp = np.exp(-r/scale)
+    loop_counter = 0
+    while(loop_counter<3):
         
-        if kernel_adjustment > 1:
-            rebinned_model = np.abs(fft_convolve_deconvolve(rebinned_model,gaus,exp))
-        else:
-            rebinned_model = np.abs(fft_convolve_deconvolve(rebinned_model,exp,gaus))
-            
-
-    # Get the zeroth-order moment for the rebinned psf
-    _xc, _yc, _, _, _, rb_model_m0 = centre_image(rebinned_model, weight_func=weight_func)
- 
+        # Check that the shifts are reasonable (within 2 non-subsampled pixels)
+        max_shift = np.max((np.abs(x_shift),np.abs(y_shift)))/subsampling_factor
+        if max_shift > 2:
+            raise Exception("Star's centring is too poor; requires too extreme of a shift.")
+    
+        # Get the rebinned PSF model
+        rebinned_model = rebin(subsampled_model.data,
+                               kernel,
+                               x_shift=x_shift,
+                               y_shift=y_shift,
+                               subsampling_factor=subsampling_factor)
+                
+    
+        # Get the zeroth-order moment for the rebinned psf
+        xc, yc, _, _, _, rb_model_m0 = centre_image(rebinned_model, weight_func=weight_func)
+        
+        rb_model_d_d_xc = (xc - (np.shape(rebinned_model)[0]-1.)/2.) - round(xc - (np.shape(rebinned_model)[0]-1.)/2.)
+        rb_model_d_d_yc = (yc - (np.shape(rebinned_model)[1]-1.)/2.) - round(yc - (np.shape(rebinned_model)[1]-1.)/2.)
+        
+        d_xc_diff = star_d_xc - rb_model_d_d_xc
+        d_xc_diff -= round(d_xc_diff)
+        d_yc_diff = star_d_yc - rb_model_d_d_yc
+        d_yc_diff -= round(d_yc_diff)
+        
+        if np.abs(d_xc_diff)<0.5/subsampling_factor and np.abs(d_yc_diff)<0.5/subsampling_factor:
+            break
+        
+        loop_counter += 1
+        
+        x_shift += int(round(subsampling_factor*d_xc_diff))
+        y_shift += int(round(subsampling_factor*d_yc_diff))
+        
+    if loop_counter>3:
+        pass
+        
     scaled_model = rebinned_model * star_m0 / rb_model_m0
+        
+    n[0] += 1
+    sum_d_d_xc[0] += d_xc_diff
+    sum_d_d_yc[0] += d_yc_diff
+    sum_d_d_xc_sq[0] += (d_xc_diff)**2
+    sum_d_d_yc_sq[0] += (d_yc_diff)**2
 
     return scaled_model

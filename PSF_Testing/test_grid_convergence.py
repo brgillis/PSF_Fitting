@@ -46,7 +46,7 @@ class test_psf_caller(object):
             if x == 0:
                 num_grid_points = (0, 0)
             else:
-                num_grid_points = tuple(np.divide(image_size), x)
+                num_grid_points = tuple(np.divide(image_size, x))
             test_psf(self.image_filename, num_grid_points=num_grid_points, results_tag="gp" + str(x), *self.args, **self.kwargs)
         except Exception as e:
             logger = get_default_logger()

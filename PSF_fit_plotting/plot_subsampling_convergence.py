@@ -47,6 +47,9 @@ results_file_root = "jb6v09shq_sci2_cor"
 figsize = (6, 6)
 fontsize = 12
 
+output_filename_root = "subsampling_convergence_test"
+output_extension = "eps"
+
 def main(argv):
     """ @TODO main docstring
     """
@@ -72,14 +75,14 @@ def main(argv):
         header = fits.open(filename)[1].header
 
         X2s[ssf - 1] = header["X_SQR"]
-        Qx_diff_Z2s[ssf - 1] = header["QXD_Z2"] / np.square(rel_weights["Qxy_diff"][0])
-        Qy_diff_Z2s[ssf - 1] = header["QYD_Z2"] / np.square(rel_weights["Qxy_diff"][1])
-        Qp_sum_Z2s[ssf - 1] = header["QPS_Z2"] / np.square(rel_weights["Qpcs_diff"][0])
-        Qp_diff_Z2s[ssf - 1] = header["QPD_Z2"] / np.square(rel_weights["Qpcs_diff"][0])
-        Qc_sum_Z2s[ssf - 1] = header["QPS_Z2"] / np.square(rel_weights["Qpcs_diff"][1])
-        Qc_diff_Z2s[ssf - 1] = header["QPD_Z2"] / np.square(rel_weights["Qpcs_diff"][1])
-        Qs_sum_Z2s[ssf - 1] = header["QSSNZ2"] / np.square(rel_weights["Qpcs_diff"][2])
-        Qs_diff_Z2s[ssf - 1] = header["QSDNZ2"] / np.square(rel_weights["Qpcs_diff"][2])
+        Qx_diff_Z2s[ssf - 1] = header["QXD_Z2"]
+        Qy_diff_Z2s[ssf - 1] = header["QYD_Z2"]
+        Qp_sum_Z2s[ssf - 1] = header["QPS_Z2"] 
+        Qp_diff_Z2s[ssf - 1] = header["QPD_Z2"] 
+        Qc_sum_Z2s[ssf - 1] = header["QPS_Z2"] 
+        Qc_diff_Z2s[ssf - 1] = header["QPD_Z2"] 
+        Qs_sum_Z2s[ssf - 1] = header["QSSNZ2"] 
+        Qs_diff_Z2s[ssf - 1] = header["QSDNZ2"] 
 
     # Plot it up
     _fig = pyplot.figure(figsize=figsize)
@@ -89,20 +92,26 @@ def main(argv):
 
     ax = pyplot.subplot(gs[0])
 
-    ax.plot(ss_factors, X2s, label="X2")
-    ax.plot(ss_factors, Qx_diff_Z2s, label="Qx diff Z2")
-    ax.plot(ss_factors, Qy_diff_Z2s, label="Qy diff Z2")
-    ax.plot(ss_factors, Qp_sum_Z2s, label="Qp sum Z2")
-    ax.plot(ss_factors, Qp_diff_Z2s, label="Qp diff Z2")
-    ax.plot(ss_factors, Qc_sum_Z2s, label="Qc sum Z2")
-    ax.plot(ss_factors, Qc_diff_Z2s, label="Qc diff Z2")
-    ax.plot(ss_factors, Qs_sum_Z2s, label="Qs sum Z2")
-    ax.plot(ss_factors, Qs_diff_Z2s, label="Qs diff Z2")
+    ax.plot(ss_factors, X2s, label="$X^2$", color="black")
+    ax.plot(ss_factors, Qx_diff_Z2s, label=r"$Q_x^{-} Z^2$", linestyle="dotted")
+    ax.plot(ss_factors, Qy_diff_Z2s, label=r"$Q_y^{-} Z^2$", linestyle="dotted")
+    ax.plot(ss_factors, Qp_sum_Z2s, label=r"$Q_+^{+} Z^2$", linestyle="dashed")
+    ax.plot(ss_factors, Qp_diff_Z2s, label=r"$Q_+^{-} Z^2$", linestyle="dashed")
+    ax.plot(ss_factors, Qc_sum_Z2s, label=r"$Q_{\times}^{+} Z^2$", linestyle="dashed")
+    ax.plot(ss_factors, Qc_diff_Z2s, label=r"$Q_{\times}^{-} Z^2$", linestyle="dashed")
+    ax.plot(ss_factors, Qs_sum_Z2s, label=r"$Q_s^{+} Z^2$", linestyle="dashdot")
+    ax.plot(ss_factors, Qs_diff_Z2s, label=r"$Q_s^{-} Z^2$", linestyle="dashdot")
 
     ax.set_xlim([0.5, 10.5])
-    ax.set_ylim([0, 0.002])
+    ax.set_ylim([0, 0.02])
+    
+    ax.set_xlabel("Subsampling Factor")
 
-    ax.legend(loc="upper right")
+    ax.legend(loc="upper right",ncol=2)
+    
+    output_filename = output_filename_root + "." + output_extension
+
+    pyplot.savefig(output_filename, format=output_extension, bbox_inches="tight", pad_inches=0.05)
 
     pyplot.show()
 
