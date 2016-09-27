@@ -52,7 +52,7 @@ def fft_convolve_deconvolve(im1,im2,im3):
 
 
 def make_subsampled_psf_model(filename,
-                              chip=1,
+                              tinytim_params=None,
                               psf_size=mv.default_model_psf_width,
                               xp=mv.default_image_shape[0]//2,
                               yp=mv.default_image_shape[1]//2,
@@ -101,6 +101,9 @@ def make_subsampled_psf_model(filename,
 
         Side-effects: Overwrites $filename if it exists with the new subsampled PSF model
     """
+    
+    if tinytim_params is None:
+        tinytim_params = mv.default_tinytim_params
 
     filename_base = filename.replace(mv.image_extension, "")
     
@@ -139,7 +142,7 @@ def make_subsampled_psf_model(filename,
     cmd = "export TINYTIM=" + tinytim_path + "\n" + \
           tinytim_path + "/tiny1 " + par_file + " << EOF \n" + \
           str(detector) + "\n" + \
-          str(chip) + "\n" + \
+          str(tinytim_params["chip"]) + "\n" + \
           str(xp) + " " + str(yp) + "\n" + \
           str(filter) + "\n" + \
           str(spec_type[0]) + "\n" + \
@@ -355,20 +358,19 @@ def make_subsampled_psf_model(filename,
     return subsampled_image[0]
 
 @lru_cache(128)
-def get_cached_subsampled_psf(tinytim_path,
-                              tinytim_data_path,
+def get_cached_subsampled_psf(tinytim_params,
                               weight_func,
                               psf_position,
-                              chip,
                               focus,
-                              subsampling_factor=mv.default_subsampling_factor,
+                              spec_type,
                               use_cache=True,
                               **params):
 
     # Determine the name for the subsampled model PSF file
-    subsampled_name = os.path.join(tinytim_data_path, "ss" + str(subsampling_factor) + "p_x" + str(psf_position[0]) + \
-                        "y" + str(psf_position[1]) + "f" + str(focus) + \
-                        "c" + str(chip))
+    subsampled_name = os.path.join(tinytim_params["tinytim_data_path"],
+                                   "ss" + str(tinytim_params["subsampling_factor"]) + "p_x" + str(psf_position[0]) +
+                                   "y" + str(psf_position[1]) + "f" + str(focus) + \
+                                   "c" + str(tinytim_params["chip"]))
     
     for (key, label) in (("z2", "z02"),
                            ("z3", "z03"),
@@ -395,6 +397,9 @@ def get_cached_subsampled_psf(tinytim_path,
         value = params[key]
         if (value is not None) and not (value == mv.default_params[key]):
             subsampled_name += label + str(100*value)
+            
+    if not spec_type==mv.default_model_psf_spec_type:
+        subsampled_name += "st" + str(spec_type[1])
     
     subsampled_name +=  mv.image_extension
 
@@ -407,11 +412,10 @@ def get_cached_subsampled_psf(tinytim_path,
                                   xp=psf_position[0],
                                   yp=psf_position[1],
                                   focus=focus,
+                                  spec_type=spec_type,
                                   use_cache=use_cache,
-                                  chip=chip,
+                                  tinytim_params=tinytim_params,
                                   weight_func=weight_func,
-                                  tinytim_path=tinytim_path,
-                                  subsampling_factor=subsampling_factor,
                                   **params)
 
     else:
@@ -426,9 +430,8 @@ def get_cached_subsampled_psf(tinytim_path,
                                   yp=psf_position[1],
                                   focus=focus,
                                   use_cache=use_cache,
-                                  chip=chip,
+                                  tinytim_params=tinytim_params,
                                   weight_func=weight_func,
-                                  tinytim_path=tinytim_path,
                                   **params)
             
     return subsampled_model
@@ -469,6 +472,7 @@ def get_model_psf(x_pix,
                    star_m0=1.,
                    weight_func=mv.default_prim_weight_func,
                    tinytim_params=None,
+                   spec_type=mv.default_model_psf_spec_type,
                    kernel_adjustment=mv.default_params["kernel_adjustment"],
                    kernel_adjustment_ratio=mv.default_params["kernel_adjustment_ratio"],
                    use_cache=True,
@@ -507,22 +511,19 @@ def get_model_psf(x_pix,
         if param in mv.default_params:
             if not param=="kernel_adjustment" and not param=="kernel_adjustment_ratio":
                 rounded_params[param] = round(params[param],5)
-                
-    subsampling_factor = tinytim_params["subsampling_factor"]
 
-    subsampled_model = get_cached_subsampled_psf(tinytim_params["tinytim_path"],
-                                                 tinytim_params["tinytim_data_path"],
+    subsampled_model = get_cached_subsampled_psf(tinytim_params,
                                                  weight_func,
                                                  psf_position,
-                                                 tinytim_params["chip"],
                                                  focus,
-                                                 subsampling_factor=subsampling_factor,
+                                                 spec_type,
                                                  use_cache=use_cache,
                                                  **rounded_params)
+                
             
-
     # Get the charge diffusion kernel from the FITS comments
 
+    subsampling_factor = tinytim_params["subsampling_factor"]
     if(subsampling_factor > 1):
         fits_comments = subsampled_model.header['COMMENT']
     
@@ -542,7 +543,7 @@ def get_model_psf(x_pix,
         # Convert to an ndarray
         kernel = np.asarray(kernel)
     else:
-        kernel = np.array([[0.,0.,0.],[0.,1.,0.],[0.,0.,0.]])
+        kernel = np.array([[1]])
 
     # Determine how far off the centre of the subsampled image is from the centre when rebinned with shift 0
     ss_model_rb_x_offset = subsampled_model.header[mv.ss_model_rb_x_offset_label]
@@ -555,6 +556,7 @@ def get_model_psf(x_pix,
     x_shift = int(round(subsampling_factor * (star_d_xc - ss_model_rb_x_offset),0))
     y_shift = int(round(subsampling_factor * (star_d_yc - ss_model_rb_y_offset),0))
     
+    # Check this is good enough, and shift again as necessary
     loop_counter = 0
     while(loop_counter<3):
         

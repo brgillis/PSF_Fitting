@@ -50,7 +50,7 @@ class test_psf_caller(object):
 image_dir = "/disk2/brg/Data/HST_Fields/"
 image_filename = "jb6v09shq_sci2_cor.fits"
 results_dir = "/disk2/brg/Data/HST_Fields/subsampling_convergence_testing"
-num_grid_points = (8,4)
+num_grid_points = (16,8)
 parallelize = True
 
 def main(argv):
@@ -75,9 +75,10 @@ def main(argv):
                              focus_samples=7,
                              norm_errors=True,
                              min_star_snr=50.,
-                             results_dir=results_dir)
+                             results_dir=results_dir,
+                             parallelize=True)
         
-    if debugging or not parallelize:
+    if debugging or not parallelize or True:
         for subsampling_factor in subsampling_factors:
             caller(subsampling_factor)
     else:

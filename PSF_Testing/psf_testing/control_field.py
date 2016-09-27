@@ -29,6 +29,12 @@ from psf_testing import magic_values as mv
 from psf_testing.get_model_psf import get_model_psf
 from psf_testing.psf_model_scheme import psf_model_scheme
 
+spec_types = np.linspace(0,18,19,endpoint=True)
+spec_types_pdf = spec_types**3
+spec_types_pdf[0] = spec_types_pdf[-1] = 0
+spec_types_pdf /= spec_types_pdf.sum()
+    
+
 def make_control_field(image_filename,
                        
                        random_seed = 0,
@@ -50,7 +56,8 @@ def make_control_field(image_filename,
                        
                        focus=mv.default_focus,
                        tinytim_params=None,
-                       subsampling_factor=mv.default_subsampling_factor):
+                       subsampling_factor=mv.default_subsampling_factor,
+                       randomize_spectral_type=True):
     
     if tinytim_params is None:
         tinytim_params = mv.default_tinytim_params
@@ -63,32 +70,39 @@ def make_control_field(image_filename,
     
     im_zeropoint = zeropoint + 2.5*np.log10(exp_time)
     
-    rng = galsim.BaseDeviate(random_seed)
+    u = galsim.random.UniformDeviate(galsim.BaseDeviate(random_seed))
+    spec_f = galsim.DistDeviate(galsim.BaseDeviate(random_seed+1), function=galsim.LookupTable(spec_types,spec_types_pdf))
+        
+    if num_grid_points == (0,0):
+        use_cache=False
+    else:
+        use_cache=True
     
     for _i in range(num_stars):
         
         # Choose a random position
-        u = galsim.random.UniformDeviate(rng)
         xp = u()*image_shape[0]
         yp = u()*image_shape[1]
         
         # Choose a random magnitude
         mag = min_star_mag + u()*(max_star_mag-min_star_mag)
         
-        # Calculate the flux for this star given its magnitude
-        count = 10.0**(0.4*(im_zeropoint-mag))
-        flux = count/gain
-        
-        if num_grid_points == (0,0):
-            use_cache=False
+        # Choose a random spectral type if desired
+        if randomize_spectral_type:
+            spec_type = (1,round(spec_f()))
         else:
-            use_cache=True
+            spec_type = mv.default_model_psf_spec_type
+            _ = u() # Advance the deviate to keep seeding the same
+        
+        # Calculate the flux for this star given its magnitude
+        flux = 10.0**(0.4*(im_zeropoint-mag))
         
         psf_data = get_model_psf(xp,yp,
                                  scheme=scheme,
                                  tinytim_params=tinytim_params,
                                  use_cache=use_cache,
-                                 subsampling_factor=subsampling_factor)
+                                 subsampling_factor=subsampling_factor,
+                                 spec_type=spec_type)
         
         psf_data *= flux/psf_data.sum()
         
