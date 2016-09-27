@@ -57,10 +57,12 @@ def make_control_field(image_filename,
                        focus=mv.default_focus,
                        tinytim_params=None,
                        subsampling_factor=mv.default_subsampling_factor,
-                       randomize_spectral_type=True):
+                       randomize_spectral_type=True,
+                       use_cache=True):
     
     if tinytim_params is None:
         tinytim_params = mv.default_tinytim_params
+    tinytim_params['subsampling_factor'] = subsampling_factor
         
     scheme = psf_model_scheme(focus = focus,
                               num_grid_points = num_grid_points,
@@ -72,11 +74,6 @@ def make_control_field(image_filename,
     
     u = galsim.random.UniformDeviate(galsim.BaseDeviate(random_seed))
     spec_f = galsim.DistDeviate(galsim.BaseDeviate(random_seed+1), function=galsim.LookupTable(spec_types,spec_types_pdf))
-        
-    if num_grid_points == (0,0):
-        use_cache=False
-    else:
-        use_cache=True
     
     for _i in range(num_stars):
         
@@ -89,7 +86,7 @@ def make_control_field(image_filename,
         
         # Choose a random spectral type if desired
         if randomize_spectral_type:
-            spec_type = (1,round(spec_f()))
+            spec_type = (1,int(round(spec_f())))
         else:
             spec_type = mv.default_model_psf_spec_type
             _ = u() # Advance the deviate to keep seeding the same
@@ -101,7 +98,6 @@ def make_control_field(image_filename,
                                  scheme=scheme,
                                  tinytim_params=tinytim_params,
                                  use_cache=use_cache,
-                                 subsampling_factor=subsampling_factor,
                                  spec_type=spec_type)
         
         psf_data *= flux/psf_data.sum()
