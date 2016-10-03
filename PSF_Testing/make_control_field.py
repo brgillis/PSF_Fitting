@@ -37,7 +37,7 @@ def main(argv):
                        read_noise=50,
                        suppress_noise=False,
                        num_stars=1000,
-                       subsampling_factor=10,
+                       subsampling_factor=20,
                        randomize_spectral_type=False,
                        use_cache=True)
     pass

@@ -66,7 +66,8 @@ def rebin(a,
         a = np.asarray(a,dtype='float32')
         f = cIceBRGpy.rebin_float
 
-    new_shape = f(a, y_shift, x_shift, subsampling_factor) # Note swap of indices here
+    new_shape_c = f(a, y_shift, x_shift, subsampling_factor) # Note swap of indices here
+    new_shape = new_shape_c[1], new_shape_c[0]
 
     # Resort the new array into the proper shape
     new_size = np.product(new_shape)

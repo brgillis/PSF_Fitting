@@ -34,7 +34,7 @@ def extract_stamp_for_star(star, image):
     assert((x1>0) and (y1>0) and (x1+stamp_size-1<image_nx) and (y1+stamp_size-1<image_ny))
 
     # Create the stamp data
-    stamp = image.data[x1-1:x1+stamp_size-1,
-                       y1-1:y1+stamp_size-1]
+    stamp = image.data[x1:x1+stamp_size,
+                       y1:y1+stamp_size]
 
     return stamp

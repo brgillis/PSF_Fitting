@@ -154,7 +154,7 @@ def test_psf(image_filename,
             x_shift = np.abs( star.xc - (np.shape(star.stamp)[0]-1)/2 )
             y_shift = np.abs( star.yc - (np.shape(star.stamp)[1]-1)/2 )
             max_shift = np.max((np.abs(x_shift),np.abs(y_shift)))
-            if max_shift > 2:
+            if max_shift > 4:
                 star.valid = False
                 continue
         except AssertionError as _e:

@@ -42,6 +42,11 @@ def make_stacks(stars, stack_size=int(2 * mv.default_weight_rmax + 1),
         stack = np.zeros((stack_size, stack_size))
         num_stars = 0
         for star in stars:
+            
+            # TODO: Remove this
+            if num_stars >= 1:
+                break
+            
             if (not star.valid) or star.outlier:
                 continue
 

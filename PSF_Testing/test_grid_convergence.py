@@ -54,16 +54,16 @@ class test_psf_caller(object):
             raise
 
 image_dir = "/disk2/brg/Data/HST_Fields/"
-image_filename = "jb6v09shq_sci2_cor.fits"
+image_filename = "control_image_n_rs.fits"
 results_dir = "/disk2/brg/Data/HST_Fields/grid_convergence_testing"
-subsampling_factor = 10
+subsampling_factor = 13
 parallelize = True
 
 def main(argv):
     """ @TODO main docstring
     """
 
-    grid_sizes = (2048, 1024, 512, 256, 0)
+    grid_sizes = (2048, 1024, 512, 256, 128, 64, 32, 1)
 
     # Check if we're debugging
     try:
@@ -75,10 +75,10 @@ def main(argv):
     caller = test_psf_caller(os.path.join(image_dir, image_filename),
                              subsampling_factor=subsampling_factor,
                              min_lowest_separation=1.0,
-                             min_class_star=0.95,
+                             min_class_star=0.01,
                              min_star_mag=22.,
                              max_star_mag=25.,
-                             focus_samples=7,
+                             focus=mv.default_focus,
                              norm_errors=True,
                              min_star_snr=50.,
                              results_dir=results_dir,

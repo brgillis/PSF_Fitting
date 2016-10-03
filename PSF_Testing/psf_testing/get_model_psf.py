@@ -495,17 +495,17 @@ def get_model_psf(x_pix,
     # Get the offset for the star's postage stamp if we have it
     if star_xc is not None:
         star_d_xc = star_xc - (star_nx - 1.) / 2
-    else:
-        star_d_xc = x_pix - int(x_pix)
-    if star_yc is not None:
         star_d_yc = star_yc - (star_ny - 1.) / 2
+        star_xp = int(x_pix)+star_d_yc # Deliberate swap here
+        star_yp = int(y_pix)+star_d_xc
     else:
-        star_d_yc = y_pix - int(y_pix)
-    star_d_xc = star_d_xc - round(star_d_xc)
-    star_d_yc = star_d_yc - round(star_d_yc)
+        star_d_xc = y_pix - int(y_pix) # Deliberate swap here
+        star_d_yc = x_pix - int(x_pix)
+        star_xp = x_pix
+        star_yp = y_pix
 
     # Get the position we'll generate the model PSF for
-    psf_position = scheme.get_position_to_use(int(x_pix)+star_d_xc, int(y_pix)+star_d_yc)
+    psf_position = scheme.get_position_to_use(star_xp, star_yp)
     
     focus = round(scheme.focus,5)
     
@@ -557,6 +557,10 @@ def get_model_psf(x_pix,
     ss_model_rb_y_offset -= round(ss_model_rb_y_offset)
 
     # Determine how many subsampled pixels we'll have to shift the subsampled psf by
+    
+    star_d_xc = star_d_xc - round(star_d_xc)
+    star_d_yc = star_d_yc - round(star_d_yc)
+    
     x_shift = int(round(subsampling_factor * (star_d_xc - ss_model_rb_x_offset),0))
     y_shift = int(round(subsampling_factor * (star_d_yc - ss_model_rb_y_offset),0))
     

@@ -64,8 +64,8 @@ class psf_model_scheme(object):
             
     def get_position_to_use(self, xp, yp):
         
-        gx = int(float(xp)/self.grid_stepx)
-        gy = int(float(yp)/self.grid_stepy)
+        gx = int(float(xp+0.5)/self.grid_stepx)
+        gy = int(float(yp+0.5)/self.grid_stepy)
         
         xp = int((gx + 0.5) * self.grid_stepx)
         yp = int((gy + 0.5) * self.grid_stepy)
