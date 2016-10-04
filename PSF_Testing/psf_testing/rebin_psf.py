@@ -27,6 +27,7 @@ from __future__ import division
 from copy import deepcopy
 import numpy as np
 from scipy.signal import convolve
+import galsim
 
 from psf_testing import magic_values as mv
 
@@ -34,45 +35,69 @@ try:
     import cIceBRGpy
 except ImportError as _e:
     from Release import cIceBRGpy
+    
+def galsim_rebin(a,
+                 x_shift=0,
+                 y_shift=0,
+                 subsampling_factor = mv.default_subsampling_factor):
+    
+    # Interpret the subsampled image as an interpolated image
+    ss_prof = galsim.InterpolatedImage(galsim.Image(a,scale=1./subsampling_factor))
+    
+    # Get the rebinned shape
+    ss_nx, ss_ny = np.shape(a)
+    rb_nx = 2*((ss_nx//subsampling_factor-1)//2) + 1
+    rb_ny = 2*((ss_ny//subsampling_factor-1)//2) + 1
+    
+    rb_array = np.zeros((rb_nx,rb_ny))
+    rb_image = galsim.Image(rb_array,scale=1.)
+    
+    ss_prof.drawImage(rb_image,offset=(float(y_shift)/subsampling_factor,float(x_shift)/subsampling_factor))
+    
+    return rb_array
 
 def rebin(a,
           cdf,
           x_shift=0,
           y_shift=0,
           subsampling_factor = mv.default_subsampling_factor,
-          conserve=False):
+          conserve=False,
+          use_galsim=True):
 
-    # If we want to conserve, do so by operating on a copy of the array
-    if(conserve):
-        a = deepcopy(a)
+    if use_galsim:
+        rebinned_array = galsim_rebin(a,x_shift,y_shift,subsampling_factor)
     else:
-        # Ensure it's contiguous
-        a = np.ascontiguousarray(a)
-
-    # Use the proper function for the data type
-    if a.dtype == 'float32':
-        f = cIceBRGpy.rebin_float
-    elif a.dtype == 'float64':
-        f = cIceBRGpy.rebin_double
-    elif a.dtype == 'int32':
-        f = cIceBRGpy.rebin_int
-    elif a.dtype == 'int64':
-        f = cIceBRGpy.rebin_long
-    elif a.dtype == 'uint32':
-        f = cIceBRGpy.rebin_uint
-    elif a.dtype == 'uint64':
-        f = cIceBRGpy.rebin_ulong
-    else:
-        a = np.asarray(a,dtype='float32')
-        f = cIceBRGpy.rebin_float
-
-    new_shape_c = f(a, y_shift, x_shift, subsampling_factor) # Note swap of indices here
-    new_shape = new_shape_c[1], new_shape_c[0]
-
-    # Resort the new array into the proper shape
-    new_size = np.product(new_shape)
-
-    rebinned_array = np.reshape(np.ravel(a)[0:new_size], new_shape)
+        # If we want to conserve, do so by operating on a copy of the array
+        if(conserve):
+            a = deepcopy(a)
+        else:
+            # Ensure it's contiguous
+            a = np.ascontiguousarray(a)
+    
+        # Use the proper function for the data type
+        if a.dtype == 'float32':
+            f = cIceBRGpy.rebin_float
+        elif a.dtype == 'float64':
+            f = cIceBRGpy.rebin_double
+        elif a.dtype == 'int32':
+            f = cIceBRGpy.rebin_int
+        elif a.dtype == 'int64':
+            f = cIceBRGpy.rebin_long
+        elif a.dtype == 'uint32':
+            f = cIceBRGpy.rebin_uint
+        elif a.dtype == 'uint64':
+            f = cIceBRGpy.rebin_ulong
+        else:
+            a = np.asarray(a,dtype='float32')
+            f = cIceBRGpy.rebin_float
+    
+        new_shape_c = f(a, y_shift, x_shift, subsampling_factor) # Note swap of indices here
+        new_shape = new_shape_c[1], new_shape_c[0]
+    
+        # Resort the new array into the proper shape
+        new_size = np.product(new_shape)
+    
+        rebinned_array = np.reshape(np.ravel(a)[0:new_size], new_shape)
     
     if np.any(np.isnan(rebinned_array)):
         pass

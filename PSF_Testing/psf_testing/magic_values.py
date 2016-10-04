@@ -169,10 +169,12 @@ default_model_psf_spec_type = (1, 15) # K-type star 15
 default_detector = 15 # WFC
 default_filter = "f606w"
 default_subsampling_factor = 6
+default_galsim_rebin = False
 default_tinytim_params = {"tinytim_data_path":default_tinytim_data_path,
                           "tinytim_path":default_tinytim_path,
                           "chip":1,
-                          "subsampling_factor":default_subsampling_factor}
+                          "subsampling_factor":default_subsampling_factor,
+                          "galsim_rebin":default_galsim_rebin}
 
 undistorted_model_tail = "00_psf.fits"
 subsampled_model_tail = "00.fits"

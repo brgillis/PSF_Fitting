@@ -54,7 +54,7 @@ class test_psf_caller(object):
             raise
 
 image_dir = "/disk2/brg/Data/HST_Fields/"
-image_filename = "control_image_n_rs.fits"
+image_filename = "control_image_n.fits"
 results_dir = "/disk2/brg/Data/HST_Fields/grid_convergence_testing"
 subsampling_factor = 13
 parallelize = True

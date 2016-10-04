@@ -60,7 +60,6 @@ def make_subsampled_psf_model(filename,
                               detector=mv.default_detector,
                               filter=mv.default_filter,
                               spec_type=mv.default_model_psf_spec_type,
-                              subsampling_factor=mv.default_subsampling_factor,
                               weight_func=mv.default_prim_weight_func,
                               tinytim_path=mv.default_tinytim_path,
                               z2=None,
@@ -104,6 +103,8 @@ def make_subsampled_psf_model(filename,
     
     if tinytim_params is None:
         tinytim_params = mv.default_tinytim_params
+        
+    subsampling_factor = tinytim_params["subsampling_factor"]
 
     filename_base = filename.replace(mv.image_extension, "")
     
@@ -230,7 +231,7 @@ def make_subsampled_psf_model(filename,
     # Set up the command to call tiny3
     cmd = "export TINYTIM=" + tinytim_path + "\n" + \
           tinytim_path + "/tiny3 " + par_file + " SUB=" + \
-        str(subsampling_factor)
+          str(int(subsampling_factor))
     # Run the command to call tiny3
     sbp.call(cmd, shell=True)
 
@@ -315,7 +316,7 @@ def make_subsampled_psf_model(filename,
     else:
         kernel = np.array([[1]])
         
-    rb_psf = rebin(subsampled_image[0].data,kernel,0,0,conserve=True)
+    rb_psf = rebin(subsampled_image[0].data,kernel,0,0,conserve=True,use_galsim=True)
     rb_shape = np.shape(rb_psf)
     rb_xc, rb_yc, _, _, _, _ = centre_image(rb_psf,weight_func=weight_func)
     d_rb_xc = rb_xc - (rb_shape[0]-1.)/2
@@ -558,11 +559,21 @@ def get_model_psf(x_pix,
 
     # Determine how many subsampled pixels we'll have to shift the subsampled psf by
     
+    # galsim_rebin = tinytim_params["galsim_rebin"]
+    galsim_rebin = True
+    
     star_d_xc = star_d_xc - round(star_d_xc)
     star_d_yc = star_d_yc - round(star_d_yc)
     
-    x_shift = int(round(subsampling_factor * (star_d_xc - ss_model_rb_x_offset),0))
-    y_shift = int(round(subsampling_factor * (star_d_yc - ss_model_rb_y_offset),0))
+    x_shift = subsampling_factor * (star_d_xc - ss_model_rb_x_offset)
+    y_shift = subsampling_factor * (star_d_yc - ss_model_rb_y_offset)
+    
+    if galsim_rebin:
+        thresh = 0.05
+    else:
+        thresh = 0.5
+        x_shift = int(round(x_shift,0))
+        y_shift = int(round(y_shift,0))
     
     # Check this is good enough, and shift again as necessary
     loop_counter = 0
@@ -578,7 +589,8 @@ def get_model_psf(x_pix,
                                kernel,
                                x_shift=x_shift,
                                y_shift=y_shift,
-                               subsampling_factor=subsampling_factor)
+                               subsampling_factor=subsampling_factor,
+                               use_galsim=galsim_rebin)
                 
     
         # Get the zeroth-order moment for the rebinned psf
@@ -592,13 +604,17 @@ def get_model_psf(x_pix,
         d_yc_diff = star_d_yc - rb_model_d_d_yc
         d_yc_diff -= round(d_yc_diff)
         
-        if np.abs(d_xc_diff)<0.5/subsampling_factor and np.abs(d_yc_diff)<0.5/subsampling_factor:
+        if np.abs(d_xc_diff)<thresh/subsampling_factor and np.abs(d_yc_diff)<thresh/subsampling_factor:
             break
         
         loop_counter += 1
         
-        x_shift += int(round(subsampling_factor*d_xc_diff))
-        y_shift += int(round(subsampling_factor*d_yc_diff))
+        if galsim_rebin:
+            x_shift += subsampling_factor*d_xc_diff
+            y_shift += subsampling_factor*d_yc_diff
+        else:
+            x_shift += int(round(subsampling_factor*d_xc_diff))
+            y_shift += int(round(subsampling_factor*d_yc_diff))
         
     if loop_counter>3:
         pass
