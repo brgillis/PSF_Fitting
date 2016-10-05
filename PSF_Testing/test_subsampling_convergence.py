@@ -27,10 +27,8 @@
 import os
 import sys
 import numpy as np
-from multiprocessing import Pool, cpu_count
-from copy import deepcopy
 
-from psf_testing import magic_values as mv
+from psf_testing.arg_parser import get_arg_parser, parse_and_get_kwargs
 from psf_testing.test_psf import test_psf
 from psf_testing.smart_logging import get_default_logger
 
@@ -47,12 +45,9 @@ class test_psf_caller(object):
             logger.error("Exception when trying subsampling factor " + str(x) + ": " + str(e))
             raise
 
-image_dir = "/disk2/brg/Data/HST_Fields/"
-image_filename = "control_image_n.fits"
-results_dir = "/disk2/brg/Data/HST_Fields/subsampling_convergence_testing"
-num_grid_points = (32,16)
-parallelize = True
-galsim_rebin = True
+default_image_dir = "/disk2/brg/Data/HST_Fields/"
+default_image_filename = "control_image_n.fits"
+default_results_dir = "/disk2/brg/Data/HST_Fields/subsampling_convergence_testing"
 
 def main(argv):
     """ @TODO main docstring
@@ -62,34 +57,42 @@ def main(argv):
     
     # Check if we're debugging
     try:
-        import pydevd as unused_import
+        import pydevd as _
         debugging = True
     except ImportError:
         debugging = False
         
-    caller = test_psf_caller(os.path.join(image_dir,image_filename),
-                             num_grid_points=num_grid_points,
-                             min_lowest_separation=1.0,
-                             min_class_star=0.01,
-                             min_star_mag=22.,
-                             max_star_mag=25.,
-                             focus=mv.default_focus,
-                             norm_errors=True,
-                             min_star_snr=50.,
-                             results_dir=results_dir,
-                             parallelize=not debugging,
-                             galsim_rebin=galsim_rebin)
+    # Execute command-line parsing
+    parser = get_arg_parser()
+    kwargs, special_kwargs = parse_and_get_kwargs(parser,
+                                                  special_keys=("image_filename","image_list_filename",
+                                                                "image_dir","logging_level","disable_parallelization",
+                                                                "subsampling_factor"))
+    
+    if special_kwargs["image_filename"] is None:
+        image_filename = default_image_filename
+    else:
+        image_filename = special_kwargs["image_filename"]
         
-#     if debugging or not parallelize or True:
+    if special_kwargs["image_dir"] is None:
+        image_dir = default_image_dir
+    else:
+        image_dir = special_kwargs["image_dir"]
+        
+    if special_kwargs["results_dir"] is None:
+        results_dir = default_results_dir
+    else:
+        results_dir = special_kwargs["results_dir"]
+        
+    parallelize = not (special_kwargs["disable_parallelization"] or debugging)
+
+    caller = test_psf_caller(os.path.join(image_dir, image_filename),
+                             results_dir=results_dir,
+                             parallelize=parallelize,
+                             **kwargs)
+        
     for subsampling_factor in subsampling_factors:
         caller(subsampling_factor)
-#     else:
-#         nproc = max((cpu_count()-1,1))
-#         pool = Pool(processes=nproc,maxtasksperchild=1)
-#         pool.map(caller, subsampling_factors,chunksize=1)
-#         pool.close()
-#         pool.join()
-#         pool.terminate()
     
 
 if __name__ == "__main__":
