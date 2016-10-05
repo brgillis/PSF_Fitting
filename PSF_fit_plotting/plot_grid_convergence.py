@@ -37,9 +37,9 @@ matplotlib.rcParams['pdf.use14corefonts'] = True
 matplotlib.rcParams['text.usetex'] = True
 
 data_dir = "/disk2/brg/Data/HST_Fields/grid_convergence_testing"
-results_file_root = "jb6v09shq_sci2_cor"
+results_file_root = "control_image_n_rs"
 
-grid_sizes = [2048,1024,512,256,0]
+grid_sizes = (2048, 1024, 512, 256, 128, 64, 32, 1)
 
 figsize = (6, 6)
 fontsize = 12
@@ -78,8 +78,8 @@ def main(argv):
         Qp_diff_Z2s[i] = header["QPD_Z2"] 
         Qc_sum_Z2s[i] = header["QPS_Z2"] 
         Qc_diff_Z2s[i] = header["QPD_Z2"] 
-        Qs_sum_Z2s[i] = header["QSSNZ2"] 
-        Qs_diff_Z2s[i] = header["QSDNZ2"] 
+        Qs_sum_Z2s[i] = header["QSS_Z2"] 
+        Qs_diff_Z2s[i] = header["QSD_Z2"] 
 
     # Plot it up
     _fig = pyplot.figure(figsize=figsize)
@@ -100,13 +100,15 @@ def main(argv):
     ax.plot(indices, Qs_diff_Z2s, label=r"$Q_s^{(-)} Z^2$", linestyle="dashdot")
 
     ax.set_xlim([-0.5, len(indices)-0.5])
-    ax.set_ylim([0, 0.02])
+    # ax.set_ylim([0, 0.02])
+    
+    ax.set_yscale("log", nonposy='clip')
     
     ax.set_xlabel("Cell size",fontsize=fontsize)
     ax.set_xticks(indices)
     ax.set_xticklabels(grid_sizes)
 
-    ax.legend(loc="upper right",ncol=2)
+    ax.legend(loc="lower left",ncol=2)
     
     output_filename = output_filename_root + "." + output_extension
 

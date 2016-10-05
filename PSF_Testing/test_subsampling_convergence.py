@@ -48,10 +48,11 @@ class test_psf_caller(object):
             raise
 
 image_dir = "/disk2/brg/Data/HST_Fields/"
-image_filename = "control_image_n_rs.fits"
+image_filename = "control_image_n.fits"
 results_dir = "/disk2/brg/Data/HST_Fields/subsampling_convergence_testing"
 num_grid_points = (32,16)
 parallelize = True
+galsim_rebin = True
 
 def main(argv):
     """ @TODO main docstring
@@ -76,7 +77,8 @@ def main(argv):
                              norm_errors=True,
                              min_star_snr=50.,
                              results_dir=results_dir,
-                             parallelize=not debugging)
+                             parallelize=not debugging,
+                             galsim_rebin=galsim_rebin)
         
 #     if debugging or not parallelize or True:
     for subsampling_factor in subsampling_factors:

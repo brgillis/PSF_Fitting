@@ -559,8 +559,7 @@ def get_model_psf(x_pix,
 
     # Determine how many subsampled pixels we'll have to shift the subsampled psf by
     
-    # galsim_rebin = tinytim_params["galsim_rebin"]
-    galsim_rebin = True
+    galsim_rebin = tinytim_params["galsim_rebin"]
     
     star_d_xc = star_d_xc - round(star_d_xc)
     star_d_yc = star_d_yc - round(star_d_yc)

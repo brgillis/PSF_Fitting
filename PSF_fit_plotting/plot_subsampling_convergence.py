@@ -37,7 +37,9 @@ matplotlib.rcParams['pdf.use14corefonts'] = True
 matplotlib.rcParams['text.usetex'] = True
 
 data_dir = "/disk2/brg/Data/HST_Fields/subsampling_convergence_testing"
-results_file_root = "jb6v09shq_sci2_cor"
+results_file_root = "control_image_n_rs"
+
+max_ssf = 15
 
 figsize = (6, 6)
 fontsize = 12
@@ -51,7 +53,7 @@ def main(argv):
 
     results_root = os.path.join(data_dir, results_file_root)
 
-    ss_factors = np.linspace(1, 10, 10, endpoint=True).astype(int)
+    ss_factors = np.linspace(1, max_ssf, max_ssf, endpoint=True).astype(int)
 
     X2s = np.zeros_like(ss_factors, dtype=float)
     Qx_diff_Z2s = np.zeros_like(ss_factors, dtype=float)
@@ -97,12 +99,13 @@ def main(argv):
     ax.plot(ss_factors, Qs_sum_Z2s, label=r"$Q_s^{(+)} Z^2$", linestyle="dashdot")
     ax.plot(ss_factors, Qs_diff_Z2s, label=r"$Q_s^{(-)} Z^2$", linestyle="dashdot")
 
-    ax.set_xlim([0.5, 10.5])
-    ax.set_ylim([0, 0.02])
+    ax.set_xlim([0.5, max_ssf+0.5])
+    # ax.set_ylim([0, 0.02])
+    ax.set_yscale("log", nonposy='clip')
     
     ax.set_xlabel("Subsampling Factor")
 
-    ax.legend(loc="upper right",ncol=2)
+    ax.legend(loc="lower left",ncol=2)
     
     output_filename = output_filename_root + "." + output_extension
 

@@ -58,6 +58,7 @@ image_filename = "control_image_n.fits"
 results_dir = "/disk2/brg/Data/HST_Fields/grid_convergence_testing"
 subsampling_factor = 13
 parallelize = True
+galsim_rebin = True
 
 def main(argv):
     """ @TODO main docstring
@@ -82,7 +83,8 @@ def main(argv):
                              norm_errors=True,
                              min_star_snr=50.,
                              results_dir=results_dir,
-                             parallelize=True)
+                             parallelize=True,
+                             galsim_rebin=galsim_rebin)
 
     for grid_size in grid_sizes:
         caller(grid_size)

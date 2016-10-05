@@ -126,6 +126,8 @@ def main(argv):
                              " can greatly slow down repeated runs.")
     parser.add_argument("--subsampling_factor",type=int,default=mv.default_subsampling_factor,
                         help="The subsampling factor to use for TinyTim PSFs.")
+    parser.add_argument("--galsim_rebin", action="store_true",
+                        help="Use galsim to perform rebinning via interpolation. Will be slower but more accurate.")
     
     parser.add_argument("--force_update", action="store_true",
                         help="Force update of Sextractor catalogues and TinyTim PSFs.")

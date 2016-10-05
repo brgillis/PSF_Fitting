@@ -79,6 +79,7 @@ def test_psf(image_filename,
              save_stacks=True,
              refresh_only=False,
              subsampling_factor=mv.default_subsampling_factor,
+             galsim_rebin=mv.default_galsim_rebin,
              
              parallelize=False,
              
@@ -186,7 +187,8 @@ def test_psf(image_filename,
     tinytim_params = {"tinytim_path":tinytim_path,
                       "tinytim_data_path":tinytim_data_path,
                       "subsampling_factor":subsampling_factor,
-                      "chip":chip}
+                      "chip":chip,
+                      "galsim_rebin":galsim_rebin}
     
     kwargs = {"stars":stars,
 
