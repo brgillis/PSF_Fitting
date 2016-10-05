@@ -24,6 +24,7 @@
 
 import os
 import sys
+from argparse import ArgumentParser
 
 from astropy.io import fits
 import matplotlib
@@ -37,21 +38,29 @@ matplotlib.rcParams['pdf.use14corefonts'] = True
 matplotlib.rcParams['text.usetex'] = True
 
 data_dir = "/disk2/brg/Data/HST_Fields/grid_convergence_testing"
-results_file_root = "control_image_n_rs"
+default_results_file_root = "control_image_n"
 
 grid_sizes = (2048, 1024, 512, 256, 128, 64, 32, 1)
 
 figsize = (6, 6)
 fontsize = 12
 
-output_filename_root = "grid_convergence_test"
-output_extension = "eps"
+default_output_filename_root = "grid_convergence_test"
+default_output_extension = "eps"
 
 def main(argv):
     """ @TODO main docstring
     """
+    
+    parser = ArgumentParser()
+    
+    parser.add_argument("--results_file_root",default=default_results_file_root)
+    parser.add_argument("--output_filename_root",default=default_output_filename_root)
+    parser.add_argument("--output_extension",default=default_output_extension)
+    
+    args = parser.parse_args()
 
-    results_root = os.path.join(data_dir, results_file_root)
+    results_root = os.path.join(data_dir, args.results_file_root)
     
     indices = range(len(grid_sizes))
 
@@ -110,9 +119,9 @@ def main(argv):
 
     ax.legend(loc="lower left",ncol=2)
     
-    output_filename = output_filename_root + "." + output_extension
+    output_filename = args.output_filename_root + "." + args.output_extension
 
-    pyplot.savefig(output_filename, format=output_extension, bbox_inches="tight", pad_inches=0.05)
+    pyplot.savefig(output_filename, format=args.output_extension, bbox_inches="tight", pad_inches=0.05)
 
     pyplot.show()
 
