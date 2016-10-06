@@ -37,8 +37,9 @@ from psf_testing.test_psf import test_psf
 image_size = (4096, 2048)
 
 class test_psf_caller(object):
-    def __init__(self, image_filename, *args, **kwargs):
+    def __init__(self,image_filename,extra_tag,*args,**kwargs):
         self.image_filename = image_filename
+        self.extra_tag = extra_tag
         self.args = args
         self.kwargs = kwargs
     def __call__(self, x):
@@ -47,7 +48,9 @@ class test_psf_caller(object):
                 num_grid_points = (0, 0)
             else:
                 num_grid_points = tuple(np.divide(image_size, x))
-            test_psf(self.image_filename, num_grid_points=num_grid_points, results_tag="gp" + str(x), *self.args, **self.kwargs)
+            test_psf(self.image_filename, num_grid_points=num_grid_points,
+                     results_tag=self.extra_tag + "gp" + str(x),
+                     *self.args, **self.kwargs)
         except Exception as e:
             logger = get_default_logger()
             logger.error("Exception when trying grid points " + str(x) + ": " + str(e))
@@ -75,7 +78,7 @@ def main(argv):
     kwargs, special_kwargs = parse_and_get_kwargs(parser,
                                                   special_keys=("image_filename","image_list_filename",
                                                                 "image_dir","logging_level","disable_parallelization",
-                                                                "num_grid_points"))
+                                                                "num_grid_points","results_dir","results_tag"))
     
     if special_kwargs["image_filename"] is None:
         image_filename = default_image_filename
@@ -92,15 +95,23 @@ def main(argv):
     else:
         results_dir = special_kwargs["results_dir"]
         
+    if kwargs["galsim_rebin"]:
+        extra_tag = "grb_"
+    else:
+        extra_tag = ""
+        
     parallelize = not (special_kwargs["disable_parallelization"] or debugging)
 
     caller = test_psf_caller(os.path.join(image_dir, image_filename),
+                             extra_tag,
                              results_dir=results_dir,
                              parallelize=parallelize,
                              **kwargs)
 
     for grid_size in grid_sizes:
         caller(grid_size)
+    
+    print("Finished grid convergence testing on " + image_filename + " with extra results tag " + extra_tag + ".")
 
 
 if __name__ == "__main__":

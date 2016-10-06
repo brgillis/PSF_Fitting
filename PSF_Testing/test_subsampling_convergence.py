@@ -33,13 +33,15 @@ from psf_testing.test_psf import test_psf
 from psf_testing.smart_logging import get_default_logger
 
 class test_psf_caller(object):
-    def __init__(self,image_filename,*args,**kwargs):
+    def __init__(self,image_filename,extra_tag,*args,**kwargs):
         self.image_filename = image_filename
+        self.extra_tag = extra_tag
         self.args = args
         self.kwargs = kwargs
     def __call__(self,x):
         try:
-            test_psf(self.image_filename,subsampling_factor=x,results_tag="ss"+str(x),*self.args,**self.kwargs)
+            test_psf(self.image_filename,subsampling_factor=x,results_tag=self.extra_tag+"ss"+str(x),
+                     *self.args,**self.kwargs)
         except Exception as e:
             logger = get_default_logger()
             logger.error("Exception when trying subsampling factor " + str(x) + ": " + str(e))
@@ -67,7 +69,7 @@ def main(argv):
     kwargs, special_kwargs = parse_and_get_kwargs(parser,
                                                   special_keys=("image_filename","image_list_filename",
                                                                 "image_dir","logging_level","disable_parallelization",
-                                                                "subsampling_factor"))
+                                                                "subsampling_factor","results_dir","results_tag"))
     
     if special_kwargs["image_filename"] is None:
         image_filename = default_image_filename
@@ -84,9 +86,15 @@ def main(argv):
     else:
         results_dir = special_kwargs["results_dir"]
         
+    if kwargs["galsim_rebin"]:
+        extra_tag = "grb_"
+    else:
+        extra_tag = ""
+        
     parallelize = not (special_kwargs["disable_parallelization"] or debugging)
 
     caller = test_psf_caller(os.path.join(image_dir, image_filename),
+                             extra_tag,
                              results_dir=results_dir,
                              parallelize=parallelize,
                              **kwargs)
@@ -94,6 +102,7 @@ def main(argv):
     for subsampling_factor in subsampling_factors:
         caller(subsampling_factor)
     
+    print("Finished subsampling convergence testing on " + image_filename + " with extra results tag " + extra_tag + ".")
 
 if __name__ == "__main__":
     main(sys.argv)

@@ -168,7 +168,7 @@ default_model_psf_width = 2.0
 default_model_psf_spec_type = (1, 15) # K-type star 15
 default_detector = 15 # WFC
 default_filter = "f606w"
-default_subsampling_factor = 6
+default_subsampling_factor = 4
 default_galsim_rebin = False
 default_tinytim_params = {"tinytim_data_path":default_tinytim_data_path,
                           "tinytim_path":default_tinytim_path,
