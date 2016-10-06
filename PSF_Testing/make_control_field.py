@@ -30,13 +30,14 @@ from psf_testing.control_field import make_control_field
 def main(argv):
     """ @TODO main docstring
     """
-    make_control_field("/disk2/brg/Data/HST_Fields/control_image_nf.fits",
+    make_control_field("/disk2/brg/Data/HST_Fields/control_image_n_b3.fits",
                        random_seed=3,
-                       num_grid_points=(0,0),
+                       num_grid_points=(0, 0),
                        sky_level=0.,
                        read_noise=51., # Approximately right for background, but doesn't include unresolved sources
                        suppress_noise=True,
                        num_stars=1000,
+                       binary_fraction=0.3,
                        subsampling_factor=20,
                        randomize_spectral_type=False,
                        use_cache=True)
