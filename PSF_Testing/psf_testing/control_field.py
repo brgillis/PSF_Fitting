@@ -79,7 +79,7 @@ def make_control_field(image_filename,
                        min_star_mag=mv.default_min_star_mag,
                        max_star_mag=mv.default_max_star_mag,
                        binary_fraction=0.,
-                       binary_r_max=2.,
+                       binary_r_max=1.,
 
                        suppress_noise=False,
 
@@ -130,8 +130,8 @@ def make_control_field(image_filename,
         r = r_deviate ** 2 * binary_r_max
         theta = theta_deviate * 2 * np.pi
 
-        extra_star["xp"] += r * np.cos(theta)
-        extra_star["yp"] += r * np.sin(theta)
+        extra_star["xp"] = star[i]["xp"] + r * np.cos(theta)
+        extra_star["yp"] = star[i]["yp"] + r * np.sin(theta)
 
         stars.append(extra_star)
 
