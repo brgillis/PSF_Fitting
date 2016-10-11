@@ -24,6 +24,7 @@
 
 import os
 import sys
+import subprocess as sbp
 from argparse import ArgumentParser
 
 from astropy.io import fits
@@ -48,6 +49,10 @@ fontsize = 12
 default_output_filename_root = "grid_convergence_test"
 default_output_extension = "eps"
 
+paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/PSF_Model_Testing/"
+
+num_images = 10
+
 def main(argv):
     """ @TODO main docstring
     """
@@ -63,32 +68,41 @@ def main(argv):
     results_root = os.path.join(data_dir, args.results_file_root)
     
     indices = range(len(grid_sizes))
-
-    X2s = np.zeros_like(indices, dtype=float)
-    Qx_diff_Z2s = np.zeros_like(indices, dtype=float)
-    Qy_diff_Z2s = np.zeros_like(indices, dtype=float)
-    Qp_sum_Z2s = np.zeros_like(indices, dtype=float)
-    Qp_diff_Z2s = np.zeros_like(indices, dtype=float)
-    Qc_sum_Z2s = np.zeros_like(indices, dtype=float)
-    Qc_diff_Z2s = np.zeros_like(indices, dtype=float)
-    Qs_sum_Z2s = np.zeros_like(indices, dtype=float)
-    Qs_diff_Z2s = np.zeros_like(indices, dtype=float)
-
-    for i in indices:
-
-        filename = results_root + "_gp" + str(grid_sizes[i]) + "_results.fits"
-
-        header = fits.open(filename)[1].header
-
-        X2s[i] = header["X_SQR"]
-        Qx_diff_Z2s[i] = header["QXD_Z2"]
-        Qy_diff_Z2s[i] = header["QYD_Z2"]
-        Qp_sum_Z2s[i] = header["QPS_Z2"] 
-        Qp_diff_Z2s[i] = header["QPD_Z2"] 
-        Qc_sum_Z2s[i] = header["QPS_Z2"] 
-        Qc_diff_Z2s[i] = header["QPD_Z2"] 
-        Qs_sum_Z2s[i] = header["QSS_Z2"] 
-        Qs_diff_Z2s[i] = header["QSD_Z2"] 
+    
+    labels = ("X2",
+              "Qx_diff_Z2s","Qx_diff_Z2s",
+              "Qp_sum_Z2s","Qp_diff_Z2s",
+              "Qc_sum_Z2s","Qc_diff_Z2s",
+              "Qs_sum_Z2s","Qs_diff_Z2s")
+    
+    vals = {}
+    for label in labels:
+        vals[label] = np.zeros((len(grid_sizes),num_images), dtype=float)
+    
+    for n in range(num_images):
+        
+        results_root_n = results_root.replace("_n","_"+str(n))
+        
+        for i in indices:
+        
+            filename = results_root_n + "_gp" + str(grid_sizes[i]) + "_results.fits"
+        
+            header = fits.open(filename)[1].header
+        
+            vals["X2"][i,n] = header["X_SQR"]
+            vals["Qx_diff_Z2"][i,n] = header["QXD_Z2"]
+            vals["Qy_diff_Z2"][i,n] = header["QYD_Z2"]
+            vals["Qp_sum_Z2"][i,n] = header["QPS_Z2"] 
+            vals["Qp_diff_Z2"][i,n] = header["QPD_Z2"] 
+            vals["Qc_sum_Z2"][i,n] = header["QPS_Z2"] 
+            vals["Qc_diff_Z2"][i,n] = header["QPD_Z2"] 
+            vals["Qs_sum_Z2"][i,n] = header["QSS_Z2"] 
+            vals["Qs_diff_Z2"][i,n] = header["QSD_Z2"]
+            
+    # Get the means
+    val_means = {}
+    for label in labels:
+        val_means[label] = vals[label].mean(axis=1)
 
     # Plot it up
     _fig = pyplot.figure(figsize=figsize)
@@ -98,15 +112,15 @@ def main(argv):
 
     ax = pyplot.subplot(gs[0])
 
-    ax.plot(indices, X2s, label="$X^2$", color="black")
-    ax.plot(indices, Qx_diff_Z2s, label=r"$Q_x^{(-)} Z^2$", linestyle="dotted")
-    ax.plot(indices, Qy_diff_Z2s, label=r"$Q_y^{(-)} Z^2$", linestyle="dotted")
-    ax.plot(indices, Qp_sum_Z2s, label=r"$Q_+^{(+)} Z^2$", linestyle="dashed")
-    ax.plot(indices, Qp_diff_Z2s, label=r"$Q_+^{(-)} Z^2$", linestyle="dashed")
-    ax.plot(indices, Qc_sum_Z2s, label=r"$Q_{\times}^{(+)} Z^2$", linestyle="dashed")
-    ax.plot(indices, Qc_diff_Z2s, label=r"$Q_{\times}^{(-)} Z^2$", linestyle="dashed")
-    ax.plot(indices, Qs_sum_Z2s, label=r"$Q_s^{(+)} Z^2$", linestyle="dashdot")
-    ax.plot(indices, Qs_diff_Z2s, label=r"$Q_s^{(-)} Z^2$", linestyle="dashdot")
+    ax.plot(indices, val_means["X2"], label="$X^2$", color="black")
+    ax.plot(indices, val_means["Qx_diff_Z2"], label=r"$Q_x^{(-)} Z^2$", linestyle="dotted")
+    ax.plot(indices, val_means["Qy_diff_Z2"], label=r"$Q_y^{(-)} Z^2$", linestyle="dotted")
+    ax.plot(indices, val_means["Qp_sum_Z2"], label=r"$Q_+^{(+)} Z^2$", linestyle="dashed")
+    ax.plot(indices, val_means["Qp_diff_Z2"], label=r"$Q_+^{(-)} Z^2$", linestyle="dashed")
+    ax.plot(indices, val_means["Qc_sum_Z2"], label=r"$Q_{\times}^{(+)} Z^2$", linestyle="dashed")
+    ax.plot(indices, val_means["Qc_diff_Z2"], label=r"$Q_{\times}^{(-)} Z^2$", linestyle="dashed")
+    ax.plot(indices, val_means["Qs_sum_Z2"], label=r"$Q_s^{(+)} Z^2$", linestyle="dashdot")
+    ax.plot(indices, val_means["Qs_diff_Z2"], label=r"$Q_s^{(-)} Z^2$", linestyle="dashdot")
 
     ax.set_xlim([-0.5, len(indices)-0.5])
     # ax.set_ylim([0, 0.02])
@@ -122,6 +136,10 @@ def main(argv):
     output_filename = args.output_filename_root + "." + args.output_extension
 
     pyplot.savefig(output_filename, format=args.output_extension, bbox_inches="tight", pad_inches=0.05)
+    
+    if args.output_extension == "eps":
+        cmd = "cp " + output_filename + " " + paper_location
+        sbp.call(cmd,shell=True)
 
     pyplot.show()
 

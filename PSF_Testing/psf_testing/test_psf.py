@@ -211,18 +211,19 @@ def test_psf(image_filename,
               "norm_errors":norm_errors,
               "seed":seed}
 
-    # If we're testing a single focus value, do that now
+    # Are we fitting all params?
     if fit_all_params:
         kwargs_and_params = kwargs.copy()
         kwargs_and_params.update(mv.default_params)
         test_results, fitting_record = fit_best_params_and_test_psf(focus_penalty_sigma=focus_penalty_sigma,
                                                                     penalty_sigma=penalty_sigma,
                                                                     **kwargs_and_params)
+    # Are we testing a specific focus value?
     elif focus is not None:
         test_results = test_psf_for_params(focus=focus,
                                            **kwargs)
         fitting_record = None
-    # Otherwise, call the fitting function
+    # Otherwise, call the focus fitting function
     else:
         test_results, fitting_record = fit_best_focus_and_test_psf(focus_penalty_sigma=focus_penalty_sigma,
 

@@ -98,13 +98,12 @@ sex_cat_yp_max_col = 8
 sex_cat_num_cols = 24
 
 # Focus fitting values
-default_focus = 0.0
-default_init_focus = -1.0
+default_focus = -2.0
 default_min_focus = -6.0
 default_max_focus = 6.0
 default_focus_samples = 4
 default_focus_precision = 0.1
-default_num_grid_points = (8, 4) # (x,y) in fits ordering, (y,x) in C ordering
+default_num_grid_points = (16, 8) # (x,y) in fits ordering, (y,x) in C ordering
 
 # Param fitting values
 default_params = {"z2":0.,
@@ -129,6 +128,9 @@ default_params = {"z2":0.,
                   "spherical_5th":0.009,
                   "kernel_adjustment":1.0,
                   "kernel_adjustment_ratio":1.0,
+                  "guiding_error_mag1":0.,
+                  "guiding_error_mag2":0.,
+                  "guiding_error_angle":0,
                   }
 default_penalty_sigma = 0
 default_focus_penalty_sigma = 0
@@ -168,7 +170,7 @@ default_model_psf_width = 2.0
 default_model_psf_spec_type = (1, 15) # K-type star 15
 default_detector = 15 # WFC
 default_filter = "f606w"
-default_subsampling_factor = 4
+default_subsampling_factor = 5
 default_galsim_rebin = False
 default_tinytim_params = {"tinytim_data_path":default_tinytim_data_path,
                           "tinytim_path":default_tinytim_path,

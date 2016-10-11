@@ -25,7 +25,7 @@
 import numpy as np
 from scipy.stats import norm
 
-def remove_outliers(array,min_remaining_members=2):
+def remove_outliers(array,min_remaining_members=2,thresh=0.5):
     """ Removes outliers from a list of values, using Chauvenet's criterion.
     
         Requires: array <ndarray>
@@ -56,7 +56,7 @@ def remove_outliers(array,min_remaining_members=2):
         
         probs = 1-norm.cdf(abs(marray - mean) / sigma)
         
-        outliers = probs*num_tot < 0.5
+        outliers = probs*num_tot < thresh
         
         # Do we have any new outliers?
         if(np.any(outliers[~marray.mask])):

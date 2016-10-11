@@ -27,20 +27,40 @@
 import sys
 from psf_testing.control_field import make_control_field
 
+num_fields = 100
+
 def main(argv):
     """ @TODO main docstring
     """
-    make_control_field("/disk2/brg/Data/HST_Fields/control_image_n_b3.fits",
-                       random_seed=3,
-                       num_grid_points=(0, 0),
-                       sky_level=0.,
-                       read_noise=51., # Approximately right for background, but doesn't include unresolved sources
-                       suppress_noise=True,
-                       num_stars=1000,
-                       binary_fraction=0.3,
-                       subsampling_factor=20,
-                       randomize_spectral_type=False,
-                       use_cache=True)
+    # Check if we're debugging
+    try:
+        import pydevd as _
+        debugging = True
+    except ImportError:
+        debugging = False
+        
+    for i in range(num_fields):
+        
+        focus = -6.0 + (10.0*i)/num_fields
+        
+        make_control_field("/disk2/brg/Data/HST_Fields/control_image_"+str(i)+".fits",
+                   random_seed=10*(i+1),
+                   num_grid_points=(0, 0),
+                   focus=focus,
+                   sky_level=0.,
+                   read_noise=51., # Approximately right for background, but doesn't include unresolved sources
+                   # base_image="/disk2/brg/Data/HST_Fields/mock_galaxies_"+str(i)+".fits",
+                   suppress_noise=False,
+                   num_stars=1000,
+                   binary_fraction=0.0,
+                   binary_r_max=1.,
+                   subsampling_factor=10,
+                   guiding_error_mag1=0.000/0.05,
+                   guiding_error_mag2=0.000/0.05,
+                   guiding_error_angle=0.,
+                   randomize_spectral_type=False,
+                   use_cache=True,
+                   parallelize=not debugging)
     pass
 
 if __name__ == "__main__":

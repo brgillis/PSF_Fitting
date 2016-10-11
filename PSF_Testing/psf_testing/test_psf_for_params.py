@@ -247,15 +247,29 @@ def test_psf_for_params(stars,
         for star in stars:
             new_point = model_scheme.get_position_to_use(star.x_pix,star.y_pix)
             points.add(new_point)
-        
-        pool = multiprocessing.Pool(processes=multiprocessing.cpu_count(),maxtasksperchild=1)
-        pool.map(get_psf_caller(tinytim_params_set=frozenset(tinytim_params.items()),
+    
+        rounded_params = {}
+    
+        for param in params:
+            if param in mv.default_params:
+                if (not param=="kernel_adjustment" and not param=="kernel_adjustment_ratio" and
+                    not param=="guiding_error_mag1" and not param=="guiding_error_mag2" and
+                    not param=="guiding_error_angle"):
+                    rounded_params[param] = round(params[param],4)
+            
+        caller = get_psf_caller(tinytim_params_set=frozenset(tinytim_params.items()),
                                 weight_func=prim_weight_func,
                                 focus=focus,
-                                use_cache=use_cache),points,chunksize=1)
+                                use_cache=use_cache,
+                                **rounded_params)
+        
+        pool = multiprocessing.Pool(processes=multiprocessing.cpu_count(),maxtasksperchild=128)
+        pool.map(caller,points,chunksize=1)
         pool.close()
         pool.join()
         pool.terminate()
+    else:
+        pass
     
     # Go through and test the model PSF for each star. If parallelizing and not using the cache, this
     # is where we'll break it up into parallel processes
@@ -272,6 +286,7 @@ def test_psf_for_params(stars,
                       seed_factor,
                       num_stars,
                       save_models,
+                      focus=focus,
                       **params)
     else:
         pool = multiprocessing.Pool(processes=multiprocessing.cpu_count(),maxtasksperchild=1)
@@ -285,6 +300,7 @@ def test_psf_for_params(stars,
                                               seed_factor,
                                               num_stars,
                                               save_models,
+                                              focus=focus,
                                               **params),
                              range(num_stars),
                              chunksize=1)

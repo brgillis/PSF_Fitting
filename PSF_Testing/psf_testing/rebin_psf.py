@@ -37,12 +37,22 @@ except ImportError as _e:
     from Release import cIceBRGpy
     
 def galsim_rebin(a,
-                 x_shift=0,
-                 y_shift=0,
-                 subsampling_factor = mv.default_subsampling_factor):
+                 x_shift = 0,
+                 y_shift = 0,
+                 subsampling_factor = mv.default_subsampling_factor,
+                 guiding_error_mag1 = 0.,
+                 guiding_error_mag2 = 0.,
+                 guiding_error_angle = 0.,):
     
     # Interpret the subsampled image as an interpolated image
     ss_prof = galsim.InterpolatedImage(galsim.Image(a,scale=1./subsampling_factor))
+    
+    # Convolve by guiding error if appropriate
+    if guiding_error_mag1 != 0. or guiding_error_mag2:
+        guiding_error_prof = galsim.Box(guiding_error_mag1,guiding_error_mag2)
+        guiding_error_prof = guiding_error_prof.rotate(guiding_error_angle*galsim.degrees)
+        
+        ss_prof = galsim.Convolve([ss_prof,guiding_error_prof])
     
     # Get the rebinned shape
     ss_nx, ss_ny = np.shape(a)
@@ -62,10 +72,17 @@ def rebin(a,
           y_shift=0,
           subsampling_factor = mv.default_subsampling_factor,
           conserve=False,
-          use_galsim=True):
+          use_galsim=True,
+          guiding_error_mag1=0.,
+          guiding_error_mag2=0.,
+          guiding_error_angle=0.,):
+    
+    if (guiding_error_mag1 != 0. or guiding_error_mag2 != 0.) and not use_galsim:
+        raise Exception("Error: Galsim must be used for rebinning if guiding error is nonzero.")
 
     if use_galsim:
-        rebinned_array = galsim_rebin(a,x_shift,y_shift,subsampling_factor)
+        rebinned_array = galsim_rebin(a,x_shift,y_shift,subsampling_factor,guiding_error_mag1,
+                                      guiding_error_mag2,guiding_error_angle)
     else:
         # If we want to conserve, do so by operating on a copy of the array
         if(conserve):

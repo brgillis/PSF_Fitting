@@ -370,6 +370,9 @@ def get_cached_subsampled_psf(tinytim_params_set,
     tinytim_params = {}
     for i in tinytim_params_set:
         tinytim_params[i[0]] = i[1]
+        
+    if focus==mv.default_focus:
+        raise Exception("Shouldn't be testing this focus!")
 
     # Determine the name for the subsampled model PSF file
     subsampled_name = os.path.join(tinytim_params["tinytim_data_path"],
@@ -481,11 +484,6 @@ def get_model_psf(x_pix,
                    kernel_adjustment=mv.default_params["kernel_adjustment"],
                    kernel_adjustment_ratio=mv.default_params["kernel_adjustment_ratio"],
                    use_cache=True,
-                   n = [0],
-                   sum_d_d_xc = [0.],
-                   sum_d_d_yc = [0.],
-                   sum_d_d_xc_sq = [0.],
-                   sum_d_d_yc_sq = [0.],
                    **params):
     
     if scheme is None:
@@ -514,8 +512,10 @@ def get_model_psf(x_pix,
     
     for param in params:
         if param in mv.default_params:
-            if not param=="kernel_adjustment" and not param=="kernel_adjustment_ratio":
-                rounded_params[param] = round(params[param],5)
+            if (not param=="kernel_adjustment" and not param=="kernel_adjustment_ratio" and
+                not param=="guiding_error_mag1" and not param=="guiding_error_mag2" and
+                not param=="guiding_error_angle"):
+                rounded_params[param] = round(params[param],4)
 
     subsampled_model = get_cached_subsampled_psf(frozenset(tinytim_params.items()),
                                                  weight_func,
@@ -559,7 +559,19 @@ def get_model_psf(x_pix,
 
     # Determine how many subsampled pixels we'll have to shift the subsampled psf by
     
-    galsim_rebin = tinytim_params["galsim_rebin"]
+    if "guiding_error_mag1" in params:
+        guiding_error_mag1 = params["guiding_error_mag1"]
+    else:
+        guiding_error_mag1 = 0
+    if "guiding_error_mag2" in params:
+        guiding_error_mag2 = params["guiding_error_mag2"]
+    else:
+        guiding_error_mag2 = 0
+    if "guiding_error_angle" in params:
+        guiding_error_angle = params["guiding_error_angle"]
+    else:
+        guiding_error_angle = 0
+    galsim_rebin = tinytim_params["galsim_rebin"] or guiding_error_mag1 != 0. or guiding_error_mag2 != 0.
     
     star_d_xc = star_d_xc - round(star_d_xc)
     star_d_yc = star_d_yc - round(star_d_yc)
@@ -589,7 +601,11 @@ def get_model_psf(x_pix,
                                x_shift=x_shift,
                                y_shift=y_shift,
                                subsampling_factor=subsampling_factor,
-                               use_galsim=galsim_rebin)
+                               use_galsim=galsim_rebin,
+                               guiding_error_mag1=guiding_error_mag1,
+                               guiding_error_mag2=guiding_error_mag2,
+                               guiding_error_angle=guiding_error_angle,
+                               )
                 
     
         # Get the zeroth-order moment for the rebinned psf
@@ -619,11 +635,5 @@ def get_model_psf(x_pix,
         pass
         
     scaled_model = rebinned_model * star_m0 / rb_model_m0
-        
-    n[0] += 1
-    sum_d_d_xc[0] += d_xc_diff
-    sum_d_d_yc[0] += d_yc_diff
-    sum_d_d_xc_sq[0] += (d_xc_diff)**2
-    sum_d_d_yc_sq[0] += (d_yc_diff)**2
 
     return scaled_model

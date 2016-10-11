@@ -103,12 +103,12 @@ def fit_best_focus_and_test_psf(stars,
         if focus_penalty_sigma==0:
             penalty = 0
         else:
-            penalty = ((focus-mv.default_init_focus)/focus_penalty_sigma)**2
+            penalty = ((focus-mv.default_focus)/focus_penalty_sigma)**2
         return get_X2_of_test_results(test_results) + penalty
     
     # Calculate (and cache) the value for focus 0 first, so we'll always use the
     # outliers list for that
-    get_X2_for_focus(mv.default_init_focus)
+    get_X2_for_focus(mv.default_focus)
 
     # Initialize the test
 

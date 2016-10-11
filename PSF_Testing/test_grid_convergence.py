@@ -60,6 +60,8 @@ default_image_dir = "/disk2/brg/Data/HST_Fields/"
 default_image_filename = "control_image_n.fits"
 default_results_dir = "/disk2/brg/Data/HST_Fields/grid_convergence_testing"
 
+default_num_images = 10
+
 def main(argv):
     """ @TODO main docstring
     """
@@ -75,15 +77,14 @@ def main(argv):
         
     # Execute command-line parsing
     parser = get_arg_parser()
+    
+    parser.add_argument("--num_images",default=default_num_images)
+    
     kwargs, special_kwargs = parse_and_get_kwargs(parser,
                                                   special_keys=("image_filename","image_list_filename",
                                                                 "image_dir","logging_level","disable_parallelization",
-                                                                "num_grid_points","results_dir","results_tag"))
-    
-    if special_kwargs["image_filename"] is None:
-        image_filename = default_image_filename
-    else:
-        image_filename = special_kwargs["image_filename"]
+                                                                "num_grid_points","results_dir","results_tag",
+                                                                "num_images"))
         
     if special_kwargs["image_dir"] is None:
         image_dir = default_image_dir
@@ -100,18 +101,30 @@ def main(argv):
     else:
         extra_tag = ""
         
+    if special_kwargs["num_images"] is None:
+        num_images = default_num_images
+    else:
+        num_images = special_kwargs["num_images"]
+        
     parallelize = not (special_kwargs["disable_parallelization"] or debugging)
 
-    caller = test_psf_caller(os.path.join(image_dir, image_filename),
-                             extra_tag,
-                             results_dir=results_dir,
-                             parallelize=parallelize,
-                             **kwargs)
-
-    for grid_size in grid_sizes:
-        caller(grid_size)
+    for i in range(num_images):
     
-    print("Finished grid convergence testing on " + image_filename + " with extra results tag " + extra_tag + ".")
+        if special_kwargs["image_filename"] is None:
+            image_filename = default_image_filename.replace("_n","_"+str(i))
+        else:
+            image_filename = special_kwargs["image_filename"].replace("_n","_"+str(i))
+
+        caller = test_psf_caller(os.path.join(image_dir, image_filename),
+                                 extra_tag,
+                                 results_dir=results_dir,
+                                 parallelize=parallelize,
+                                 **kwargs)
+    
+        for grid_size in grid_sizes:
+            caller(grid_size)
+        
+        print("Finished grid convergence testing on " + image_filename + " with extra results tag " + extra_tag + ".")
 
 
 if __name__ == "__main__":

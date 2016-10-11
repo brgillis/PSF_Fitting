@@ -51,7 +51,7 @@ def get_params_penalty(focus,
     if focus_penalty_sigma==0:
         penalty = 0
     else:
-        penalty = ((focus-mv.default_init_focus)/focus_penalty_sigma)**2
+        penalty = ((focus-mv.default_focus)/focus_penalty_sigma)**2
     
     if penalty_sigma > 0:
         for param in params:
@@ -64,7 +64,7 @@ def fit_best_params_and_test_psf(stars,
                                 image_filename,
                                 image=None,
 
-                                focus=mv.default_init_focus,
+                                focus=-1.0,
                                 penalty_sigma=mv.default_penalty_sigma,
                                 focus_penalty_sigma=mv.default_focus_penalty_sigma,
                                 
@@ -211,31 +211,31 @@ def fit_best_params_and_test_psf(stars,
     
     # Start by using tunneling_mcmc to find a good starting point
     
-    from psf_testing.tunneling_mcmc_minimize import tunneling_mcmc_minimize
-    
-    steps = 0.02*param_array
-    
-    best_tuple = None
-    
-    param_mins = param_array - 5.*steps
-    param_maxes = param_array + 5.*steps
-    
-    num_trials = len(param_array)
-    
-    for i in range(num_trials):
-        test_tuple = tunneling_mcmc_minimize(get_X2_for_params, param_array,
-                                             steps,
-                                             param_mins,
-                                             param_maxes,
-                                             100,
-                                             seed=num_trials*seed+i)
-        if best_tuple is None or test_tuple[1]<best_tuple[1]:
-            best_tuple = test_tuple
+#     from psf_testing.tunneling_mcmc_minimize import tunneling_mcmc_minimize
+#     
+#     steps = 0.02*param_array
+#     
+#     best_tuple = None
+#     
+#     param_mins = param_array - 5.*steps
+#     param_maxes = param_array + 5.*steps
+#     
+#     num_trials = len(param_array)
+#     
+#     for i in range(num_trials):
+#         test_tuple = tunneling_mcmc_minimize(get_X2_for_params, param_array,
+#                                              steps,
+#                                              param_mins,
+#                                              param_maxes,
+#                                              100,
+#                                              seed=num_trials*seed+i)
+#         if best_tuple is None or test_tuple[1]<best_tuple[1]:
+#             best_tuple = test_tuple
 
     # Store fitting record now
     fitting_record = []
     
-    best_param_array = minimize(get_X2_for_params, best_tuple[0], method='Nelder-Mead',
+    best_param_array = minimize(get_X2_for_params, param_array, method='Nelder-Mead',
                                 options={'xtol':0.01,'ftol':100}).x
 
     best_focus = focus_scale*(best_param_array[0] - 1)

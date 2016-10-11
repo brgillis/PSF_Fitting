@@ -74,12 +74,17 @@ def make_control_field(image_filename,
                        zeropoint=mv.zeropoint,
                        read_noise=mv.read_noise,
                        sky_level=mv.sky_level,
+                       base_image=None,
 
                        num_stars=1000,
                        min_star_mag=mv.default_min_star_mag,
                        max_star_mag=mv.default_max_star_mag,
                        binary_fraction=0.,
                        binary_r_max=1.,
+                       
+                       guiding_error_mag1=0.,
+                       guiding_error_mag2=0.,
+                       guiding_error_angle=0.,
 
                        suppress_noise=False,
 
@@ -95,12 +100,17 @@ def make_control_field(image_filename,
     if tinytim_params is None:
         tinytim_params = mv.default_tinytim_params
     tinytim_params['subsampling_factor'] = subsampling_factor
+    tinytim_params['galsim_rebin'] = True
 
     scheme = psf_model_scheme(focus=focus,
                               num_grid_points=num_grid_points,
                               image_shape=image_shape)
 
-    image = galsim.Image(image_shape[0], image_shape[1], scale=scale)
+    if base_image is None:
+        image = galsim.Image(image_shape[0], image_shape[1], scale=scale)
+    else:
+        image = galsim.Image(galsim.fits.readFile(base_image)[0].data,scale=scale)
+        assert np.shape(image.array) == (image_shape[1], image_shape[0])
 
     im_zeropoint = zeropoint + 2.5 * np.log10(exp_time)
 
@@ -130,8 +140,8 @@ def make_control_field(image_filename,
         r = r_deviate ** 2 * binary_r_max
         theta = theta_deviate * 2 * np.pi
 
-        extra_star["xp"] = star[i]["xp"] + r * np.cos(theta)
-        extra_star["yp"] = star[i]["yp"] + r * np.sin(theta)
+        extra_star["xp"] = stars[i]["xp"] + r * np.cos(theta)
+        extra_star["yp"] = stars[i]["yp"] + r * np.sin(theta)
 
         stars.append(extra_star)
 
@@ -151,7 +161,7 @@ def make_control_field(image_filename,
         pool.join()
         pool.terminate()
 
-    for i in range(num_stars):
+    for i in range(len(stars)):
 
         # Calculate the flux for this star given its magnitude
         flux = 10.0 ** (0.4 * (im_zeropoint - stars[i]["mag"]))
@@ -160,7 +170,10 @@ def make_control_field(image_filename,
                                  scheme=scheme,
                                  tinytim_params=tinytim_params,
                                  use_cache=use_cache,
-                                 spec_type=stars[i]["spec_type"])
+                                 spec_type=stars[i]["spec_type"],
+                                 guiding_error_mag1=guiding_error_mag1,
+                                 guiding_error_mag2=guiding_error_mag2,
+                                 guiding_error_angle=guiding_error_angle)
 
         psf_data *= flux / psf_data.sum()
 
@@ -200,7 +213,8 @@ def make_control_field(image_filename,
             pass
         image_window += psf_window
 
-        pass
+        if (i+1) % 10 == 0:
+            print("Drawn " + str(i+1) + "/" + str(len(stars)) + " stars.")
 
     # Set up the image's header
     image.header = {}

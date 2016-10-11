@@ -24,6 +24,7 @@
 
 import os
 import sys
+import subprocess as sbp
 from argparse import ArgumentParser
 
 from astropy.io import fits
@@ -40,13 +41,17 @@ matplotlib.rcParams['text.usetex'] = True
 data_dir = "/disk2/brg/Data/HST_Fields/subsampling_convergence_testing"
 default_results_file_root = "control_image_n"
 
-max_ssf = 15
+max_ssf = 10
 
 figsize = (6, 6)
 fontsize = 12
 
 default_output_filename_root = "subsampling_convergence_test"
 default_output_extension = "eps"
+
+paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/PSF_Model_Testing/"
+
+num_images = 10
 
 def main(argv):
     """ @TODO main docstring
@@ -62,33 +67,42 @@ def main(argv):
 
     results_root = os.path.join(data_dir, args.results_file_root)
 
-    ss_factors = np.linspace(1, max_ssf, max_ssf, endpoint=True).astype(int)
-
-    X2s = np.zeros_like(ss_factors, dtype=float)
-    Qx_diff_Z2s = np.zeros_like(ss_factors, dtype=float)
-    Qy_diff_Z2s = np.zeros_like(ss_factors, dtype=float)
-    Qp_sum_Z2s = np.zeros_like(ss_factors, dtype=float)
-    Qp_diff_Z2s = np.zeros_like(ss_factors, dtype=float)
-    Qc_sum_Z2s = np.zeros_like(ss_factors, dtype=float)
-    Qc_diff_Z2s = np.zeros_like(ss_factors, dtype=float)
-    Qs_sum_Z2s = np.zeros_like(ss_factors, dtype=float)
-    Qs_diff_Z2s = np.zeros_like(ss_factors, dtype=float)
-
-    for ssf in ss_factors:
-
-        filename = results_root + "_ss" + str(ssf) + "_results.fits"
-
-        header = fits.open(filename)[1].header
-
-        X2s[ssf - 1] = header["X_SQR"]
-        Qx_diff_Z2s[ssf - 1] = header["QXD_Z2"]
-        Qy_diff_Z2s[ssf - 1] = header["QYD_Z2"]
-        Qp_sum_Z2s[ssf - 1] = header["QPS_Z2"] 
-        Qp_diff_Z2s[ssf - 1] = header["QPD_Z2"] 
-        Qc_sum_Z2s[ssf - 1] = header["QPS_Z2"] 
-        Qc_diff_Z2s[ssf - 1] = header["QPD_Z2"] 
-        Qs_sum_Z2s[ssf - 1] = header["QSSNZ2"] 
-        Qs_diff_Z2s[ssf - 1] = header["QSDNZ2"] 
+    ss_factors_m1 = range(max_ssf)
+    
+    labels = ("X2",
+              "Qx_diff_Z2s","Qx_diff_Z2s",
+              "Qp_sum_Z2s","Qp_diff_Z2s",
+              "Qc_sum_Z2s","Qc_diff_Z2s",
+              "Qs_sum_Z2s","Qs_diff_Z2s")
+    
+    vals = {}
+    for label in labels:
+        vals[label] = np.zeros((max_ssf,num_images), dtype=float)
+    
+    for n in range(num_images):
+        
+        results_root_n = results_root.replace("_n","_"+str(n))
+        
+        for i in ss_factors_m1:
+        
+            filename = results_root_n + "_ss" + str(i+1) + "_results.fits"
+        
+            header = fits.open(filename)[1].header
+        
+            vals["X2"][i,n] = header["X_SQR"]
+            vals["Qx_diff_Z2"][i,n] = header["QXD_Z2"]
+            vals["Qy_diff_Z2"][i,n] = header["QYD_Z2"]
+            vals["Qp_sum_Z2"][i,n] = header["QPS_Z2"] 
+            vals["Qp_diff_Z2"][i,n] = header["QPD_Z2"] 
+            vals["Qc_sum_Z2"][i,n] = header["QPS_Z2"] 
+            vals["Qc_diff_Z2"][i,n] = header["QPD_Z2"] 
+            vals["Qs_sum_Z2"][i,n] = header["QSS_Z2"] 
+            vals["Qs_diff_Z2"][i,n] = header["QSD_Z2"]
+            
+    # Get the means
+    val_means = {}
+    for label in labels:
+        val_means[label] = vals[label].mean(axis=1)
 
     # Plot it up
     _fig = pyplot.figure(figsize=figsize)
@@ -98,15 +112,17 @@ def main(argv):
 
     ax = pyplot.subplot(gs[0])
 
-    ax.plot(ss_factors, X2s, label="$X^2$", color="black")
-    ax.plot(ss_factors, Qx_diff_Z2s, label=r"$Q_x^{(-)} Z^2$", linestyle="dotted")
-    ax.plot(ss_factors, Qy_diff_Z2s, label=r"$Q_y^{(-)} Z^2$", linestyle="dotted")
-    ax.plot(ss_factors, Qp_sum_Z2s, label=r"$Q_+^{(+)} Z^2$", linestyle="dashed")
-    ax.plot(ss_factors, Qp_diff_Z2s, label=r"$Q_+^{(-)} Z^2$", linestyle="dashed")
-    ax.plot(ss_factors, Qc_sum_Z2s, label=r"$Q_{\times}^{(+)} Z^2$", linestyle="dashed")
-    ax.plot(ss_factors, Qc_diff_Z2s, label=r"$Q_{\times}^{(-)} Z^2$", linestyle="dashed")
-    ax.plot(ss_factors, Qs_sum_Z2s, label=r"$Q_s^{(+)} Z^2$", linestyle="dashdot")
-    ax.plot(ss_factors, Qs_diff_Z2s, label=r"$Q_s^{(-)} Z^2$", linestyle="dashdot")
+    ss_factors = np.add(ss_factors_m1,1)
+
+    ax.plot(ss_factors, val_means["X2"], label="$X^2$", color="black")
+    ax.plot(ss_factors, val_means["Qx_diff_Z2"], label=r"$Q_x^{(-)} Z^2$", linestyle="dotted")
+    ax.plot(ss_factors, val_means["Qy_diff_Z2"], label=r"$Q_y^{(-)} Z^2$", linestyle="dotted")
+    ax.plot(ss_factors, val_means["Qp_sum_Z2"], label=r"$Q_+^{(+)} Z^2$", linestyle="dashed")
+    ax.plot(ss_factors, val_means["Qp_diff_Z2"], label=r"$Q_+^{(-)} Z^2$", linestyle="dashed")
+    ax.plot(ss_factors, val_means["Qc_sum_Z2"], label=r"$Q_{\times}^{(+)} Z^2$", linestyle="dashed")
+    ax.plot(ss_factors, val_means["Qc_diff_Z2"], label=r"$Q_{\times}^{(-)} Z^2$", linestyle="dashed")
+    ax.plot(ss_factors, val_means["Qs_sum_Z2"], label=r"$Q_s^{(+)} Z^2$", linestyle="dashdot")
+    ax.plot(ss_factors, val_means["Qs_diff_Z2"], label=r"$Q_s^{(-)} Z^2$", linestyle="dashdot")
 
     ax.set_xlim([0.5, max_ssf+0.5])
     # ax.set_ylim([0, 0.02])
@@ -119,6 +135,10 @@ def main(argv):
     output_filename = args.output_filename_root + "." + args.output_extension
 
     pyplot.savefig(output_filename, format=args.output_extension, bbox_inches="tight", pad_inches=0.05)
+    
+    if args.output_extension == "eps":
+        cmd = "cp " + output_filename + " " + paper_location
+        sbp.call(cmd,shell=True)
 
     pyplot.show()
 
