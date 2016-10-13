@@ -85,7 +85,7 @@ def main(argv):
 		else:
 			base_image = None
 
-		make_control_field("/home/brg/Data/HST_Fields/control_image_"+str(i)+"_blur2.fits",
+		make_control_field("/home/brg/Data/HST_Fields/control_image_"+str(i)+tag+".fits",
 				   random_seed=10*(i+1),
 				   num_grid_points=(0, 0),
 				   focus=focus,
