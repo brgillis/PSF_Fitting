@@ -470,9 +470,9 @@ def test_psf_for_params(stars,
                 np.square(star_props["noisy_Qpcs_diff_diff_mean"][2]/star_props["noisy_Qpcs_diff_diff_err"][2])
 
     if ignore_size:
-        dof = 6 - fitted_params
+        dof = 6
     else:
-        dof = 8 - fitted_params
+        dof = 8
     
     test_params = deepcopy(mv.default_params)
     for param in params:
