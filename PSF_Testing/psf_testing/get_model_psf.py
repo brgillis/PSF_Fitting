@@ -482,7 +482,6 @@ def get_model_psf(x_pix,
                    tinytim_params=None,
                    spec_type=mv.default_model_psf_spec_type,
                    kernel_adjustment=mv.default_params["kernel_adjustment"],
-                   kernel_adjustment_ratio=mv.default_params["kernel_adjustment_ratio"],
                    use_cache=True,
                    **params):
     
@@ -547,6 +546,14 @@ def get_model_psf(x_pix,
     
         # Convert to an ndarray
         kernel = np.asarray(kernel)
+        kernel /= kernel.sum()
+        
+        # Apply the kernel adjustment
+        if kernel_adjustment != 1.:
+            kernel[1,1] = 0
+            kernel *= kernel_adjustment
+            kernel[1,1] = 1. - kernel.sum()
+        
     else:
         kernel = np.array([[1]])
 

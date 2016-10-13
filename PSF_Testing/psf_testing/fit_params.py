@@ -145,8 +145,7 @@ def fit_best_params_and_test_psf(stars,
                                                 z20 = param_scale*(test_param_array[18]-1),
                                                 z21 = param_scale*(test_param_array[19]-1),
                                                 spherical_5th = param_scale*(test_param_array[20]-1),
-                                                kernel_adjustment = 1.5-param_scale*test_param_array[21],
-                                                kernel_adjustment_ratio = 1.5-param_scale*test_param_array[22])
+                                                kernel_adjustment = 1.5-param_scale*test_param_array[21])
             X2 = get_X2_of_test_results(test_results) + \
                 get_params_penalty(focus,focus_penalty_sigma=focus_penalty_sigma,
                                    penalty_sigma=penalty_sigma,
@@ -170,8 +169,7 @@ def fit_best_params_and_test_psf(stars,
                                     z20 = param_scale*(test_param_array[18]-1),
                                     z21 = param_scale*(test_param_array[19]-1),
                                     spherical_5th = param_scale*(test_param_array[20]-1),
-                                    kernel_adjustment = 1.5-param_scale*test_param_array[21],
-                                    kernel_adjustment_ratio = 1.5-param_scale*test_param_array[22],)
+                                    kernel_adjustment = 1.5-param_scale*test_param_array[21])
         except Exception as _e:
             # Return a near-infinite value on exception
             X2 = 1.0e100
@@ -203,36 +201,12 @@ def fit_best_params_and_test_psf(stars,
     param_array[19] = params["z21"]/param_scale + 1
     param_array[20] = params["spherical_5th"]/param_scale + 1
     param_array[21] = (1.5 - params["kernel_adjustment"])/param_scale
-    param_array[22] = (1.5 - params["kernel_adjustment_ratio"])/param_scale
     
-    # Calculate (and cache) the value for init params first, so we'll always use the
-    # outliers list for that
-    get_X2_for_params(param_array)
-    
-    # Start by using tunneling_mcmc to find a good starting point
-    
-#     from psf_testing.tunneling_mcmc_minimize import tunneling_mcmc_minimize
-#     
-#     steps = 0.02*param_array
-#     
-#     best_tuple = None
-#     
-#     param_mins = param_array - 5.*steps
-#     param_maxes = param_array + 5.*steps
-#     
-#     num_trials = len(param_array)
-#     
-#     for i in range(num_trials):
-#         test_tuple = tunneling_mcmc_minimize(get_X2_for_params, param_array,
-#                                              steps,
-#                                              param_mins,
-#                                              param_maxes,
-#                                              100,
-#                                              seed=num_trials*seed+i)
-#         if best_tuple is None or test_tuple[1]<best_tuple[1]:
-#             best_tuple = test_tuple
+#     # Calculate (and cache) the value for init params first, so we'll always use the
+#     # outliers list for that
+#     get_X2_for_params(param_array)
 
-    # Store fitting record now
+    # Store fitting record
     fitting_record = []
     
     best_param_array = minimize(get_X2_for_params, param_array, method='Nelder-Mead',
@@ -261,7 +235,6 @@ def fit_best_params_and_test_psf(stars,
     best_params["z21"] = param_scale*(best_param_array[19]-1)
     best_params["spherical_5th"] = param_scale*(best_param_array[20]-1)
     best_params["kernel_adjustment"] = 1.5-param_scale*best_param_array[21]
-    best_params["kernel_adjustment_ratio"] = 1.5-param_scale*best_param_array[22]
 
     test_results = test_psf_for_params(stars=stars,
 
@@ -310,7 +283,6 @@ def fit_best_params_and_test_psf(stars,
                                             z20 = param_scale*(best_param_array[18]-1),
                                             z21 = param_scale*(best_param_array[19]-1),
                                             spherical_5th = param_scale*(best_param_array[20]-1),
-                                            kernel_adjustment = 1.5-param_scale*best_param_array[21],
-                                            kernel_adjustment_ratio = 1.5-param_scale*best_param_array[22],)
+                                            kernel_adjustment = 1.5-param_scale*best_param_array[21],)
 
     return test_results, fitting_record
