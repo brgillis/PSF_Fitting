@@ -70,10 +70,10 @@ def main(argv):
     ss_factors_m1 = range(max_ssf)
     
     labels = ("X2",
-              "Qx_diff_Z2s","Qx_diff_Z2s",
-              "Qp_sum_Z2s","Qp_diff_Z2s",
-              "Qc_sum_Z2s","Qc_diff_Z2s",
-              "Qs_sum_Z2s","Qs_diff_Z2s")
+              "Qx_diff_Z2","Qy_diff_Z2",
+              "Qp_sum_Z2","Qp_diff_Z2",
+              "Qc_sum_Z2","Qc_diff_Z2",
+              "Qs_sum_Z2","Qs_diff_Z2")
     
     vals = {}
     for label in labels:
