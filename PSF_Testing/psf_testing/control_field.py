@@ -137,7 +137,7 @@ def make_control_field(image_filename,
         r_deviate = extra_star["xp"] / image_shape[0]
         theta_deviate = extra_star["yp"] / image_shape[1] # These will be uniform [0,1) now
 
-        r = r_deviate ** 2 * binary_r_max
+        r = np.sqrt(r_deviate) * binary_r_max
         theta = theta_deviate * 2 * np.pi
 
         extra_star["xp"] = stars[i]["xp"] + r * np.cos(theta)
