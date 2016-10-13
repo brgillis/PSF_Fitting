@@ -506,7 +506,7 @@ def get_model_psf(x_pix,
     # Get the position we'll generate the model PSF for
     psf_position = scheme.get_position_to_use(star_xp, star_yp)
     
-    focus = round(scheme.focus,5)
+    focus = round(scheme.focus,mv.rounding_digits)
     
     rounded_params = {}
     
@@ -515,7 +515,7 @@ def get_model_psf(x_pix,
             if (not param=="kernel_adjustment" and not param=="kernel_adjustment_ratio" and
                 not param=="guiding_error_mag1" and not param=="guiding_error_mag2" and
                 not param=="guiding_error_angle"):
-                rounded_params[param] = round(params[param],4)
+                rounded_params[param] = round(params[param],mv.rounding_digits)
 
     subsampled_model = get_cached_subsampled_psf(frozenset(tinytim_params.items()),
                                                  weight_func,

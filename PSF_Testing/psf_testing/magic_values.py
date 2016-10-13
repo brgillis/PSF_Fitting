@@ -134,6 +134,7 @@ default_params = {"z2":0.,
                   }
 default_penalty_sigma = 0
 default_focus_penalty_sigma = 0
+rounding_digits = 4
 
 default_image_shape = (4096, 2048) # (x,y) in fits ordering, (y,x) in C ordering
 default_logging_level = "info"
@@ -164,7 +165,7 @@ if(min_stamp_size<=default_weight_rmax):
     min_stamp_size = default_weight_rmax+1
 
 # TinyTim values
-default_tinytim_data_path = "/disk2/brg/Data/HST_Fields/PSF_models"
+default_tinytim_data_path = "/home/brg/Data/HST_Fields/PSF_models"
 default_tinytim_path = "/home/brg/Program_Files/tinytim-7.5"
 default_model_psf_width = 2.0
 default_model_psf_spec_type = (1, 15) # K-type star 15
