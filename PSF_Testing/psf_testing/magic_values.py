@@ -98,7 +98,7 @@ sex_cat_yp_max_col = 8
 sex_cat_num_cols = 24
 
 # Focus fitting values
-default_focus = -2.0
+default_focus = -1.0
 default_min_focus = -6.0
 default_max_focus = 6.0
 default_focus_samples = 4

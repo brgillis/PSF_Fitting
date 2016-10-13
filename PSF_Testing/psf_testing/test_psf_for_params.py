@@ -256,10 +256,11 @@ def test_psf_for_params(stars,
                     not param=="guiding_error_mag1" and not param=="guiding_error_mag2" and
                     not param=="guiding_error_angle"):
                     rounded_params[param] = round(params[param],mv.rounding_digits)
+                    
+        rounded_params["focus"] = round(focus,mv.rounding_digits)
             
         caller = get_psf_caller(tinytim_params_set=frozenset(tinytim_params.items()),
                                 weight_func=prim_weight_func,
-                                focus=focus,
                                 use_cache=use_cache,
                                 **rounded_params)
         

@@ -370,9 +370,6 @@ def get_cached_subsampled_psf(tinytim_params_set,
     tinytim_params = {}
     for i in tinytim_params_set:
         tinytim_params[i[0]] = i[1]
-        
-    if focus==mv.default_focus:
-        raise Exception("Shouldn't be testing this focus!")
 
     # Determine the name for the subsampled model PSF file
     subsampled_name = os.path.join(tinytim_params["tinytim_data_path"],
