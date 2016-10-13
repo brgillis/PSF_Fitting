@@ -78,7 +78,7 @@ def main(argv):
 
 
 	def run_for_i(i):
-		focus = -6.0 + (10.0*(i%100))/100
+		focus = -6.0 + (i%100)/10.
 
 		if base_image_root is not None:
 			base_image=base_image_root+str(i)+".fits"
