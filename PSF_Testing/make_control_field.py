@@ -102,7 +102,7 @@ def main(argv):
 				   guiding_error_angle=0.,
 				   randomize_spectral_type=randomize_spectral_type,
 				   use_cache=True,
-				   parallelize=True)
+				   parallelize=False)
 		
 	for i in range(num_fields):
 		run_for_i(i+i_start)
