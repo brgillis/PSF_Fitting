@@ -37,6 +37,7 @@ from psf_testing.moments.centre_image import centre_image
 from psf_testing.rebin_psf import rebin
 from psf_testing.psf_model_scheme import psf_model_scheme
 import subprocess as sbp
+from copy import deepcopy
 
 def fft_convolve_deconvolve(im1,im2,im3):
 
@@ -325,6 +326,8 @@ def make_subsampled_psf_model(filename,
     subsampled_image[0].header[mv.ss_model_rb_x_offset_label] = d_rb_xc
     subsampled_image[0].header[mv.ss_model_rb_y_offset_label] = d_rb_yc
 
+    # Copy workaround to avoid astropy bug with copying an HDU
+    res = fits.PrimaryHDU(subsampled_image[0].data,subsampled_image[0].header)
 
     # Write the image out to the proper filename
     if use_cache:
@@ -356,7 +359,7 @@ def make_subsampled_psf_model(filename,
     except OSError as _e:
         pass
 
-    return subsampled_image[0]
+    return res
 
 @lru_cache(128)
 def get_cached_subsampled_psf(tinytim_params_set,
