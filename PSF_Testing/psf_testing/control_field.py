@@ -225,6 +225,7 @@ def make_control_field(image_filename,
     image.header[mv.header_obs_time_keyword] = 0.
     image.header[mv.header_ra_keyword] = 0.
     image.header[mv.header_dec_keyword] = 0.
+    image.header["FOCUS"] = focus
 
     # Add noise to the image
     if not suppress_noise:

@@ -38,7 +38,7 @@ matplotlib.rcParams['ps.useafm'] = True
 matplotlib.rcParams['pdf.use14corefonts'] = True
 matplotlib.rcParams['text.usetex'] = True
 
-data_dir = "/disk2/brg/Data/HST_Fields/grid_convergence_testing"
+data_dir = "/home/brg/Data/HST_Fields/grid_convergence_testing"
 default_results_file_root = "control_image_n"
 
 grid_sizes = (2048, 1024, 512, 256, 128, 64, 32, 1)
@@ -51,7 +51,7 @@ default_output_extension = "eps"
 
 paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/PSF_Model_Testing/"
 
-num_images = 10
+num_images = 100
 
 def main(argv):
     """ @TODO main docstring

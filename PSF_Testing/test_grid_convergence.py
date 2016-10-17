@@ -56,11 +56,11 @@ class test_psf_caller(object):
             logger.error("Exception when trying grid points " + str(x) + ": " + str(e))
             raise
 
-default_image_dir = "/disk2/brg/Data/HST_Fields/"
+default_image_dir = "/home/brg/Data/HST_Fields/"
 default_image_filename = "control_image_n.fits"
-default_results_dir = "/disk2/brg/Data/HST_Fields/grid_convergence_testing"
+default_results_dir = "/home/brg/Data/HST_Fields/grid_convergence_testing"
 
-default_num_images = 10
+default_num_images = 1
 
 def main(argv):
     """ @TODO main docstring
@@ -111,9 +111,11 @@ def main(argv):
     for i in range(num_images):
     
         if special_kwargs["image_filename"] is None:
-            image_filename = default_image_filename.replace("_n","_"+str(i))
+            image_filename = default_image_filename
         else:
-            image_filename = special_kwargs["image_filename"].replace("_n","_"+str(i))
+            image_filename = special_kwargs["image_filename"]
+        if num_images != 1:
+            image_filename = image_filename.replace("_n","_"+str(i))
 
         caller = test_psf_caller(os.path.join(image_dir, image_filename),
                                  extra_tag,

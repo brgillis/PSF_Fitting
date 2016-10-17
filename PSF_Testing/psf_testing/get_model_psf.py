@@ -21,7 +21,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-
+    
 import time
 import os
 
@@ -377,9 +377,9 @@ def get_cached_subsampled_psf(tinytim_params_set,
     # Determine the name for the subsampled model PSF file
     subsampled_name = ("ss" + str(tinytim_params["subsampling_factor"]) + "p_x" + str(psf_position[0]) +
                        "y" + str(psf_position[1]) + "f" + str(focus) + \
-                       "c" + str(tinytim_params["chip"])))
+                       "c" + str(tinytim_params["chip"]))
     
-	extra_params_name = ""
+    extra_params_name = ""
     for (key, label) in (("z2", "z02"),
                            ("z3", "z03"),
                            ("astigmatism_0", "a0"),
@@ -405,55 +405,56 @@ def get_cached_subsampled_psf(tinytim_params_set,
         value = params[key]
         if (value is not None) and not (value == mv.default_params[key]):
             extra_params_name += label + str(100*value)
-		
-            
-    if not spec_type==mv.default_model_psf_spec_type:
-        subsampled_name += "st" + str(spec_type[1])
+    try:
+        if not spec_type==mv.default_model_psf_spec_type:
+            extra_params_name += "st" + str(spec_type[1])
 
-	if extra_params_name != "":
-		# We'll use the earlier name as a subdirectory, and put this in that
-		subdir_name = subsampled_name
-		subsampled_name = extra_params_name
-		if not os.path.exists(subdir_name):
-			try:
-    			os.makedirs(subdir_name)
-			except OSError:
-				pass
-    
-    subsampled_name +=  mv.image_extension
+        if extra_params_name != "":
+            # We'll use the earlier name as a subdirectory, and put this in that
+            subdir_name = os.path.join(tinytim_params["tinytim_data_path"],subsampled_name)
+            subsampled_name = extra_params_name
+            if not os.path.exists(subdir_name):
+                try:
+                    os.makedirs(subdir_name)
+                except OSError:
+                    pass
 
-	qualified_subsampled_name = os.path.join(tinytim_params["tinytim_data_path"],subdir_name,subsampled_name)
+            qualified_subsampled_name = os.path.join(subdir_name,subsampled_name+mv.image_extension)
+        else:
+            qualified_subsampled_name = os.path.join(tinytim_params["tinytim_data_path"],subsampled_name+mv.image_extension)
 
-    # Check if we need to update this file, or if we can reuse the existing version
-    # if file_needs_update(subsampled_name) or len(params)>0:
-    if file_needs_update(qualified_subsampled_name):
+        # Check if we need to update this file, or if we can reuse the existing version
+        if file_needs_update(qualified_subsampled_name):
 
-        # We'll need to update it, so we'll call TinyTim to generate a PSF model
-        subsampled_model = make_subsampled_psf_model(filename=qualified_subsampled_name,
-                                  xp=psf_position[0],
-                                  yp=psf_position[1],
-                                  focus=focus,
-                                  spec_type=spec_type,
-                                  use_cache=use_cache,
-                                  tinytim_params=tinytim_params,
-                                  weight_func=weight_func,
-                                  **params)
-
-    else:
-
-        # It doesn't need an update, so open up the old image
-        try:
-            subsampled_model = fits.open(qualified_subsampled_name)[0]
-        except IOError as _e:
-            # File is corrupt, so we'll regenerate it
+            # We'll need to update it, so we'll call TinyTim to generate a PSF model
             subsampled_model = make_subsampled_psf_model(filename=qualified_subsampled_name,
-                                  xp=psf_position[0],
-                                  yp=psf_position[1],
-                                  focus=focus,
-                                  use_cache=use_cache,
-                                  tinytim_params=tinytim_params,
-                                  weight_func=weight_func,
-                                  **params)
+                                      xp=psf_position[0],
+                                      yp=psf_position[1],
+                                      focus=focus,
+                                      spec_type=spec_type,
+                                      use_cache=use_cache,
+                                      tinytim_params=tinytim_params,
+                                      weight_func=weight_func,
+                                      **params)
+
+        else:
+
+            # It doesn't need an update, so open up the old image
+            try:
+                subsampled_model = fits.open(qualified_subsampled_name)[0]
+            except IOError as _e:
+                # File is corrupt, so we'll regenerate it
+                subsampled_model = make_subsampled_psf_model(filename=qualified_subsampled_name,
+                                      xp=psf_position[0],
+                                      yp=psf_position[1],
+                                      focus=focus,
+                                      use_cache=use_cache,
+                                      tinytim_params=tinytim_params,
+                                      weight_func=weight_func,
+                                      **params)
+    except Exception as e:
+        print(str(e))
+        raise
             
     return subsampled_model
 
