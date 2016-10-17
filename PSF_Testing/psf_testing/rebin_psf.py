@@ -72,7 +72,7 @@ def rebin(a,
           y_shift=0,
           subsampling_factor = mv.default_subsampling_factor,
           conserve=False,
-          use_galsim=True,
+          use_galsim=False,
           guiding_error_mag1=0.,
           guiding_error_mag2=0.,
           guiding_error_angle=0.,):
