@@ -45,7 +45,7 @@ def fft_convolve_deconvolve(im1,im2,im3):
     im2_fft = fp.ifftshift(fp.fftn(im2))
     im3_fft = fp.ifftshift(fp.fftn(im3))
     
-    im_fft = im1_fft*im2_fft/im3_fft
+    im_fft = im1_fft*im2_fft/im3_fftget_
     
     res = fp.ifftn(im_fft)
     
@@ -119,7 +119,7 @@ def make_subsampled_psf_model(filename,
     if os.path.isfile(lock_filename):
         time_start = time.time()
         while (not os.path.isfile(process_filename)) and (time.time() - time_start < 60):
-            time.sleep(1)
+            time.sleep(np.random.rand())
         
         # Give the file a chance to be fully written
         time.sleep(1)
@@ -252,7 +252,7 @@ def make_subsampled_psf_model(filename,
         time_start = time.time()
         while ((not os.path.isfile(process_filename_base + mv.subsampled_model_tail))
             and (time.time() - time_start < 120)):
-            time.sleep(1)
+            time.sleep(np.random.rand())
         
         # Give the file a chance to be fully written
         time.sleep(1)
@@ -427,15 +427,25 @@ def get_cached_subsampled_psf(tinytim_params_set,
         if file_needs_update(qualified_subsampled_name):
 
             # We'll need to update it, so we'll call TinyTim to generate a PSF model
-            subsampled_model = make_subsampled_psf_model(filename=qualified_subsampled_name,
-                                      xp=psf_position[0],
-                                      yp=psf_position[1],
-                                      focus=focus,
-                                      spec_type=spec_type,
-                                      use_cache=use_cache,
-                                      tinytim_params=tinytim_params,
-                                      weight_func=weight_func,
-                                      **params)
+            loop_counter = 0
+            while True:
+                try:
+                    subsampled_model = make_subsampled_psf_model(filename=qualified_subsampled_name,
+                                              xp=psf_position[0],
+                                              yp=psf_position[1],
+                                              focus=focus,
+                                              spec_type=spec_type,
+                                              use_cache=use_cache,
+                                              tinytim_params=tinytim_params,
+                                              weight_func=weight_func,
+                                              **params)
+                    break
+                except IOError as e:
+                    if "No such file" in str(e) and loop_counter<10:
+                        loop_counter += 1
+                        time.sleep(10.*np.random.rand())
+                    else:
+                        raise
 
         else:
 
