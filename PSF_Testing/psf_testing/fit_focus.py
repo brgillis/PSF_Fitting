@@ -23,9 +23,9 @@
 """
 
 from psf_testing import magic_values as mv
-from psf_testing.brute_force_minimize import bf_minimize
+from utility.brute_force_minimize import bf_minimize
 from psf_testing.test_psf_for_params import test_psf_for_params
-from psf_testing.memoize import memoize
+from utility import memoize.memoize
 
 
 def get_X2_of_test_results(test_results):

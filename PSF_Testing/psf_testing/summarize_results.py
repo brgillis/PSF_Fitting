@@ -25,7 +25,7 @@
 from astropy.io import fits
 import numpy as np
 
-from psf_testing import smart_logging
+from utility import smart_logging
 from psf_testing import magic_values as mv
 
 def make_results_summary(results_filename_roots,

@@ -31,7 +31,7 @@ import sys
 
 import numpy as np
 from psf_testing.arg_parser import get_arg_parser, parse_and_get_kwargs
-from psf_testing.smart_logging import get_default_logger
+from utility.smart_logging import get_default_logger
 from psf_testing.test_psf import test_psf
 
 image_size = (4096, 2048)

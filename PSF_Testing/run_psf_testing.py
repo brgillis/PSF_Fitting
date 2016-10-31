@@ -30,7 +30,7 @@ from multiprocessing import Pool, cpu_count
 
 from psf_testing.arg_parser import get_arg_parser, parse_and_get_kwargs
 from psf_testing.test_psf import test_psf
-from psf_testing.smart_logging import get_default_logger
+from utility.smart_logging import get_default_logger
 
 class test_psf_caller(object):
     def __init__(self,*args,**kwargs):

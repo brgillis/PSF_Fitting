@@ -28,7 +28,7 @@ import sys
 from os.path import join
 import argparse
 
-from psf_testing.smart_logging import get_default_logger
+from utility.smart_logging import get_default_logger
 from psf_testing.summarize_results import make_results_summary, make_stack_stacks
 from psf_testing import magic_values as mv
 

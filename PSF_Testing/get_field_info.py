@@ -25,7 +25,7 @@
 """
 
 import click
-from psf_testing.smart_logging import get_default_logger
+from utility.smart_logging import get_default_logger
 from astropy.io import ascii
 from astropy.io import fits
 from os.path import join
