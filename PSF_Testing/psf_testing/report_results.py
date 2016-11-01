@@ -186,7 +186,7 @@ def report_results(test_results,
     tbhdu.header["ASTIG_0"] = test_results[0]["astigmatism_0"]
     tbhdu.header["ASTIG_45"] = test_results[0]["astigmatism_45"]
     tbhdu.header["COMA_X"] = test_results[0]["coma_x"]
-    tbhdu.header["COMA_X"] = test_results[0]["coma_x"]
+    tbhdu.header["COMA_Y"] = test_results[0]["coma_x"]
     tbhdu.header["CLOVER_X"] = test_results[0]["clover_x"]
     tbhdu.header["CLOVER_Y"] = test_results[0]["clover_y"]
     tbhdu.header["SPHERE_3"] = test_results[0]["spherical_3rd"]
