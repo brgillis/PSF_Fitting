@@ -25,7 +25,7 @@
 from psf_testing import magic_values as mv
 from utility.brute_force_minimize import bf_minimize
 from psf_testing.test_psf_for_params import test_psf_for_params
-from utility import memoize.memoize
+from utility.memoize import memoize
 
 
 def get_X2_of_test_results(test_results):

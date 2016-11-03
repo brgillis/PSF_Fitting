@@ -417,12 +417,15 @@ def get_cached_subsampled_psf(tinytim_params_set,
         else:
             full_subsampled_name = subsampled_name
 
-        qualified_subsampled_name = find_file_in_path(full_subsampled_name, tinytim_params["tinytim_data_dir"])
+        qualified_subsampled_name = find_file_in_path(full_subsampled_name + mv.image_extension, tinytim_params["tinytim_data_path"])
 
         if qualified_subsampled_name is None:
-            qualified_subsampled_name = os.path.join(first_in_path(tinytim_params["tinytim_data_dir"]),
-                                                     full_subsampled_name)
-            os.makedirs(os.path.split()[0])
+            qualified_subsampled_name = os.path.join(first_in_path(tinytim_params["tinytim_data_path"]),
+                                                     full_subsampled_name + mv.image_extension)
+            try:
+                os.makedirs(os.path.split(qualified_subsampled_name)[0])
+            except OSError:
+                pass
 
         # Check if we need to update this file, or if we can reuse the existing version
         if file_needs_update(qualified_subsampled_name):

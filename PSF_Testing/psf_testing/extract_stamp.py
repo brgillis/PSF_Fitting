@@ -22,7 +22,7 @@ def extract_stamp_for_star(star, image):
                extracted.
     """
     
-    stamp_size = 2*star.SkyObj.stamp_size + 1
+    stamp_size = int(2*star.SkyObj.stamp_size + 1)
     
     # Swap x/y due to fits ordering
     x1=int(star.SkyObj.y_pix-star.SkyObj.stamp_size)
