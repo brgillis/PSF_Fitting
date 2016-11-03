@@ -28,6 +28,29 @@ import numpy as np
 from utility import smart_logging
 from psf_testing import magic_values as mv
 
+param_colnames = (("Z2", "Z 2"),
+                  ("Z3", "Z 3"),
+                  ("ASTIG_0", "0 degree astigmatism"),
+                  ("ASTIG_45", "45 degree astigmatism"),
+                  ("COMA_X", "X coma"),
+                  ("COMA_Y", "Y coma"),
+                  ("CLOVER_X", "X clover"),
+                  ("CLOVER_Y", "Y clover"),
+                  ("SPHERE_3", "Spherical 3rd"),
+                  ("Z12", "Z 12"),
+                  ("Z13", "Z 13"),
+                  ("Z14", "Z 14"),
+                  ("Z15", "Z 15"),
+                  ("Z16", "Z 16"),
+                  ("Z17", "Z 17"),
+                  ("Z18", "Z 18"),
+                  ("Z19", "Z 19"),
+                  ("Z20", "Z 20"),
+                  ("Z21", "Z 21"),
+                  ("SPHERE_5", "Spherical 5th"),
+                  ("KERN_ADJ", "Kernel adjustment")
+                  )
+
 def make_results_summary(results_filename_roots,
                          summary_filename):
     
@@ -54,6 +77,7 @@ def make_results_summary(results_filename_roots,
     m0_noisy_Zs = []
     
     Qs = {}
+    param_vals = {}
     
     logger = smart_logging.get_default_logger()
 
@@ -65,6 +89,9 @@ def make_results_summary(results_filename_roots,
 
     for Q_label in ("QXC", "QYC", "QPC", "QCC", "QSC", "QXW", "QYW", "QPW", "QCW", "QSW"):
         Qs[Q_label + "_DIF"] = []
+        
+    for param in param_colnames:
+        param_vals[param[0]] = []
         
     for weight_label in ("core_", "wings_"):
         for label in ("star_", "model_"):
@@ -125,6 +152,9 @@ def make_results_summary(results_filename_roots,
         for Q_label in ("QXC", "QYC", "QPC", "QCC", "QSC", "QXW", "QYW", "QPW", "QCW", "QSW"):
             Qs[Q_label + "_DIF"].append(header[Q_label + "_DIF"])
             
+        for param in param_colnames:
+            param_vals[param[0]].append(header[param[0]])
+            
         data = results_file[1].data
         good_stars = data["is_not_outlier"]
         mask = np.logical_not(good_stars)
@@ -182,6 +212,9 @@ def make_results_summary(results_filename_roots,
             for Q_label in ("Qx", "Qy", "Qplus", "Qcross", "Qsize"):
                 name = weight_label+label+Q_label + "_mean"
                 columns.append(fits.Column(name=name, format='E', array=Qs[name]))
+                
+    for param in param_colnames:
+        columns.append(fits.Column(name=param[1],format='E',array=param_vals[param[0]]))
 
     tbhdu = fits.BinTableHDU.from_columns(columns)
 

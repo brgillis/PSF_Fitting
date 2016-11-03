@@ -32,7 +32,7 @@ ss_factor = 5
 
 @pytest.fixture()
 def rebinning_test_array():
-    a = np.zeros((25,25),dtype=int)
+    a = np.zeros((25,25),dtype=float)
     
     # Have it step by 1 in the first index in the centre 5x5 coords
     for i in range(5):

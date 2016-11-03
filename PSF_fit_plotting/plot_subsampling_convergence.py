@@ -51,7 +51,7 @@ default_output_extension = "eps"
 
 paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/PSF_Model_Testing/"
 
-num_images = 10
+num_images = 100
 
 def main(argv):
     """ @TODO main docstring

@@ -69,10 +69,10 @@ def main(argv):
         binary_fraction = 0.3
         binary_r_max = 2.
     if mode == "blur":
-        guiding_error_mag1 = 0.010/0.005
+        guiding_error_mag1 = 0.010/0.05
     if mode == "blur2" or mode == "full":
-        guiding_error_mag1 = 0.010/0.005
-        guiding_error_mag2 = 0.010/0.005
+        guiding_error_mag1 = 0.010/0.05
+        guiding_error_mag2 = 0.010/0.05
     if mode == "rs" or mode == "full":
         randomize_spectral_type = True
     if mode == "nf":
