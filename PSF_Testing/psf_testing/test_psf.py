@@ -18,7 +18,7 @@
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
+    You should have received a copy of the GNU General Pmvublic License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
@@ -28,11 +28,11 @@ import numpy as np
 from astropy.io import fits
 
 from psf_testing import magic_values as mv
-from psf_testing.check_updates import make_update_marker
+from utility.check_updates import make_update_marker
 from psf_testing.extract_stamp import extract_stamp_for_star
 from psf_testing.fit_focus import fit_best_focus_and_test_psf
 from psf_testing.fit_params import fit_best_params_and_test_psf
-from psf_testing.smart_logging import get_default_logger
+from utility.smart_logging import get_default_logger
 from psf_testing.moments.centre_image import centre_image
 from psf_testing.moments.estimate_background import get_background_level_and_noise
 from psf_testing.moments.get_Qs import get_m0_and_Qs
@@ -94,11 +94,24 @@ def test_psf(image_filename,
         make_update_marker()
 
     filename_root = image_filename.replace(mv.image_extension, "")
+
+    # Set up the filename root for the results
+    
+    if results_dir is None:
+        results_root = filename_root
+    else:
+        results_root = os.path.join(results_dir,os.path.split(filename_root)[-1])
+    
+    if results_tag is not None:
+        results_root += "_" + results_tag
+        
+    if seed is not None:
+        results_root += "_" + str(seed)
         
     # If refreshing only, check if we can skip this
     if refresh_only:
-        if os.path.isfile(filename_root+mv.results_tail):
-            logger.info(filename_root+mv.results_tail + " already exists, so skipping.")
+        if os.path.isfile(results_root+mv.results_tail):
+            logger.info(results_root+mv.results_tail + " already exists, so skipping.")
             return
     
     logger.info("Testing " + image_filename + ".")
@@ -233,19 +246,6 @@ def test_psf(image_filename,
                                                                   focus_precision=focus_precision,
                 
                                                                   **kwargs)
-
-    # Set up the filename root for the results
-    
-    if results_dir is None:
-        results_root = filename_root
-    else:
-        results_root = os.path.join(results_dir,os.path.split(filename_root)[-1])
-    
-    if results_tag is not None:
-        results_root += "_" + results_tag
-        
-    if seed is not None:
-        results_root += "_" + str(seed)
     
     # Report the results
     report_results(test_results=test_results,

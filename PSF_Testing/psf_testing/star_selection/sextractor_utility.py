@@ -29,10 +29,10 @@ import subprocess as sbp
 from astropy.io import fits
 
 from psf_testing import magic_values as mv
-from psf_testing.io import replace_multiple_in_file
+from utility.io import replace_multiple_in_file
 from psf_testing.star_selection.image_info import get_exp_time
 from psf_testing.star_selection.star_selection import get_objects_from_cat, get_stars, get_isolated_stars
-from psf_testing.check_updates import file_needs_update
+from utility.check_updates import file_needs_update
 
 def get_mag_zeropoint(exp_time,instrument_zeropoint=mv.zeropoint):
     """ Gets the magnitude zeropoint for an exposure from the exposure time and the instrument's

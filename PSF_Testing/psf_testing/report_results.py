@@ -27,7 +27,7 @@ from astropy.io import fits
 import numpy as np
 
 from psf_testing import magic_values as mv
-from psf_testing.smart_logging import get_default_logger
+from utility.smart_logging import get_default_logger
 
 def save_fitting_record(fitting_record,
                         filename_root):

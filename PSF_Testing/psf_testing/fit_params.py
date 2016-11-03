@@ -210,7 +210,7 @@ def fit_best_params_and_test_psf(stars,
     fitting_record = []
     
     best_param_array = minimize(get_X2_for_params, param_array, method='Nelder-Mead',
-                                options={'xtol':0.01,'ftol':100}).x
+                                options={'xtol':0.001,'ftol':0.001}).x
 
     best_focus = focus_scale*(best_param_array[0] - 1)
     best_params = {}

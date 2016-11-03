@@ -21,42 +21,44 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-    
-import time
+
+from copy import deepcopy
 import os
+import time
 
 from astropy.io import fits
 from scipy import fftpack as fp
 
 import numpy as np
-from psf_testing.function_cache import lru_cache
 from psf_testing import magic_values as mv
-from psf_testing.check_updates import file_needs_update
-from psf_testing.io import replace_multiple_in_file
 from psf_testing.moments.centre_image import centre_image
-from psf_testing.rebin_psf import rebin
 from psf_testing.psf_model_scheme import psf_model_scheme
+from psf_testing.rebin_psf import rebin
 import subprocess as sbp
-from copy import deepcopy
+from utility.check_updates import file_needs_update
+from utility.function_cache import lru_cache
+from utility.io import replace_multiple_in_file
+from utility.path import find_file_in_path, first_in_path
 
-def fft_convolve_deconvolve(im1,im2,im3):
+
+def fft_convolve_deconvolve(im1, im2, im3):
 
     im1_fft = fp.fftn(im1)
     im2_fft = fp.ifftshift(fp.fftn(im2))
     im3_fft = fp.ifftshift(fp.fftn(im3))
-    
-    im_fft = im1_fft*im2_fft/im3_fft
-    
+
+    im_fft = im1_fft * im2_fft / im3_fftget_
+
     res = fp.ifftn(im_fft)
-    
+
     return res
 
 
 def make_subsampled_psf_model(filename,
                               tinytim_params=None,
                               psf_size=mv.default_model_psf_width,
-                              xp=mv.default_image_shape[0]//2,
-                              yp=mv.default_image_shape[1]//2,
+                              xp=mv.default_image_shape[0] // 2,
+                              yp=mv.default_image_shape[1] // 2,
                               focus=0.0,
                               detector=mv.default_detector,
                               filter=mv.default_filter,
@@ -101,29 +103,29 @@ def make_subsampled_psf_model(filename,
 
         Side-effects: Overwrites $filename if it exists with the new subsampled PSF model
     """
-    
+
     if tinytim_params is None:
         tinytim_params = mv.default_tinytim_params
-        
+
     subsampling_factor = tinytim_params["subsampling_factor"]
 
     filename_base = filename.replace(mv.image_extension, "")
-    
+
     pid = str(os.getpid())
-    
+
     process_filename_base = filename_base + pid
     process_filename = process_filename_base + mv.image_extension
-    
+
     # Check for a lock file on this, to make sure its safe to create
     lock_filename = process_filename_base + ".lock"
     if os.path.isfile(lock_filename):
         time_start = time.time()
         while (not os.path.isfile(process_filename)) and (time.time() - time_start < 60):
-            time.sleep(1)
-        
+            time.sleep(np.random.rand())
+
         # Give the file a chance to be fully written
         time.sleep(1)
-        
+
         if os.path.isfile(process_filename):
             if use_cache:
                 try:
@@ -137,7 +139,7 @@ def make_subsampled_psf_model(filename,
             open(lock_filename, 'a').close()
     else:
         open(lock_filename, 'a').close()
-    
+
     par_file = process_filename_base + ".par"
 
     # Set up the command to call tiny1
@@ -154,7 +156,7 @@ def make_subsampled_psf_model(filename,
           process_filename_base + "\nEOF"
     # Run the command to call tiny1
     sbp.call(cmd, shell=True)
-    
+
     # Edit the parameter file to adjust coma and astigmatism if necessary
     str_to_replace = []
     replacements = []
@@ -218,7 +220,7 @@ def make_subsampled_psf_model(filename,
     if spherical_5th is not None:
         str_to_replace.append("0.009    # Z22 = 5th order spherical")
         replacements.append(str(spherical_5th) + "    # Z22 = 5th order spherical")
-        
+
     if len(str_to_replace) > 0:
         replace_multiple_in_file(par_file, par_file + ".new", str_to_replace, replacements)
         replace_multiple_in_file(par_file + ".new", par_file, [], [])
@@ -252,37 +254,37 @@ def make_subsampled_psf_model(filename,
         time_start = time.time()
         while ((not os.path.isfile(process_filename_base + mv.subsampled_model_tail))
             and (time.time() - time_start < 120)):
-            time.sleep(1)
-        
+            time.sleep(np.random.rand())
+
         # Give the file a chance to be fully written
         time.sleep(1)
-        
+
         if not os.path.isfile(process_filename_base + mv.subsampled_model_tail):
             raise
         else:
             subsampled_image = fits.open(process_filename_base + mv.subsampled_model_tail)
-            
+
     # Get the centre position of the subsampled image
     if shape is not None:
         full_shape = np.shape(subsampled_image[0].data)
-        dx, dy = np.subtract(full_shape,shape) // 2
-        
+        dx, dy = np.subtract(full_shape, shape) // 2
+
         if dx > 0 and dy > 0:
-            subsampled_image[0].data = subsampled_image[0].data[dx:-dx,dy:-dy]
+            subsampled_image[0].data = subsampled_image[0].data[dx:-dx, dy:-dy]
         elif dx > 0:
-            subsampled_image[0].data = subsampled_image[0].data[dx:-dx,:]
+            subsampled_image[0].data = subsampled_image[0].data[dx:-dx, :]
         elif dy > 0:
-            subsampled_image[0].data = subsampled_image[0].data[:,dy:-dy]
-            
+            subsampled_image[0].data = subsampled_image[0].data[:, dy:-dy]
+
         full_shape = np.shape(subsampled_image[0].data)
         if full_shape[0] > shape[0]:
-            subsampled_image[0].data = subsampled_image[0].data[1:,:]
+            subsampled_image[0].data = subsampled_image[0].data[1:, :]
         if full_shape[1] > shape[1]:
-            subsampled_image[0].data = subsampled_image[0].data[:,1:]
+            subsampled_image[0].data = subsampled_image[0].data[:, 1:]
 
     # Define a modified weight function to work on subsampled pixels
     def ss_weight_func(x, y):
-        return weight_func(x/subsampling_factor, y/subsampling_factor)
+        return weight_func(x / subsampling_factor, y / subsampling_factor)
 
     # Get the centre of this image
     ss_xc, ss_yc, _ss_x_array, _ss_y_array, _ss_weight_mask, ss_m0 = \
@@ -291,12 +293,12 @@ def make_subsampled_psf_model(filename,
     subsampled_image[0].header[mv.ss_model_xc_label] = ss_xc
     subsampled_image[0].header[mv.ss_model_yc_label] = ss_yc
     subsampled_image[0].header[mv.ss_model_m0_label] = ss_m0
-            
+
     # Normalize the image
     subsampled_image[0].data /= ss_m0
-    
+
     # Rebin it to get the rebinning offset in x and y
-    
+
     if subsampling_factor > 1:
         fits_comments = subsampled_image[0].header['COMMENT']
         for test_i, s in enumerate(fits_comments):
@@ -306,28 +308,28 @@ def make_subsampled_psf_model(filename,
         if i == -1:
             raise Exception("Cannot find charge-diffusion kernel in fits file passed to " +
                             "read_kernel_from_fits")
-    
+
         # kernel parameters are located in the three lines following to that index
         kernel = []
         for j in fits_comments[i + 1:i + 4]:
             kernel.append([float(x) for x in j.split()])
-    
+
         # Convert to an ndarray
         kernel = np.asarray(kernel)
     else:
         kernel = np.array([[1]])
-        
-    rb_psf = rebin(subsampled_image[0].data,kernel,0,0,conserve=True,use_galsim=True)
+
+    rb_psf = rebin(subsampled_image[0].data, kernel, 0, 0, conserve=True, use_galsim=True)
     rb_shape = np.shape(rb_psf)
-    rb_xc, rb_yc, _, _, _, _ = centre_image(rb_psf,weight_func=weight_func)
-    d_rb_xc = rb_xc - (rb_shape[0]-1.)/2
-    d_rb_yc = rb_yc - (rb_shape[1]-1.)/2
-    
+    rb_xc, rb_yc, _, _, _, _ = centre_image(rb_psf, weight_func=weight_func)
+    d_rb_xc = rb_xc - (rb_shape[0] - 1.) / 2
+    d_rb_yc = rb_yc - (rb_shape[1] - 1.) / 2
+
     subsampled_image[0].header[mv.ss_model_rb_x_offset_label] = d_rb_xc
     subsampled_image[0].header[mv.ss_model_rb_y_offset_label] = d_rb_yc
 
     # Copy workaround to avoid astropy bug with copying an HDU
-    res = fits.PrimaryHDU(subsampled_image[0].data,subsampled_image[0].header)
+    res = fits.PrimaryHDU(subsampled_image[0].data, subsampled_image[0].header)
 
     # Write the image out to the proper filename
     if use_cache:
@@ -353,7 +355,7 @@ def make_subsampled_psf_model(filename,
         os.remove(process_filename_base + ".tt3")
     except OSError as _e:
         pass
-    
+
     try:
         os.remove(lock_filename)
     except OSError as _e:
@@ -369,7 +371,7 @@ def get_cached_subsampled_psf(tinytim_params_set,
                               spec_type=mv.default_model_psf_spec_type,
                               use_cache=True,
                               **params):
-    
+
     tinytim_params = {}
     for i in tinytim_params_set:
         tinytim_params[i[0]] = i[1]
@@ -378,7 +380,7 @@ def get_cached_subsampled_psf(tinytim_params_set,
     subsampled_name = ("ss" + str(tinytim_params["subsampling_factor"]) + "p_x" + str(psf_position[0]) +
                        "y" + str(psf_position[1]) + "f" + str(focus) + \
                        "c" + str(tinytim_params["chip"]))
-    
+
     extra_params_name = ""
     for (key, label) in (("z2", "z02"),
                            ("z3", "z03"),
@@ -404,38 +406,47 @@ def get_cached_subsampled_psf(tinytim_params_set,
             continue
         value = params[key]
         if (value is not None) and not (value == mv.default_params[key]):
-            extra_params_name += label + str(100*value)
+            extra_params_name += label + str(100 * value)
     try:
-        if not spec_type==mv.default_model_psf_spec_type:
+        if not spec_type == mv.default_model_psf_spec_type:
             extra_params_name += "st" + str(spec_type[1])
 
         if extra_params_name != "":
             # We'll use the earlier name as a subdirectory, and put this in that
-            subdir_name = os.path.join(tinytim_params["tinytim_data_path"],subsampled_name)
-            subsampled_name = extra_params_name
-            if not os.path.exists(subdir_name):
-                try:
-                    os.makedirs(subdir_name)
-                except OSError:
-                    pass
-
-            qualified_subsampled_name = os.path.join(subdir_name,subsampled_name+mv.image_extension)
+            full_subsampled_name = os.path.join(subsampled_name, extra_params_name)
         else:
-            qualified_subsampled_name = os.path.join(tinytim_params["tinytim_data_path"],subsampled_name+mv.image_extension)
+            full_subsampled_name = subsampled_name
+
+        qualified_subsampled_name = find_file_in_path(full_subsampled_name, tinytim_params["tinytim_data_dir"])
+
+        if qualified_subsampled_name is None:
+            qualified_subsampled_name = os.path.join(first_in_path(tinytim_params["tinytim_data_dir"]),
+                                                     full_subsampled_name)
+            os.makedirs(os.path.split()[0])
 
         # Check if we need to update this file, or if we can reuse the existing version
         if file_needs_update(qualified_subsampled_name):
 
             # We'll need to update it, so we'll call TinyTim to generate a PSF model
-            subsampled_model = make_subsampled_psf_model(filename=qualified_subsampled_name,
-                                      xp=psf_position[0],
-                                      yp=psf_position[1],
-                                      focus=focus,
-                                      spec_type=spec_type,
-                                      use_cache=use_cache,
-                                      tinytim_params=tinytim_params,
-                                      weight_func=weight_func,
-                                      **params)
+            loop_counter = 0
+            while True:
+                try:
+                    subsampled_model = make_subsampled_psf_model(filename=qualified_subsampled_name,
+                                              xp=psf_position[0],
+                                              yp=psf_position[1],
+                                              focus=focus,
+                                              spec_type=spec_type,
+                                              use_cache=use_cache,
+                                              tinytim_params=tinytim_params,
+                                              weight_func=weight_func,
+                                              **params)
+                    break
+                except IOError as e:
+                    if "No such file" in str(e) and loop_counter < 10:
+                        loop_counter += 1
+                        time.sleep(10.*np.random.rand())
+                    else:
+                        raise
 
         else:
 
@@ -455,7 +466,7 @@ def get_cached_subsampled_psf(tinytim_params_set,
     except Exception as e:
         print(str(e))
         raise
-            
+
     return subsampled_model
 
 def get_model_psf_for_star(star,
@@ -473,7 +484,7 @@ def get_model_psf_for_star(star,
 
         Returns: model_psf <star> (with m_err, Q values, and Q errors not yet determined)
     """
-    
+
     return get_model_psf(star.x_pix,
                          star.y_pix,
                          star_nx=np.shape(star.stamp)[0],
@@ -498,7 +509,7 @@ def get_model_psf(x_pix,
                    kernel_adjustment=mv.default_params["kernel_adjustment"],
                    use_cache=True,
                    **params):
-    
+
     if scheme is None:
         scheme = psf_model_scheme()
     if tinytim_params is None:
@@ -508,8 +519,8 @@ def get_model_psf(x_pix,
     if star_xc is not None:
         star_d_xc = star_xc - (star_nx - 1.) / 2
         star_d_yc = star_yc - (star_ny - 1.) / 2
-        star_xp = int(x_pix)+star_d_yc # Deliberate swap here
-        star_yp = int(y_pix)+star_d_xc
+        star_xp = int(x_pix) + star_d_yc # Deliberate swap here
+        star_yp = int(y_pix) + star_d_xc
     else:
         star_d_xc = y_pix - int(y_pix) # Deliberate swap here
         star_d_yc = x_pix - int(x_pix)
@@ -518,17 +529,17 @@ def get_model_psf(x_pix,
 
     # Get the position we'll generate the model PSF for
     psf_position = scheme.get_position_to_use(star_xp, star_yp)
-    
-    focus = round(scheme.focus,mv.rounding_digits)
-    
+
+    focus = round(scheme.focus, mv.rounding_digits)
+
     rounded_params = {}
-    
+
     for param in params:
         if param in mv.default_params:
-            if (not param=="kernel_adjustment" and not param=="kernel_adjustment_ratio" and
-                not param=="guiding_error_mag1" and not param=="guiding_error_mag2" and
-                not param=="guiding_error_angle"):
-                rounded_params[param] = round(params[param],mv.rounding_digits)
+            if (not param == "kernel_adjustment" and not param == "kernel_adjustment_ratio" and
+                not param == "guiding_error_mag1" and not param == "guiding_error_mag2" and
+                not param == "guiding_error_angle"):
+                rounded_params[param] = round(params[param], mv.rounding_digits)
 
     subsampled_model = get_cached_subsampled_psf(frozenset(tinytim_params.items()),
                                                  weight_func,
@@ -537,14 +548,14 @@ def get_model_psf(x_pix,
                                                  spec_type,
                                                  use_cache=use_cache,
                                                  **rounded_params)
-                
-            
+
+
     # Get the charge diffusion kernel from the FITS comments
 
     subsampling_factor = tinytim_params["subsampling_factor"]
     if(subsampling_factor > 1):
         fits_comments = subsampled_model.header['COMMENT']
-    
+
         for test_i, s in enumerate(fits_comments):
             if 'following kernel' in s:
                 i = test_i
@@ -557,29 +568,29 @@ def get_model_psf(x_pix,
         kernel = []
         for j in fits_comments[i + 1:i + 4]:
             kernel.append([float(x) for x in j.split()])
-    
+
         # Convert to an ndarray
         kernel = np.asarray(kernel)
         kernel /= kernel.sum()
-        
+
         # Apply the kernel adjustment
         if kernel_adjustment != 1.:
-            kernel[1,1] = 0
+            kernel[1, 1] = 0
             kernel *= kernel_adjustment
-            kernel[1,1] = 1. - kernel.sum()
-        
+            kernel[1, 1] = 1. - kernel.sum()
+
     else:
         kernel = np.array([[1]])
 
     # Determine how far off the centre of the subsampled image is from the centre when rebinned with shift 0
     ss_model_rb_x_offset = subsampled_model.header[mv.ss_model_rb_x_offset_label]
     ss_model_rb_y_offset = subsampled_model.header[mv.ss_model_rb_y_offset_label]
-    
+
     ss_model_rb_x_offset -= round(ss_model_rb_x_offset)
     ss_model_rb_y_offset -= round(ss_model_rb_y_offset)
 
     # Determine how many subsampled pixels we'll have to shift the subsampled psf by
-    
+
     if "guiding_error_mag1" in params:
         guiding_error_mag1 = params["guiding_error_mag1"]
     else:
@@ -593,29 +604,29 @@ def get_model_psf(x_pix,
     else:
         guiding_error_angle = 0
     galsim_rebin = tinytim_params["galsim_rebin"] or guiding_error_mag1 != 0. or guiding_error_mag2 != 0.
-    
+
     star_d_xc = star_d_xc - round(star_d_xc)
     star_d_yc = star_d_yc - round(star_d_yc)
-    
+
     x_shift = subsampling_factor * (star_d_xc - ss_model_rb_x_offset)
     y_shift = subsampling_factor * (star_d_yc - ss_model_rb_y_offset)
-    
+
     if galsim_rebin:
         thresh = 0.05
     else:
         thresh = 0.5
-        x_shift = int(round(x_shift,0))
-        y_shift = int(round(y_shift,0))
-    
+        x_shift = int(round(x_shift, 0))
+        y_shift = int(round(y_shift, 0))
+
     # Check this is good enough, and shift again as necessary
     loop_counter = 0
-    while(loop_counter<3):
-        
+    while(loop_counter < 3):
+
         # Check that the shifts are reasonable (within 2 non-subsampled pixels)
-        max_shift = np.max((np.abs(x_shift),np.abs(y_shift)))/subsampling_factor
+        max_shift = np.max((np.abs(x_shift), np.abs(y_shift))) / subsampling_factor
         if max_shift > 2:
             raise Exception("Star's centring is too poor; requires too extreme of a shift.")
-    
+
         # Get the rebinned PSF model
         rebinned_model = rebin(subsampled_model.data,
                                kernel,
@@ -627,34 +638,34 @@ def get_model_psf(x_pix,
                                guiding_error_mag2=guiding_error_mag2,
                                guiding_error_angle=guiding_error_angle,
                                )
-                
-    
+
+
         # Get the zeroth-order moment for the rebinned psf
         xc, yc, _, _, _, rb_model_m0 = centre_image(rebinned_model, weight_func=weight_func)
-        
-        rb_model_d_d_xc = (xc - (np.shape(rebinned_model)[0]-1.)/2.) - round(xc - (np.shape(rebinned_model)[0]-1.)/2.)
-        rb_model_d_d_yc = (yc - (np.shape(rebinned_model)[1]-1.)/2.) - round(yc - (np.shape(rebinned_model)[1]-1.)/2.)
-        
+
+        rb_model_d_d_xc = (xc - (np.shape(rebinned_model)[0] - 1.) / 2.) - round(xc - (np.shape(rebinned_model)[0] - 1.) / 2.)
+        rb_model_d_d_yc = (yc - (np.shape(rebinned_model)[1] - 1.) / 2.) - round(yc - (np.shape(rebinned_model)[1] - 1.) / 2.)
+
         d_xc_diff = star_d_xc - rb_model_d_d_xc
         d_xc_diff -= round(d_xc_diff)
         d_yc_diff = star_d_yc - rb_model_d_d_yc
         d_yc_diff -= round(d_yc_diff)
-        
-        if np.abs(d_xc_diff)<thresh/subsampling_factor and np.abs(d_yc_diff)<thresh/subsampling_factor:
+
+        if np.abs(d_xc_diff) < thresh / subsampling_factor and np.abs(d_yc_diff) < thresh / subsampling_factor:
             break
-        
+
         loop_counter += 1
-        
+
         if galsim_rebin:
-            x_shift += subsampling_factor*d_xc_diff
-            y_shift += subsampling_factor*d_yc_diff
+            x_shift += subsampling_factor * d_xc_diff
+            y_shift += subsampling_factor * d_yc_diff
         else:
-            x_shift += int(round(subsampling_factor*d_xc_diff))
-            y_shift += int(round(subsampling_factor*d_yc_diff))
-        
-    if loop_counter>3:
+            x_shift += int(round(subsampling_factor * d_xc_diff))
+            y_shift += int(round(subsampling_factor * d_yc_diff))
+
+    if loop_counter > 3:
         pass
-        
+
     scaled_model = rebinned_model * star_m0 / rb_model_m0
 
     return scaled_model

@@ -33,7 +33,7 @@ from psf_testing.moments.estimate_background import get_background_level
 from psf_testing.moments.get_Qs import get_m0_and_Qs
 from psf_testing.psf_model_scheme import psf_model_scheme
 from psf_testing.remove_outliers import remove_outliers
-from psf_testing.smart_logging import get_default_logger
+from utility.smart_logging import get_default_logger
 
 # Magic value toggles
 ignore_size = False
