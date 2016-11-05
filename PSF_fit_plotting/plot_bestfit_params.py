@@ -42,7 +42,7 @@ default_summary_filename = "/disk2/brg/git/Tiny_Tim_PSF_Fitting/PSF_Testing/psf_
 
 default_plot_name = "bestfit_param_hists"
 default_paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/PSF_Model_Testing/"
-default_file_type = "png"
+default_file_type = "eps"
 
 default_X2_max = 0.001
 
@@ -95,12 +95,12 @@ def make_bestfit_param_plots(summary_filename = default_summary_filename,
     
     fig = pyplot.figure(figsize=figsize)
     
-    gs = matplotlib.gridspec.GridSpec(ny, nx, wspace=0.)
+    gs = matplotlib.gridspec.GridSpec(ny, nx)
     fontsize = base_fontsize
     tick_fontsize = base_tick_fontsize
     xlog=True
         
-    gs.update(wspace=0.05, hspace=0.4, left=0.1, right=0.9, bottom=0.1, top=0.9)
+    gs.update(wspace=0.05, hspace=0.6, left=0.1, right=0.9, bottom=0.1, top=0.9)
     
     i = 0
     
@@ -127,13 +127,18 @@ def make_bestfit_param_plots(summary_filename = default_summary_filename,
         sigma = np.std(vals)
         stderr = sigma / np.sqrt(len(vals)-1)
         
-        Z = (mean-default_val)/stderr
+        Z = np.abs((mean-default_val)/stderr)
         
         p = erfc(Z/sqrt(2.))
             
-        ax.text(0.05,0.95,"p = %1.2e" %  p,horizontalalignment='left',
-                verticalalignment='top',transform=ax.transAxes,
-                fontsize=fontsize)
+        if p < 0.05/len(vals):
+            ax.text(0.05,0.95,("$\\mathbf{ p =  %1.1e }}$" %  p).replace("e","\\times 10^{"),horizontalalignment='left',
+                    verticalalignment='top',transform=ax.transAxes,
+                    fontsize=fontsize)
+        else:
+            ax.text(0.05,0.95,("$ p =  %1.1e }$" %  p).replace("e","\\times 10^{"),horizontalalignment='left',
+                    verticalalignment='top',transform=ax.transAxes,
+                    fontsize=fontsize)
         
     if not hide:
         fig.show()

@@ -39,6 +39,9 @@ class test_psf_caller(object):
     def __call__(self,x):
         try:
             test_psf(x,*self.args,**self.kwargs)
+        except AssertionError as e:
+            logger = get_default_logger()
+            logger.error("Exception when processing file " + str(x) + ": " + str(e))
         except Exception as e:
             logger = get_default_logger()
             logger.error("Exception when processing file " + str(x) + ": " + str(e))
