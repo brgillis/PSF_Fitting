@@ -65,9 +65,9 @@ def main(argv):
                      ("Binaries", "_b3"),
                      ("Wide Binaries", "_b32"),
                      ("Guiding Error", "_blur"),
-                     ("Double Guiding Error", "_blur2"),
+                     ("Double G. Error", "_blur2"),
                      ("Galaxy Background", "_gb"),
-                     ("Varying Spectral Type", "_rs"),
+                     ("Varying Spec. Type", "_rs"),
                      ("Full", "_full"))
     
     labels_and_colnames = (("X2",r"$X^2$"),
