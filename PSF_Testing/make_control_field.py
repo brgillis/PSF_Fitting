@@ -94,11 +94,12 @@ def main(argv):
                    random_seed=10*(i+1),
                    num_grid_points=(0, 0),
                    focus=focus,
-                   sky_level=0.,
-                   read_noise=51., # Approximately right for background, but doesn't include unresolved sources
+                   subtracted_sky_level=400., # Approximately right for background, but doesn't include unresolved sources
+                   unsubtracted_sky_level=5.,
+                   read_noise=20.8, 
                    base_image=base_image,
                    suppress_noise=suppress_noise,
-                   num_stars=1000,
+                   num_stars=10,
                    binary_fraction=binary_fraction,
                    binary_r_max=binary_r_max,
                    subsampling_factor=10,
