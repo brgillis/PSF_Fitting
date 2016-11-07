@@ -73,7 +73,8 @@ def make_control_field(image_filename,
                        gain=mv.gain,
                        zeropoint=mv.zeropoint,
                        read_noise=mv.read_noise,
-                       sky_level=mv.sky_level,
+                       subtracted_sky_level=mv.sky_level,
+                       unsubtracted_sky_level=0.,
                        base_image=None,
 
                        num_stars=1000,
@@ -111,6 +112,8 @@ def make_control_field(image_filename,
     else:
         image = galsim.Image(galsim.fits.readFile(base_image)[0].data,scale=scale)
         assert np.shape(image.array) == (image_shape[1], image_shape[0])
+        
+    image += unsubtracted_sky_level
 
     im_zeropoint = zeropoint + 2.5 * np.log10(exp_time)
 
@@ -229,7 +232,8 @@ def make_control_field(image_filename,
 
     # Add noise to the image
     if not suppress_noise:
-        image.addNoise(galsim.CCDNoise(galsim.BaseDeviate(random_seed + 2), gain=gain, read_noise=read_noise, sky_level=sky_level))
+        image.addNoise(galsim.CCDNoise(galsim.BaseDeviate(random_seed + 2), gain=gain,
+                                       read_noise=read_noise, sky_level=subtracted_sky_level))
 
     # Output the image
     image.write(image_filename, clobber=True)
