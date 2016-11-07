@@ -99,7 +99,7 @@ def main(argv):
                    read_noise=20.8, 
                    base_image=base_image,
                    suppress_noise=suppress_noise,
-                   num_stars=10,
+                   num_stars=1000,
                    binary_fraction=binary_fraction,
                    binary_r_max=binary_r_max,
                    subsampling_factor=10,
