@@ -48,8 +48,14 @@ def galsim_rebin(a,
     ss_prof = galsim.InterpolatedImage(galsim.Image(a,scale=1./subsampling_factor))
     
     # Convolve by guiding error if appropriate
-    if guiding_error_mag1 != 0. or guiding_error_mag2:
-        guiding_error_prof = galsim.Box(guiding_error_mag1,guiding_error_mag2)
+    if guiding_error_mag1 != 0. or guiding_error_mag2 != 0.:
+        # If one is zero, set it to 0.01x the other
+        if guiding_error_mag1 == 0.:
+            guiding_error_prof = galsim.Box(0.01*guiding_error_mag2,guiding_error_mag2)
+        elif guiding_error_mag2 == 0.:
+            guiding_error_prof = galsim.Box(guiding_error_mag1,0.01*guiding_error_mag1)
+        else:
+            guiding_error_prof = galsim.Box(guiding_error_mag1,guiding_error_mag2)
         guiding_error_prof = guiding_error_prof.rotate(guiding_error_angle*galsim.degrees)
         
         ss_prof = galsim.Convolve([ss_prof,guiding_error_prof])
