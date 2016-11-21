@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-""" @file /disk2/brg/git/Tiny_Tim_PSF_Fitting/PSF_fit_plotting/plot_fit_statistics.py
+""" @file /disk2/brg/git/Tiny_Tim_PSF_Fitting/PSF_fit_plotting/plot_bestfit_params_v_obs_time.py
 
     Created 29 Jan 2016
 
@@ -40,7 +40,7 @@ from astropy.io import fits
 
 default_summary_filename = "/disk2/brg/git/Tiny_Tim_PSF_Fitting/PSF_Testing/psf_testing_results_all_params_summary.fits"
 
-default_plot_name = "bestfit_param_hists"
+default_plot_name = "bestfit_param_v_obs_time"
 default_paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/PSF_Model_Testing/"
 default_file_type = "eps"
 
@@ -59,7 +59,7 @@ param_colnames = (("Z 2",0.),
                   ("0 degree astigmatism",0.031),
                   ("45 degree astigmatism",0.028),
                   ("X coma",0.003),
-                  # ("Y coma",0.001),
+                  ("Y coma",0.001),
                   ("X clover",0.008),
                   ("Y clover",0.018),
                   ("Spherical 3rd",-0.025),
@@ -110,23 +110,29 @@ def make_bestfit_param_plots(summary_filename = default_summary_filename,
         
         vals = summary_table[param_name]
         
-        # Draw the histogram
+        # Draw the plot
+        
+        ax.scatter(summary_table["obs_time"]/(60*60*24*365.24)+1970,vals,edgecolor='none',s=1.0)
         
         if param_name != "Kernel adjustment":
-            pyplot.hist(vals,range=[-0.05,0.05],bins=21,facecolor='y')
-            ax.set_xlim([-0.05,0.05])
-            ax.set_xticks(np.linspace(-0.04,0.04,5,True))
-            ax.set_xticklabels(["-0.04","-0.02","0","0.02","0.04"],fontsize=tick_fontsize)
+            ax.set_ylim([-0.05,0.05])
+            ax.set_yticks(np.linspace(-0.04,0.04,5,True))
+            if i % nx == 1:
+                ax.set_yticklabels(["-0.04","-0.02","0","0.02","0.04"],fontsize=tick_fontsize)
+            else:
+                ax.set_yticklabels([])
         else:
-            pyplot.hist(vals,range=[0.95,1.05],bins=21,facecolor='y')
-            ax.set_xlim([.95,1.05])
-            ax.set_xticks([0.96,0.98,1.00,1.02,1.04])
-        
-        ax.set_ylim([0,ax.get_ylim()[1]*1.1])
-        ax.set_yticklabels([])
+            ax.set_ylim([.95,1.05])
+            ax.set_yticks([0.96,0.98,1.00,1.02,1.04])
+            if i % nx != 1:
+                ax.set_yticklabels([])
+    
+        ax.set_xlim(2009.3,2011.5)
+        ax.set_xticks([2010,2011])
+        ax.set_xticklabels(["2010","2011"])
         
         # Draw the default
-        ax.plot([default_val,default_val],ax.get_ylim(),color='k',linestyle='dashed')
+        ax.plot(ax.get_xlim(),[default_val,default_val],color='k',linestyle='dashed')
         
         ax.set_title(param_name,fontsize=fontsize)
             
@@ -176,8 +182,6 @@ def main(argv):
     parser.add_argument("--plot_name",type=str, default=default_plot_name)
     parser.add_argument("--paper_location",type=str, default=default_paper_location)
     parser.add_argument("--file_type",type=str, default=default_file_type) 
-    
-    parser.add_argument("--X2_max",type=float, default=default_X2_max) 
     
     parser.add_argument("--nx",type=int, default=default_nx) 
     parser.add_argument("--ny",type=int, default=default_ny) 

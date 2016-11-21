@@ -42,6 +42,13 @@ def parse_and_get_kwargs(parser,special_keys=None):
             special_kwargs[key] = kwargs[key]
             del kwargs[key]
             
+    optical_params = {}
+    for key in mv.default_params:
+            optical_params[key] = kwargs[key]
+            del kwargs[key]
+            
+    kwargs["optical_params"] = optical_params
+            
     return kwargs, special_kwargs
 
 def get_arg_parser():
@@ -140,5 +147,10 @@ def get_arg_parser():
                         help="Normalize errors - X^2 will no longer weight differently depending on scatter.")
     parser.add_argument("--disable_parallelization", action="store_true",
                         help="If set, will not use multiprocessing at any point.")
+    
+    # Optical parameters
+    for optical_param in mv.default_params:
+        parser.add_argument("--"+optical_param,type=float, default=mv.default_params[optical_param],
+                            help="Optical parameter; will be ignored if fitting parameters.")
     
     return parser

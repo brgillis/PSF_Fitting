@@ -58,7 +58,6 @@ def main(argv):
         debugging = True
     except ImportError:
         debugging = False
-    debugging = False # FIXME
         
     # Execute command-line parsing
     parser = get_arg_parser()
