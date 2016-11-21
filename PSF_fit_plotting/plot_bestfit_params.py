@@ -51,7 +51,7 @@ default_ny = 6
 
 figsize = (8,12)
 
-base_fontsize = 12
+base_fontsize = 10
 base_tick_fontsize = 8
 
 param_colnames = (("Z 2",0.),
@@ -98,9 +98,8 @@ def make_bestfit_param_plots(summary_filename = default_summary_filename,
     gs = matplotlib.gridspec.GridSpec(ny, nx)
     fontsize = base_fontsize
     tick_fontsize = base_tick_fontsize
-    xlog=True
         
-    gs.update(wspace=0.05, hspace=0.6, left=0.1, right=0.9, bottom=0.1, top=0.9)
+    gs.update(wspace=0.05, hspace=0.4, left=0.1, right=0.9, bottom=0.1, top=0.9)
     
     i = 0
     
@@ -112,7 +111,16 @@ def make_bestfit_param_plots(summary_filename = default_summary_filename,
         vals = summary_table[param_name]
         
         # Draw the histogram
-        pyplot.hist(vals,facecolor='y')
+        
+        if param_name != "Kernel adjustment":
+            pyplot.hist(vals,range=[-0.05,0.05],bins=21,facecolor='y')
+            ax.set_xlim([-0.05,0.05])
+            ax.set_xticks(np.linspace(-0.04,0.04,5,True))
+            ax.set_xticklabels(["-0.04","-0.02","0","0.02","0.04"],fontsize=tick_fontsize)
+        else:
+            pyplot.hist(vals,range=[0.95,1.05],bins=21,facecolor='y')
+            ax.set_xlim([.95,1.05])
+            ax.set_xticks([0.96,0.98,1.00,1.02,1.04])
         
         ax.set_ylim([0,ax.get_ylim()[1]*1.1])
         ax.set_yticklabels([])
@@ -120,7 +128,7 @@ def make_bestfit_param_plots(summary_filename = default_summary_filename,
         # Draw the default
         ax.plot([default_val,default_val],ax.get_ylim(),color='k',linestyle='dashed')
         
-        ax.set_xlabel(param_name,fontsize=fontsize)
+        ax.set_title(param_name,fontsize=fontsize)
             
         # Get and print mean and sigma for this value
         mean = np.mean(vals)
@@ -132,13 +140,12 @@ def make_bestfit_param_plots(summary_filename = default_summary_filename,
         p = erfc(Z/sqrt(2.))
             
         if p < 0.05/len(vals):
-            ax.text(0.05,0.95,("$\\mathbf{ p =  %1.1e }}$" %  p).replace("e","\\times 10^{"),horizontalalignment='left',
-                    verticalalignment='top',transform=ax.transAxes,
-                    fontsize=fontsize)
+            p_label = ("$\\mathbf{ p =  %1.1e }}$" %  p).replace("e","\\times 10^{")
         else:
-            ax.text(0.05,0.95,("$ p =  %1.1e }$" %  p).replace("e","\\times 10^{"),horizontalalignment='left',
-                    verticalalignment='top',transform=ax.transAxes,
-                    fontsize=fontsize)
+            p_label = ("$ p =  %1.1e }$" %  p).replace("e","\\times 10^{")
+        ax.text(0.05,0.95,p_label,horizontalalignment='left',
+                verticalalignment='top',transform=ax.transAxes,
+                fontsize=fontsize)
         
     if not hide:
         fig.show()

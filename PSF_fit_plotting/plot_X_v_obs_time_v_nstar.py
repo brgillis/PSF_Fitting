@@ -77,10 +77,10 @@ def make_X_v_obs_time_v_nstar_plot(summary_filename = default_summary_filename,
         y_label = r"Best $\chi^2_{\rm red}$"
         fitted_param = summary_table["chi_squared"]/(summary_table["chi2_dofs"]+3)
     else:
-        y_label = r"Best $X^2_{\rm red}$"
-        fitted_param = summary_table["X_squared"]/summary_table["X2_dofs"]
+        y_label = r"Best $X^2$"
+        fitted_param = summary_table["X_squared"]
         
-    num_stars = (summary_table["X2_dofs"]+1)/8
+    num_stars = summary_table["num_stars"]
         
     ax.set_yscale("log", nonposy='clip')
     

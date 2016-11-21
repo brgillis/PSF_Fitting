@@ -130,7 +130,7 @@ def main(argv):
     
     ax.set_xlabel("Subsampling Factor")
 
-    ax.legend(loc="lower left",ncol=2)
+    ax.legend(loc="lower right",ncol=2)
     
     output_filename = args.output_filename_root + "." + args.output_extension
 

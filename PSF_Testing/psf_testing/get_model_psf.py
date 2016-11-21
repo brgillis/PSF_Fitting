@@ -47,7 +47,7 @@ def fft_convolve_deconvolve(im1, im2, im3):
     im2_fft = fp.ifftshift(fp.fftn(im2))
     im3_fft = fp.ifftshift(fp.fftn(im3))
 
-    im_fft = im1_fft * im2_fft / im3_fftget_
+    im_fft = im1_fft * im2_fft / im3_fft
 
     res = fp.ifftn(im_fft)
 

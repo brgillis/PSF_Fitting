@@ -43,14 +43,34 @@ default_plot_name = "fitting_parameter_hists"
 default_paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/PSF_Model_Testing/"
 default_file_type = "png"
 
-default_red_X2_min = 0.1
-default_red_X2_max = 100.0
+default_red_X2_min = 1.0e-4
+default_red_X2_max = 1.0e0
 default_nbins = 20
 
 figsize = (8,8)
 
 base_fontsize = 12
 base_tick_fontsize = 8
+
+control_base_values = {"Qx_diff_Z2":2.7e-6,
+                       "Qy_diff_Z2":5.7e-6,
+                       "Qplus_sum_Z2":1.3e-5,
+                       "Qplus_diff_Z2":9.1e-6,
+                       "Qcross_sum_Z2":1.5e-6,
+                       "Qcross_diff_Z2":4.0e-6,
+                       "Qsize_sum_Z2":1.8e-5,
+                       "Qsize_diff_Z2":1.3e-6,
+                       "chi_squared":1}
+
+control_full_values = {"Qx_diff_Z2":3.8e-6,
+                       "Qy_diff_Z2":4.0e-6,
+                       "Qplus_sum_Z2":1.1e-3,
+                       "Qplus_diff_Z2":4.4e-4,
+                       "Qcross_sum_Z2":1.7e-4,
+                       "Qcross_diff_Z2":1.1e-4,
+                       "Qsize_sum_Z2":3.9e-4,
+                       "Qsize_diff_Z2":2.2e-4,
+                       "chi_squared":1}
 
 def make_fit_statistic_plots(summary_filename = default_summary_filename,
                              
@@ -68,6 +88,13 @@ def make_fit_statistic_plots(summary_filename = default_summary_filename,
                             
                             hide = False,
                             ):
+
+    for vals in control_base_values, control_full_values:
+        X2 = (vals["Qx_diff_Z2"] + vals["Qy_diff_Z2"] + vals["Qplus_sum_Z2"] + vals["Qplus_diff_Z2"] +
+              vals["Qcross_sum_Z2"] + vals["Qcross_diff_Z2"])
+        if not fade_size:
+            X2 += vals["Qsize_sum_Z2"] + vals["Qsize_diff_Z2"]
+        vals["X_squared"] = X2
     
     summary_table = fits.open(summary_filename)[1].data
     
@@ -75,7 +102,7 @@ def make_fit_statistic_plots(summary_filename = default_summary_filename,
     
     if plot_chi2:
         dofs = summary_table["chi2_dofs"]+3
-        plot_tuples = (("chi_squared", r"\chi^2", 'r', 0),)
+        plot_tuples = (("chi_squared", r"\chi^2/\nu", 'r', 0),)
         gs = matplotlib.gridspec.GridSpec(1, 1)
         ymax = 140
         yticks = [0,20,40,60,80,100,120,140]
@@ -85,19 +112,19 @@ def make_fit_statistic_plots(summary_filename = default_summary_filename,
                                             nbins+1,base=10)
         xlog=True
     else:
-        dofs = summary_table["X2_dofs"]
+        dofs = 1
         gs = matplotlib.gridspec.GridSpec(3, 3)
         plot_tuples = (("X_squared", r"X^2", 'r', 0),
-                        ("Qx_diff_Z2", r"Z^2(Q_{x}^{\perp})", 'y', 1),
-                        ("Qy_diff_Z2", r"Z^2(Q_{y}^{\perp})", 'y', 2),
-                        ("Qplus_sum_Z2", r"Z^2(Q_{\rm +}^{\parallel})", 'y', 3),
-                        ("Qcross_sum_Z2", r"Z^2(Q_{\times}^{\parallel})", 'y', 4),
-                        ("Qsize_sum_Z2", r"Z^2(Q_{\rm s}^{\parallel})", 'y', 5),
-                        ("Qplus_diff_Z2", r"Z^2(Q_{\rm +}^{\perp})", 'y', 6),
-                        ("Qcross_diff_Z2", r"Z^2(Q_{\times}^{\perp})", 'y', 7),
-                        ("Qsize_diff_Z2", r"Z^2(Q_{\rm s}^{\perp})", 'y', 8),)
-        ymax = 450
-        yticks = [0,100,200,300,400]
+                        ("Qx_diff_Z2", r"Z^{2(-)}_x", 'y', 1),
+                        ("Qy_diff_Z2", r"Z^{2(-)}_y", 'y', 2),
+                        ("Qplus_sum_Z2", r"Z^{2(+)}_+", 'y', 3),
+                        ("Qcross_sum_Z2", r"Z^{2(+)}_{\times}", 'y', 4),
+                        ("Qsize_sum_Z2", r"Z^{2(+)}_{\rm s}", 'y', 5),
+                        ("Qplus_diff_Z2", r"Z^{2(-)}_+", 'y', 6),
+                        ("Qcross_diff_Z2", r"Z^{2(-)}_{\times}", 'y', 7),
+                        ("Qsize_diff_Z2", r"Z^{2(-)}_{\rm s}", 'y', 8),)
+        ymax = 225
+        yticks = [0,50,100,150,200]
         fontsize = base_fontsize
         tick_fontsize = base_tick_fontsize
         bins = np.logspace(np.log10(red_X2_min),np.log10(red_X2_max),
@@ -124,7 +151,13 @@ def make_fit_statistic_plots(summary_filename = default_summary_filename,
         
         ax.set_xticklabels(ax.get_xticklabels(),fontsize=tick_fontsize)
         
-        ax.set_xlabel(r"$" + label + r"/\nu$",fontsize=fontsize)
+        # Draw the control means
+        control_base_val = control_base_values[param_name]
+        pyplot.plot([control_base_val,control_base_val],ax.get_ylim(),linestyle="dashed",color="k")
+        control_full_val = control_full_values[param_name]
+        pyplot.plot([control_full_val,control_full_val],ax.get_ylim(),linestyle="dotted",color="k")
+        
+        ax.set_xlabel("$" + label + "$",fontsize=fontsize)
         ax.set_ylabel("\# of images",fontsize=fontsize,labelpad=-1)
         
         if xlog:
@@ -134,7 +167,7 @@ def make_fit_statistic_plots(summary_filename = default_summary_filename,
         mean = np.mean(vals)
         sigma = np.std(vals)
         
-        print("For parameter " + label + "/nu:\n" +
+        print("For parameter " + label + ":\n" +
               "mean = " + str(mean) + "\n" +
               "sigma = " + str(sigma))
         

@@ -45,7 +45,7 @@ default_output_extension = "tex"
 
 paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/PSF_Model_Testing/"
 
-num_images = 10
+num_images = 100
 
 def main(argv):
     """ @TODO main docstring
@@ -64,8 +64,8 @@ def main(argv):
     control_types = (("Base",""),
                      ("Binaries", "_b3"),
                      ("Wide Binaries", "_b32"),
-                     ("Guiding Error", "_blur"),
-                     ("Double G. Error", "_blur2"),
+                     ("1D Guiding Error", "_blur"),
+                     ("2D Guiding Error", "_blur2"),
                      ("Galaxy Background", "_gb"),
                      ("Varying Spec. Type", "_rs"),
                      ("Full", "_full"))
@@ -77,74 +77,124 @@ def main(argv):
                            ("Qp_diff_Z2",r"$Z^{2(-)}_{+}$"),
                            ("Qc_sum_Z2",r"$Z^{2(+)}_{\times}$"),
                            ("Qc_diff_Z2",r"$Z^{2(-)}_{\times}$"),
-                           ("Qs_sum_Z2",r"$Z^{2(+)}_{s}$"),
-                           ("Qs_diff_Z2",r"$Z^{2(-)}_{s}$"))
+                           ("Qs_sum_Z2",r"$Z^{2(+)}_{\rm s}$"),
+                           ("Qs_diff_Z2",r"$Z^{2(-)}_{\rm s}$"))
     
-    vals = {}
-    for control_type, _ in control_types:
-        vals[control_type] = {}
-        for label, _ in labels_and_colnames:
-            vals[control_type][label] = np.zeros(num_images, dtype=float)
+    for results_tail in "_results.fits", "_fit_results.fits":
     
-    for n in range(num_images):
-        
-        results_root_n = results_root.replace("_n","_"+str(n))
-        
-        for control_type, tag in control_types:
-        
-            filename = results_root_n + tag + "_results.fits"
-        
-            header = fits.open(filename)[1].header
-        
-            vals[control_type]["X2"][n] = header["X_SQR"]
-            vals[control_type]["Qx_diff_Z2"][n] = header["QXD_Z2"]
-            vals[control_type]["Qy_diff_Z2"][n] = header["QYD_Z2"]
-            vals[control_type]["Qp_sum_Z2"][n] = header["QPS_Z2"] 
-            vals[control_type]["Qp_diff_Z2"][n] = header["QPD_Z2"] 
-            vals[control_type]["Qc_sum_Z2"][n] = header["QPS_Z2"] 
-            vals[control_type]["Qc_diff_Z2"][n] = header["QPD_Z2"] 
-            vals[control_type]["Qs_sum_Z2"][n] = header["QSS_Z2"] 
-            vals[control_type]["Qs_diff_Z2"][n] = header["QSD_Z2"]
-            
-    # Get the means
-    val_means = {}
-    for control_type, _ in control_types:
-        val_means[control_type] = {}
-        for label, _ in labels_and_colnames:
-            val_means[control_type][label] = vals[control_type][label].mean()
-
-    # Print it in table format
-    table_filename = args.output_filename_root + "." + args.output_extension
-    
-    with open(table_filename,'w') as fo:
-        
-        # Write the header portion
-        fo.write("\\begin{center}\n")
-        fo.write("\t\\begin{tabular}{llllllllll}\n")
-        
-        line = "\t\tType"
-        for _, colname in labels_and_colnames:
-            line += " & " + colname
-        line += " \\\\ \\hline \n"
-        fo.write(line)
-        
-        # Print a line for each control type
+        vals = {}
         for control_type, _ in control_types:
-            line = "\t\t" + control_type
+            vals[control_type] = {}
+            vals[control_type]["NSTAR"] = np.zeros(num_images, dtype=int)
             for label, _ in labels_and_colnames:
-                line += (" & $%1.1e}$" % val_means[control_type][label]).replace("e","\\times 10^{").replace("{+0","{").replace("{-0","{-")
-            line += " \\\\\n"
-            
-            fo.write(line)
+                vals[control_type][label] = np.zeros(num_images, dtype=float)
+                vals[control_type]["Focus"] = np.zeros(num_images, dtype=float)
         
-        # Write the tail portion
-        fo.write("\t\\end{tabular}\n")
-        fo.write("\\end{center}\n")
+        for n in range(num_images):
+            
+            results_root_n = results_root.replace("_n","_"+str(n))
+            
+            for control_type, tag in control_types:
+            
+                filename = results_root_n + tag + results_tail
+            
+                header = fits.open(filename)[1].header
+            
+                vals[control_type]["NSTAR"][n] = header["NSTAR"]
+                vals[control_type]["X2"][n] = header["X_SQR"]
+                vals[control_type]["Qx_diff_Z2"][n] = header["QXD_Z2"]
+                vals[control_type]["Qy_diff_Z2"][n] = header["QYD_Z2"]
+                vals[control_type]["Qp_sum_Z2"][n] = header["QPS_Z2"] 
+                vals[control_type]["Qp_diff_Z2"][n] = header["QPD_Z2"] 
+                vals[control_type]["Qc_sum_Z2"][n] = header["QCS_Z2"] 
+                vals[control_type]["Qc_diff_Z2"][n] = header["QCD_Z2"] 
+                vals[control_type]["Qs_sum_Z2"][n] = header["QSS_Z2"] 
+                vals[control_type]["Qs_diff_Z2"][n] = header["QSD_Z2"]
+                vals[control_type]["Focus"][n] = header["FOCUS"]
+                
+        # Get the means and stderrs
+        val_means = {}
+        val_stderrs = {}
+        for control_type, _ in control_types:
+            val_means[control_type] = {}
+            val_stderrs[control_type] = {}
+            for label, _ in labels_and_colnames:
+                val_means[control_type][label] = vals[control_type][label].mean()
+                val_stderrs[control_type][label] = vals[control_type][label].std()
+            val_means[control_type]["Focus"] = vals[control_type]["Focus"].mean()
+            val_stderrs[control_type]["Focus"] = vals[control_type]["Focus"].std()
+                
+        if results_tail == "_results.fits":
+            output_root = args.output_filename_root
+            table_label = "Known Focus Offset"
+        else: 
+            output_root = args.output_filename_root + "_fit"
+            table_label = "Fit Focus Offset"
     
-    # Copy it to the paper location if in tex format
-    if args.output_extension=="tex":
-        cmd = "cp " + table_filename + " " + paper_location
-        sbp.call(cmd,shell=True)
+        # Print the means in table format
+        table_filename = output_root + "." + args.output_extension
+        
+        with open(table_filename,'w') as fo:
+            
+            # Write the header portion
+            fo.write("\\begin{center}\n")
+            fo.write("\t\\begin{tabular}{llllllllll}\n")
+            fo.write("\t\t\\multicolumn{10}{c}{\\textbf{"+table_label+"}} \\\\")
+            
+            line = "\t\tType"
+            for _, colname in labels_and_colnames:
+                line += " & " + colname
+            line += " \\\\ \\hline \n"
+            fo.write(line)
+            
+            # Print a line for each control type
+            for control_type, _ in control_types:
+                line = "\t\t" + control_type
+                for label, _ in labels_and_colnames:
+                    line += (" & $%1.1e}$" % val_means[control_type][label]).replace("e","\\times 10^{").replace("{+0","{").replace("{-0","{-")
+                line += " \\\\\n"
+                
+                fo.write(line)
+            
+            # Write the tail portion
+            fo.write("\t\\end{tabular}\n")
+            fo.write("\\end{center}\n")
+    
+        # Print the standard errors in table format
+        stderr_table_filename = output_root + "_stderr." + args.output_extension
+        
+        with open(stderr_table_filename,'w') as fo:
+            
+            # Write the header portion
+            fo.write("\\begin{center}\n")
+            fo.write("\t\\begin{tabular}{llllllllll}\n")
+            fo.write("\t\t\\multicolumn{10}{c}{\\textbf{"+table_label+" Errors}} \\\\")
+            
+            line = "\t\tType"
+            for _, colname in labels_and_colnames:
+                line += " & " + colname
+            line += " \\\\ \\hline \n"
+            fo.write(line)
+            
+            # Print a line for each control type
+            for control_type, _ in control_types:
+                line = "\t\t" + control_type
+                for label, _ in labels_and_colnames:
+                    line += (" & $%1.1e}$" % val_stderrs[control_type][label]).replace("e","\\times 10^{").replace("{+0","{").replace("{-0","{-")
+                line += " \\\\\n"
+                
+                fo.write(line)
+            
+            # Write the tail portion
+            fo.write("\t\\end{tabular}\n")
+            fo.write("\\end{center}\n")
+        
+        # Copy them to the paper location if in tex format
+        if args.output_extension=="tex":
+            cmd = "cp " + table_filename + " " + paper_location
+            sbp.call(cmd,shell=True)
+            cmd = "cp " + stderr_table_filename + " " + paper_location
+            sbp.call(cmd,shell=True)
 
 if __name__ == "__main__":
     main(sys.argv)

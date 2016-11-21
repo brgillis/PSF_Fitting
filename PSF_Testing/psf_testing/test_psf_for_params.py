@@ -117,8 +117,11 @@ def test_star(i,
                                        use_cache=use_cache,
                                        **params)
     
+    model_psf_noise = np.sqrt(np.abs(model_psf) / gain + np.square(star.background_noise))
+    
     # Subtract the background from the model psf for consistency with how we treat stars
-    model_psf -= get_background_level(model_psf,weight_func=prim_weight_func)
+    model_background = get_background_level(model_psf,weight_func=prim_weight_func)
+    model_psf -= model_background
     
     # Use the star's precise centre, adjusted to the pixel coord of the psf's centre
     
@@ -138,7 +141,6 @@ def test_star(i,
                       yc=star.model_yc-psf_y_offset+star_y_offset)
 
     # Now, get a noisy psf and test it (so we can test for noise bias)
-    model_psf_noise = np.sqrt(np.abs(model_psf) / gain + np.square(star.background_noise))
 
     ny, nx = np.shape(model_psf)
 

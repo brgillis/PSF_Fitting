@@ -77,8 +77,8 @@ def make_X_v_focus_v_chip_plot(summary_filename = default_summary_filename,
         y_label = r"Best $\chi^2_{\rm red}$"
         fitted_param = summary_table["chi_squared"]/(summary_table["chi2_dofs"]+3)
     else:
-        y_label = r"Best $X^2_{\rm red}$"
-        fitted_param = summary_table["X_squared"]/summary_table["X2_dofs"]
+        y_label = r"Best $X^2$"
+        fitted_param = summary_table["X_squared"]
     ax.set_yscale("log", nonposy='clip')
 
     chip1_mask = ~np.logical_and(summary_table["chip"]==1,fitted_param>0)
@@ -96,7 +96,7 @@ def make_X_v_focus_v_chip_plot(summary_filename = default_summary_filename,
     ax.set_xlabel("Best-fit focus offset (microns)",fontsize=fontsize)
     ax.set_ylabel(y_label,fontsize=fontsize,labelpad=-8)
     
-    ax.legend(loc="upper right")
+    ax.legend(loc="upper left")
         
     # Save the figure
     outfile_name = plot_name + "." + file_type

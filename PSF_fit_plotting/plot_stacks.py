@@ -39,8 +39,8 @@ matplotlib.rcParams['text.usetex'] = True
 
 from astropy.io import fits
 
-default_image_location = "/disk2/brg/Data/HST_Fields"
-default_image_name = "jb5d04qiq_sci1_cor"
+default_image_location = "/disk2/brg/git/Tiny_Tim_PSF_Fitting/PSF_Testing"
+default_image_name = "psf_testing"
 
 default_plot_name_tail = "_stacks"
 default_paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/PSF_Model_Testing/"
@@ -56,6 +56,8 @@ default_res_i_max = 0.5
 
 figsize = (4,4)
 labelsize = 8
+
+i_shift = 0.02
 
 def make_stacks(image_location = default_image_location,
                 image_name = default_image_name,
@@ -82,7 +84,7 @@ def make_stacks(image_location = default_image_location,
     
     for stack_name in ("star", "model", "noisy_model", "residual"):
         
-        stack_filename = stack_filename_base + "_" + stack_name + "_stack.fits"
+        stack_filename = stack_filename_base + "_" + stack_name + "_full_stack.fits"
         
         stack = fits.open(stack_filename)[0]
     
@@ -98,7 +100,7 @@ def make_stacks(image_location = default_image_location,
                           ("model","Model",1),
                           ("noisy_model","Noisy model",2)):
         ax = pyplot.subplot(gs[i])
-        clipped_data = np.clip(stacks[stack_name],i_min,i_max)
+        clipped_data = np.clip(stacks[stack_name]+i_shift,i_min,i_max)
         ax.matshow(np.log(clipped_data),
                    cmap=pyplot.cm.gray,
                    interpolation='nearest',

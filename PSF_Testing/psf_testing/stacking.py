@@ -28,10 +28,12 @@ import numpy as np
 from psf_testing import magic_values as mv
 from psf_testing.moments.estimate_background import get_background_level
 from psf_testing.moments.centre_image import centre_image
+from psf_testing.moments.estimate_background import get_background_noise
 
 
 def make_stacks(stars, stack_size=int(2 * mv.default_weight_rmax + 1),
-                weight_func=mv.default_prim_weight_func):
+                weight_func=mv.default_prim_weight_func,
+                optimal_weighting=True):
     
     stack_size = int(stack_size)
 
@@ -40,12 +42,8 @@ def make_stacks(stars, stack_size=int(2 * mv.default_weight_rmax + 1),
     for stack_name, image_name in zip(("star", "model", "noisy_model"),
                                       ("stamp", "model_psf", "noisy_model_psf")):
         stack = np.zeros((stack_size, stack_size))
-        num_stars = 0
+        total_weight = 0.
         for star in stars:
-            
-            # TODO: Remove this
-            if num_stars >= 1:
-                break
             
             if (not star.valid) or star.outlier:
                 continue
@@ -60,6 +58,11 @@ def make_stacks(stars, stack_size=int(2 * mv.default_weight_rmax + 1),
             else:
                 xc = int(eval("star."+stack_name+"_xc")+0.5)
                 yc = int(eval("star."+stack_name+"_yc")+0.5)
+                
+            if optimal_weighting and stack_name != "model":
+                weight = (get_background_noise(image))**(-2)
+            else:
+                weight = 1.
             
             image_radius = np.min((xc,image_shape[0]-xc-1,yc,image_shape[1]-yc-1))
             image_view = image[xc-image_radius:xc+image_radius+1,yc-image_radius:yc+image_radius+1]
@@ -74,7 +77,7 @@ def make_stacks(stars, stack_size=int(2 * mv.default_weight_rmax + 1),
             if dy > 0:
                 image_view = image_view[:,dy:-dy]
                 
-            image_view = image_view/star.m0[0]
+            image_view = weight*image_view/star.m0[0]
 
             if (dx >= 0) and (dy >= 0):
                 stack += image_view
@@ -85,21 +88,21 @@ def make_stacks(stars, stack_size=int(2 * mv.default_weight_rmax + 1),
             elif (dx < 0) and (dy >= 0):
                 stack[-dx:dx, :] += image_view
 
-            num_stars += 1
+            total_weight += weight
 
-        assert num_stars > 0
+        assert total_weight > 0
         
         # Subtract off any lingering background
         stack -= get_background_level(stack)
         
         # Normalize the stack by its number of stars
-        stack /= num_stars
+        stack /= total_weight
 
-        stacks[stack_name] = stack
+        stacks[stack_name] = (stack, total_weight)
         
     # Add residual and noisy residual stacks
-    stacks["residual"] = stacks["star"] - stacks["model"]
-    stacks["noisy_residual"] = stacks["star"] - stacks["noisy_model"]
+    stacks["residual"] = (stacks["star"][0] - stacks["model"][0]), stacks["star"][1]
+    stacks["noisy_residual"] = (stacks["star"][0] - stacks["noisy_model"][0]), 2*stacks["star"][1]
 
     return stacks
 
@@ -108,11 +111,12 @@ def save_stacks(stacks, filename_root, header=None):
     for stack_name in stacks:
         filename = filename_root + "_" + stack_name + "_stack" + mv.image_extension
 
-        hdu = fits.PrimaryHDU(stacks[stack_name])
+        hdu = fits.PrimaryHDU(stacks[stack_name][0])
         
         if header is not None:
             for key in header:
                 hdu.header[key] = header[key]
+        hdu.header["TOTAL_W"] = stacks[stack_name][1]
 
         hdu.writeto(filename, clobber=True)
 

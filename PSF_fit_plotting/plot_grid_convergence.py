@@ -127,11 +127,11 @@ def main(argv):
     
     ax.set_yscale("log", nonposy='clip')
     
-    ax.set_xlabel("Cell size",fontsize=fontsize)
+    ax.set_xlabel("Cell side length (px)",fontsize=fontsize)
     ax.set_xticks(indices)
     ax.set_xticklabels(grid_sizes)
 
-    ax.legend(loc="lower left",ncol=2)
+    ax.legend(loc="lower right",ncol=2)
     
     output_filename = args.output_filename_root + "." + args.output_extension
 
