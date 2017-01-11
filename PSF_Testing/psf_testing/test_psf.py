@@ -248,7 +248,7 @@ def test_psf(image_filename,
                                                                   focus_samples=focus_samples,
                                                                   focus_precision=focus_precision,
                 
-                                                                  **kwargs)
+                                                                  **kwargs_and_params)
     
     # Report the results
     report_results(test_results=test_results,
