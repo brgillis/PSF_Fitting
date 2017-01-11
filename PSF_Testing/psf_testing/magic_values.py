@@ -42,7 +42,7 @@ update_marker_filename = ".PSF_Testing_update_marker"
 pixel_scale = 0.05
 gain = 2.0
 zeropoint = 26.08 # F606W filter in ABmags from www.stsci.edu/hst/wfc3/phot_zp_lbn
-# zeropoint = 26.08 # F814W filter in ABmags from www.stsci.edu/hst/wfc3/phot_zp_lbn
+# zeropoint = 25.09 # F814W filter in ABmags from www.stsci.edu/hst/wfc3/phot_zp_lbn
 
 read_noise = 5.4 # Actually Euclid value
 sky_level = 32570.*3.3/2. # Actually Euclid value
