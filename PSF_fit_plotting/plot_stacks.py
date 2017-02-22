@@ -57,7 +57,7 @@ default_res_i_max = 0.5
 figsize = (4,4)
 labelsize = 8
 
-i_shift = 0.02
+i_shift = 0.01
 
 def make_stacks(image_location = default_image_location,
                 image_name = default_image_name,

@@ -509,7 +509,6 @@ def get_model_psf(x_pix,
                    weight_func=mv.default_prim_weight_func,
                    tinytim_params=None,
                    spec_type=mv.default_model_psf_spec_type,
-                   kernel_adjustment=mv.default_params["kernel_adjustment"],
                    use_cache=True,
                    **params):
 
@@ -542,7 +541,11 @@ def get_model_psf(x_pix,
             if (not param == "kernel_adjustment" and not param == "kernel_adjustment_ratio" and
                 not param == "guiding_error_mag1" and not param == "guiding_error_mag2" and
                 not param == "guiding_error_angle"):
-                rounded_params[param] = round(params[param], mv.rounding_digits)
+                rounded_params[param] = round(params[param]+scheme.focus*params[param+"_slope"],mv.rounding_digits)
+                
+    
+    kernel_adjustment=params["kernel_adjustment"]+params["kernel_adjustment_slope"]*scheme.focus
+    kernel_adjustment_ratio=params["kernel_adjustment_ratio"]+params["kernel_adjustment_ratio_slope"]*scheme.focus
 
     subsampled_model = get_cached_subsampled_psf(frozenset(tinytim_params.items()),
                                                  weight_func,
@@ -595,15 +598,15 @@ def get_model_psf(x_pix,
     # Determine how many subsampled pixels we'll have to shift the subsampled psf by
 
     if "guiding_error_mag1" in params:
-        guiding_error_mag1 = params["guiding_error_mag1"]
+        guiding_error_mag1 = params["guiding_error_mag1"] + params["guiding_error_mag1_slope"]*scheme.focus
     else:
         guiding_error_mag1 = 0
     if "guiding_error_mag2" in params:
-        guiding_error_mag2 = params["guiding_error_mag2"]
+        guiding_error_mag2 = params["guiding_error_mag2"] + params["guiding_error_mag2_slope"]*scheme.focus
     else:
         guiding_error_mag2 = 0
     if "guiding_error_angle" in params:
-        guiding_error_angle = params["guiding_error_angle"]
+        guiding_error_angle = params["guiding_error_angle"] + params["guiding_error_angle_slope"]*scheme.focus
     else:
         guiding_error_angle = 0
     galsim_rebin = tinytim_params["galsim_rebin"] or guiding_error_mag1 != 0. or guiding_error_mag2 != 0.

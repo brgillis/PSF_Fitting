@@ -63,6 +63,7 @@ def test_psf(image_filename,
              
              focus=None,
              optical_params=mv.default_params,
+             optical_param_slopes=mv.default_slopes,
              
              min_focus=mv.default_min_focus,
              max_focus=mv.default_max_focus,
@@ -235,12 +236,14 @@ def test_psf(image_filename,
     # Are we testing a specific focus value?
     elif focus is not None:
         kwargs_and_params.update(optical_params)
+        kwargs_and_params.update(optical_param_slopes)
         test_results = test_psf_for_params(focus=focus,
                                            **kwargs_and_params)
         fitting_record = None
     # Otherwise, call the focus fitting function
     else:
         kwargs_and_params.update(optical_params)
+        kwargs_and_params.update(optical_param_slopes)
         test_results, fitting_record = fit_best_focus_and_test_psf(focus_penalty_sigma=focus_penalty_sigma,
 
                                                                   min_focus=min_focus,

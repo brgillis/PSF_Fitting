@@ -44,10 +44,17 @@ def parse_and_get_kwargs(parser,special_keys=None):
             
     optical_params = {}
     for key in mv.default_params:
-            optical_params[key] = kwargs[key]
-            del kwargs[key]
+        optical_params[key] = kwargs[key]
+        del kwargs[key]
+            
+    optical_param_slopes = {}
+    for key in mv.default_params:
+        slope_key = key+"_slope"
+        optical_param_slopes[slope_key] = kwargs[slope_key]
+        del kwargs[slope_key]
             
     kwargs["optical_params"] = optical_params
+    kwargs["optical_param_slopes"] = optical_param_slopes
             
     return kwargs, special_kwargs
 
@@ -152,5 +159,7 @@ def get_arg_parser():
     for optical_param in mv.default_params:
         parser.add_argument("--"+optical_param,type=float, default=mv.default_params[optical_param],
                             help="Optical parameter; will be ignored if fitting parameters.")
+        parser.add_argument("--"+optical_param+"_slope",type=float, default=0,
+                            help="Optical parameter slope against focus; will be ignored if fitting parameters.")
     
     return parser

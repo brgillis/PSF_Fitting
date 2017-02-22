@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-""" @file /disk2/brg/git/Tiny_Tim_PSF_Fitting/PSF_fit_plotting/plot_bestfit_params_hist.py
+""" @file /disk2/brg/git/Tiny_Tim_PSF_Fitting/PSF_fit_plotting/plot_bestfit_params_v_obs_time.py
 
     Created 29 Jan 2016
 
@@ -31,6 +31,7 @@ import numpy as np
 import subprocess as sbp
 import sys
 from math import erfc, sqrt
+from scipy.stats import linregress
 
 matplotlib.rcParams['ps.useafm'] = True
 matplotlib.rcParams['pdf.use14corefonts'] = True
@@ -40,7 +41,7 @@ from astropy.io import fits
 
 default_summary_filename = "/disk2/brg/git/Tiny_Tim_PSF_Fitting/PSF_Testing/psf_testing_results_all_params_summary.fits"
 
-default_plot_name = "bestfit_param_hists"
+default_plot_name = "bestfit_param_v_focus"
 default_paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/PSF_Model_Testing/"
 default_file_type = "png"
 
@@ -77,7 +78,7 @@ param_colnames = (("Z 2",0.,"$Z_{2}$ (Tip)","z2"),
                   ("Kernel adjustment",1.0,"Kernel Adjustment","kernel_adjustment")
                   )
 
-def make_bestfit_param_hists(summary_filename = default_summary_filename,
+def make_bestfit_param_plots(summary_filename = default_summary_filename,
                              
                             plot_name = default_plot_name,
                             paper_location = default_paper_location,
@@ -111,45 +112,65 @@ def make_bestfit_param_hists(summary_filename = default_summary_filename,
         
         vals = summary_table[param_name]
         
-        # Draw the histogram
+        # Draw the plot
+        
+        ax.scatter(summary_table["focus"],vals,edgecolor='none',s=1.0)
         
         if param_name != "Kernel adjustment":
-            pyplot.hist(vals,range=[-0.05,0.05],bins=21,facecolor='y')
-            ax.set_xlim([-0.05,0.05])
-            ax.set_xticks(np.linspace(-0.04,0.04,5,True))
-            ax.set_xticklabels(["-0.04","-0.02","0","0.02","0.04"],fontsize=tick_fontsize)
+            # ax.set_ylim([-0.05,0.05])
+            # ax.set_yticks(np.linspace(-0.04,0.04,5,True))
+            # if i % nx == 1:
+            #     ax.set_yticklabels(["-0.04","-0.02","0","0.02","0.04"],fontsize=tick_fontsize)
+            # else:
+            ax.set_yticklabels([])
         else:
-            pyplot.hist(vals,range=[0.95,1.05],bins=21,facecolor='y')
-            ax.set_xlim([.95,1.05])
-            ax.set_xticks([0.96,0.98,1.00,1.02,1.04])
-        
-        ax.set_ylim([0,ax.get_ylim()[1]*1.1])
-        ax.set_yticklabels([])
+            ax.set_ylim([.98,1.02])
+            ax.set_yticks([0.98,0.99,1.00,1.01,1.02])
+            if i % nx != 1:
+                ax.set_yticklabels([])
+                
+        ax.set_xlim([-3,1])
         
         # Draw the default
-        ax.plot([default_val,default_val],ax.get_ylim(),color='k',linestyle='dashed')
+        ax.plot(ax.get_xlim(),[default_val,default_val],color='k')
         
-        ax.set_title(col_name,fontsize=fontsize)
+        # Get the linear regression and plot it
+        regression = linregress(summary_table["focus"],vals)
+        ax.plot(ax.get_xlim(),[regression[1]+regression[0]*ax.get_xlim()[0],regression[1]+regression[0]*ax.get_xlim()[1]],
+                linestyle='dashed')
+        
+        ax.set_title(param_name,fontsize=fontsize)
             
-        # Get and print mean and sigma for this value
+        # Get and print mean and sigma for the intercept
         mean = np.mean(vals)
         sigma = np.std(vals)
         stderr = sigma / np.sqrt(len(vals)-1)
         
         Z = np.abs((mean-default_val)/stderr)
         
-        p = erfc(Z/sqrt(2.))
+        p_int = erfc(Z/sqrt(2.))
             
-        if np.abs((mean-default_val)/sigma) >= 1.:
-            p_label = ("$\\mathbf{ p =  %1.1e }}$" %  p).replace("e","\\times 10^{")
+        if p_int < 0.05/len(vals):
+            p_label = ("$\\mathbf{ p_{\\rm m} =  %1.1e }}$" %  p_int).replace("e","\\times 10^{")
         else:
-            p_label = ("$ p =  %1.1e }$" %  p).replace("e","\\times 10^{")
+            p_label = ("$ p_{\\rm m} =  %1.1e }$" %  p_int).replace("e","\\times 10^{")
         ax.text(0.05,0.95,p_label,horizontalalignment='left',
                 verticalalignment='top',transform=ax.transAxes,
                 fontsize=fontsize)
         
+        # Get and print p for the slope
+        p_s = regression[3]
+        if p_s < 0.05/len(vals):
+            p_label = ("$\\mathbf{ p_{\\rm s} =  %1.1e }}$" %  p_s).replace("e","\\times 10^{")
+        else:
+            p_label = ("$ p_{\\rm s} =  %1.1e }$" %  p_s).replace("e","\\times 10^{")
+        ax.text(0.05,0.85,p_label,horizontalalignment='left',
+                verticalalignment='top',transform=ax.transAxes,
+                fontsize=fontsize)
+        
         # Append to the bestfit params string
-        bestfit_params_string += "--" + param_key + " " + str(mean) + " "
+        bestfit_params_string += "--" + param_key + " " + str(regression[1]) + " "
+        bestfit_params_string += "--" + param_key + "_slope " + str(regression[0]) + " "
         
     if not hide:
         fig.show()
@@ -159,7 +180,7 @@ def make_bestfit_param_hists(summary_filename = default_summary_filename,
     pyplot.savefig(outfile_name, format=file_type, bbox_inches="tight", pad_inches=0.05)
     
     # Copy it to the paper location if in eps format
-    if file_type=="eps":
+    if file_type=="png":
         cmd = "cp " + outfile_name + " " + paper_location
         sbp.call(cmd,shell=True)
         
@@ -190,7 +211,7 @@ def main(argv):
     
     args = vars(parser.parse_args())
     
-    make_bestfit_param_hists(**args)
+    make_bestfit_param_plots(**args)
     
     return
 

@@ -133,6 +133,9 @@ default_params = {"z2":0.,
                   "guiding_error_mag2":0.,
                   "guiding_error_angle":0,
                   }
+default_slopes = {}
+for key in default_params:
+    default_slopes[key] = 0
 default_penalty_sigma = 0
 default_focus_penalty_sigma = 0
 rounding_digits = 4
