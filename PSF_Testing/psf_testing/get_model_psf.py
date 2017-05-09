@@ -157,7 +157,7 @@ def make_subsampled_psf_model(filename,
     # Run the command to call tiny1
     sbp.call(cmd, shell=True)
 
-    # Edit the parameter file to adjust coma and astigmatism if necessary
+    # Edit the parameter file to adjust optical parameters as necessary
     str_to_replace = []
     replacements = []
     if z2 is not None:
