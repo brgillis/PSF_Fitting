@@ -251,14 +251,16 @@ def test_psf_for_params(stars,
             points.add(new_point)
     
         rounded_params = {}
+        
+        for param in mv.default_params:
+            if param+"_slope" not in params:
+                params[param+"_slope"]=0
     
         for param in params:
             if param in mv.default_params:
                 if (not param=="kernel_adjustment" and not param=="kernel_adjustment_ratio" and
                     not param=="guiding_error_mag1" and not param=="guiding_error_mag2" and
                     not param=="guiding_error_angle"):
-                    if param+"_slope" not in params:
-                        params[param+"_slope"]=0
                     rounded_params[param] = round(params[param]+focus*params[param+"_slope"],mv.rounding_digits)
                     
         rounded_params["focus"] = round(focus,mv.rounding_digits)
