@@ -535,6 +535,10 @@ def get_model_psf(x_pix,
     focus = round(scheme.focus, mv.rounding_digits)
 
     rounded_params = {}
+        
+    for param in mv.default_params:
+        if param in params and param+"_slope" not in params:
+            params[param+"_slope"]=0
 
     for param in params:
         if param in mv.default_params:

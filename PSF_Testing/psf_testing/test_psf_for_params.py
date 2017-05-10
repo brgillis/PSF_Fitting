@@ -253,7 +253,7 @@ def test_psf_for_params(stars,
         rounded_params = {}
         
         for param in mv.default_params:
-            if param+"_slope" not in params:
+            if param in params and param+"_slope" not in params:
                 params[param+"_slope"]=0
     
         for param in params:
