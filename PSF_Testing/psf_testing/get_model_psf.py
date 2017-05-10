@@ -547,9 +547,14 @@ def get_model_psf(x_pix,
                 not param == "guiding_error_angle"):
                 rounded_params[param] = round(params[param]+scheme.focus*params[param+"_slope"],mv.rounding_digits)
                 
-    
-    kernel_adjustment=params["kernel_adjustment"]+params["kernel_adjustment_slope"]*scheme.focus
-    kernel_adjustment_ratio=params["kernel_adjustment_ratio"]+params["kernel_adjustment_ratio_slope"]*scheme.focus
+    if "kernel_adjustment" in params:
+        kernel_adjustment=params["kernel_adjustment"]+params["kernel_adjustment_slope"]*scheme.focus
+    else:
+        kernel_adjustment=mv.default_params["kernel_adjustment"]
+    if "kernel_adjustment_ratio" in params:
+        kernel_adjustment_ratio=params["kernel_adjustment_ratio"]+params["kernel_adjustment_ratio_slope"]*scheme.focus
+    else:
+        kernel_adjustment_ratio=mv.default_params["kernel_adjustment_ratio"]
 
     subsampled_model = get_cached_subsampled_psf(frozenset(tinytim_params.items()),
                                                  weight_func,
