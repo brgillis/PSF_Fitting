@@ -179,7 +179,10 @@ def make_subsampled_psf_model(filename,
         str_to_replace.append("0.001    # Z8 = Y (V3) coma")
         replacements.append(str(coma_y) + "    # Z8 = Y (V3) coma")
     if clover_x is not None:
-        str_to_replace.append("0.008    # Z9 = X clover")
+        if tinytim_params["chip"]==1:
+            str_to_replace.append("0.008    # Z9 = X clover")
+        else:
+            str_to_replace.append("0.007    # Z9 = X clover")
         replacements.append(str(clover_x) + "    # Z7 = X (V2) clover")
     if clover_y is not None:
         str_to_replace.append("0.018    # Z10 = Y clover")

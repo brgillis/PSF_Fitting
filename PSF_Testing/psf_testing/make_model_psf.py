@@ -201,7 +201,10 @@ def make_subsampled_model_psf(filename,
     strs_to_replace.append("0.001    # Z8 = Y (V3) coma")
     replacements.append(str(optical_params_to_use["coma_y"]) + "    # Z8 = Y (V3) coma")
 
-    strs_to_replace.append("0.008    # Z9 = X clover")
+    if chip==1:
+        strs_to_replace.append("0.008    # Z9 = X clover")
+    else:
+        strs_to_replace.append("0.007    # Z9 = X clover")
     replacements.append(str(optical_params_to_use["clover_x"]) + "    # Z7 = X (V2) clover")
 
     strs_to_replace.append("0.018    # Z10 = Y clover")
@@ -261,6 +264,8 @@ def make_subsampled_model_psf(filename,
     # PSF should be generated, now move it to the desired filename
     init_filename = filename_base + "00.fits"
     os.rename(init_filename,filename)
+    
+    return
 
     # Clean up unneeded files. Silently suppress any errors here
     try:
