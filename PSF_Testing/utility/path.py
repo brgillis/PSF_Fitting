@@ -1,4 +1,4 @@
-""" @file combine_results.py
+""" @file path.py
 
     Created 31 Oct 2016
 
@@ -6,7 +6,7 @@
 
     ---------------------------------------------------------------------
 
-    Copyright (C) 2015 Bryan R. Gillis
+    Copyright (C) 2016 Bryan R. Gillis
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import os
 from os.path import join, isfile
 
 def find_file_in_path(filename, path):
@@ -50,3 +51,20 @@ def first_in_path(path):
     """
 
     return path.split(":")[0]
+
+def first_writable_in_path(path):
+    """
+        Gets the first directory listed in the path which we have write access for.
+    """
+
+    colon_separated_path = path.split(":")
+    
+    first_writable_dir = None
+    
+    for test_path in colon_separated_path:
+
+        if os.access(test_path, os.W_OK):
+            first_writable_dir = test_path
+            break
+
+    return first_writable_dir
