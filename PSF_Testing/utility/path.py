@@ -63,7 +63,7 @@ def first_writable_in_path(path):
     
     for test_path in colon_separated_path:
 
-        if os.access(test_path, os.W_OK):
+        if os.access(test_path, os.W_OK | os.X_OK):
             first_writable_dir = test_path
             break
 
