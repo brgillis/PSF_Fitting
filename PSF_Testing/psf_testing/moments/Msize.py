@@ -89,7 +89,7 @@ def get_light_distribution(image,
     return N, I_mean, W
     
 
-def get_Qsize(image,
+def get_Msize(image,
                       prim_weight_func=mv.default_prim_weight_func,
                       sec_weight_func=mv.default_sec_weight_func,
                       xc=None,
@@ -132,8 +132,8 @@ def get_Qsize(image,
     # Put this into the calculation for Qsize
     ri_array = np.linspace(start=0., stop=dmax, num=dmax, endpoint=False)
 
-    Qsize = np.zeros(2)
-    Qsize_ps = np.zeros(2)
+    msize = np.zeros(2)
+    msize_ps = np.zeros(2)
 
     for i, weight_func in zip(range(2), (prim_radial_weight_func, sec_radial_weight_func)):
 
@@ -144,10 +144,10 @@ def get_Qsize(image,
         weighted_W_ps = W_ps * w_ri_ps_array
 
         # Get Qsize from this
-        Qsize[i] = (weighted_W * ri_array).sum() / weighted_W.sum()
-        Qsize_ps[i] = (weighted_W_ps * ri_array).sum() / weighted_W_ps.sum()
+        msize[i] = (weighted_W * ri_array).sum() / weighted_W.sum()
+        msize_ps[i] = (weighted_W_ps * ri_array).sum() / weighted_W_ps.sum()
         
     # Subtract the point source result to normalize
-    Qsize -= Qsize_ps
+    msize -= msize_ps
 
-    return Qsize * mv.pixel_scale
+    return (msize * mv.pixel_scale)**2

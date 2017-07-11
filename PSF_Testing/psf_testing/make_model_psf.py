@@ -16,7 +16,7 @@ default_spec_type = (1, 15) # Use spectrum for a K-type star by default
 default_filter_name = 'f606w'
 default_detector = 15 # ACS WFC
 default_psf_size = 2.0
-default_tinytim_path = "../../Program_Files/tinytim-7.5" # Adjust as needed for your own purposes
+default_tinytim_path = "Program_Files/tinytim-7.5" # Adjust as needed for your own purposes
 default_subsampling_factor = 7
 
 # Default optical parameters
@@ -205,10 +205,10 @@ def make_subsampled_model_psf(filename,
         strs_to_replace.append("0.008    # Z9 = X clover")
     else:
         strs_to_replace.append("0.007    # Z9 = X clover")
-    replacements.append(str(optical_params_to_use["clover_x"]) + "    # Z7 = X (V2) clover")
+    replacements.append(str(optical_params_to_use["clover_x"]) + "    # Z9 = X clover")
 
     strs_to_replace.append("0.018    # Z10 = Y clover")
-    replacements.append(str(optical_params_to_use["clover_y"]) + "    # Z8 = Y (V3) clover")
+    replacements.append(str(optical_params_to_use["clover_y"]) + "    # Z10 = Y clover")
 
     strs_to_replace.append("-0.025    # Z11 = 3rd order spherical")
     replacements.append(str(optical_params_to_use["spherical_3rd"]) + "    # Z11 = 3rd order spherical")
@@ -264,8 +264,6 @@ def make_subsampled_model_psf(filename,
     # PSF should be generated, now move it to the desired filename
     init_filename = filename_base + "00.fits"
     os.rename(init_filename,filename)
-    
-    return
 
     # Clean up unneeded files. Silently suppress any errors here
     try:

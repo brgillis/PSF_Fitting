@@ -35,7 +35,7 @@ from psf_testing.fit_params import fit_best_params_and_test_psf
 from utility.smart_logging import get_default_logger
 from psf_testing.moments.centre_image import centre_image
 from psf_testing.moments.estimate_background import get_background_level_and_noise
-from psf_testing.moments.get_Qs import get_m0_and_Qs
+from psf_testing.moments.get_Ms import get_m0_and_Ms
 from psf_testing.report_results import report_results
 from psf_testing.stacking import make_and_save_stacks
 from psf_testing.star_selection.image_info import (get_chip, get_exp_time, get_ra, get_dec,
@@ -184,8 +184,8 @@ def test_psf(image_filename,
                 raise
                 
 
-        (star.m0, star.Qxy, star.Qpcs) = \
-            get_m0_and_Qs(image=star.stamp,
+        (star.m0, star.Mxy, star.Mpcs) = \
+            get_m0_and_Ms(image=star.stamp,
                           prim_weight_func=prim_weight_func,
                           sec_weight_func=sec_weight_func,
                           xc=star.xc,

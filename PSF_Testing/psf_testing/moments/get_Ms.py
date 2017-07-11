@@ -1,4 +1,4 @@
-""" @file /disk2/brg/git/Tiny_Tim_PSF_Fitting/PSF_Testing/moments/get_Qs.py
+""" @file /disk2/brg/git/Tiny_Tim_PSF_Fitting/PSF_Testing/moments/get_Ms.py
 
     Created 17 Sep 2015
 
@@ -25,14 +25,14 @@
 
 import numpy as np
 from psf_testing import magic_values as mv
-from psf_testing.moments.Qsize import get_Qsize
+from psf_testing.moments.Msize import get_Msize
 from psf_testing.moments.centre_image import centre_image
 from psf_testing.moments.coords import get_x_and_y_of_array
 from psf_testing.moments.get_moments import get_moments
 from psf_testing.moments.make_weight_mask import make_weight_mask
 
 
-def get_m0_and_Qs(image,
+def get_m0_and_Ms(image,
                   prim_weight_func=mv.default_prim_weight_func,
                   sec_weight_func=mv.default_sec_weight_func,
                   xc=None,
@@ -68,29 +68,29 @@ def get_m0_and_Qs(image,
                                                       xc=xc,
                                                       yc=yc)
 
-    # Get the Q values from the moments, plus errors from the variances
+    # Get the M values from the moments, plus errors from the variances
 
     scale = mv.pixel_scale
     square_scale = np.square(scale)
 
-    Qx = Mx * scale
+    Mx *= scale
 
-    Qy = My * scale
+    My *= scale
 
-    Qplus = Mplus * square_scale
+    Mplus *= square_scale
 
-    Qcross = 2. * Mxy * square_scale
+    Mcross = 2. * Mxy * square_scale
 
     # Get Qsize and its error now
-    Qsize = get_Qsize(image=image,
+    Msize = get_Msize(image=image,
                       prim_weight_func=prim_weight_func,
                       sec_weight_func=sec_weight_func,
                       xc=xc,
                       yc=yc)
 
     # Put the Q values into numpy arrays
-    Qxy = np.array([Qx, Qy])
+    Mxy = np.array([Mx, My])
     
-    Qpcs = np.array([Qplus, Qcross, Qsize])
+    Mpcs = np.array([Mplus, Mcross, Msize])
 
-    return m0, Qxy, Qpcs
+    return m0, Mxy, Mpcs

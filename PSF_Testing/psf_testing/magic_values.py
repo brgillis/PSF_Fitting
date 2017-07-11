@@ -143,13 +143,20 @@ rounding_digits = 4
 default_image_shape = (4096, 2048) # (x,y) in fits ordering, (y,x) in C ordering
 default_logging_level = "info"
 
-# Relative weights of Q values
+# Relative weights of M values
 rel_weights = {"m0_diff": np.array([1.]),
-               "Qxy_diff": np.array([1/0.2,1/0.2]),
-               "Qpcs_diff": np.array([1/0.04,1/0.04,1/0.08]),
+               "Mxy_diff": np.array([0.71,0.71]),
+               "Mpcs_diff": np.array([0.14,0.14,0.43]),
                "noisy_m0_diff": np.array([1.]),
-               "noisy_Qxy_diff": np.array([1/0.2,1/0.2]),
-               "noisy_Qpcs_diff": np.array([1/0.04,1/0.04,1/0.08])}
+               "noisy_Mxy_diff": np.array([0.71,0.71]),
+               "noisy_Mpcs_diff": np.array([0.14,0.14,0.43])}
+# Relative weights of M values
+rel_powers = {"m0_diff": np.array([2]),
+               "Mxy_diff": np.array([4,4]),
+               "Mpcs_diff": np.array([2,2,2]),
+               "noisy_m0_diff": np.array([2]),
+               "noisy_Mxy_diff": np.array([4,4]),
+               "noisy_Mpcs_diff": np.array([2,2,2])}
 
 # Default weight function for measuring star/model moments
 default_weight_sigma = 3.0 # Pixels

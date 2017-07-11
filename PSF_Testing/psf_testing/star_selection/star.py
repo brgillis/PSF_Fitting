@@ -59,8 +59,8 @@ class Star(object):
         self.sec_weight_mask = None
 
         self.m0 = None
-        self.Qxy = None
-        self.Qpcs = None
+        self.Mxy = None
+        self.Mpcs = None
 
         self.valid = True
         self.outlier = False
@@ -69,15 +69,15 @@ class Star(object):
         self.model_psf = None
         
         self.model_m0 = None
-        self.model_Qxy = None
-        self.model_Qpcs = None
+        self.model_Mxy = None
+        self.model_Mpcs = None
 
         # Data for the corresponding noisy model PSF
         self.noisy_model_psf = None
 
         self.noisy_m0 = None
-        self.noisy_model_Qxy = None
-        self.noisy_model_Qpcs = None
+        self.noisy_model_Mxy = None
+        self.noisy_model_Mpcs = None
         
         return
 

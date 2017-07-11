@@ -183,10 +183,10 @@ def make_subsampled_psf_model(filename,
             str_to_replace.append("0.008    # Z9 = X clover")
         else:
             str_to_replace.append("0.007    # Z9 = X clover")
-        replacements.append(str(clover_x) + "    # Z7 = X (V2) clover")
+        replacements.append(str(clover_x) + "    # Z9 = X clover")
     if clover_y is not None:
         str_to_replace.append("0.018    # Z10 = Y clover")
-        replacements.append(str(clover_y) + "    # Z8 = Y (V3) clover")
+        replacements.append(str(clover_y) + "    # Z10 = Y clover")
     if spherical_3rd is not None:
         str_to_replace.append("-0.025    # Z11 = 3rd order spherical")
         replacements.append(str(spherical_3rd) + "    # Z11 = 3rd order spherical")
