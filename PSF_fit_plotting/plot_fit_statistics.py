@@ -47,47 +47,51 @@ default_red_X2_min = 1.0e-4
 default_red_X2_max = 1.0e0
 default_nbins = 20
 
-figsize = (8,8)
+figsize = (16,16)
 
-base_fontsize = 12
-base_tick_fontsize = 8
+base_fontsize = 24
+base_tick_fontsize = 16
 
-control_base_values = {"Qx_diff_Z2":2.7e-6,
-                       "Qy_diff_Z2":5.7e-6,
-                       "Qplus_sum_Z2":1.3e-5,
-                       "Qplus_diff_Z2":9.1e-6,
-                       "Qcross_sum_Z2":1.5e-6,
-                       "Qcross_diff_Z2":4.0e-6,
-                       "Qsize_sum_Z2":1.8e-5,
-                       "Qsize_diff_Z2":1.3e-6,
-                       "chi_squared":1}
+control_base_values = {"Qx_diff_Z2":9.5230633899e-11,
+                       "Qy_diff_Z2":9.89293638281e-11,
+                       "Qplus_sum_Z2":2.54180115624e-08,
+                       "Qplus_diff_Z2":1.05985170277e-08,
+                       "Qcross_sum_Z2":2.41826638198e-08,
+                       "Qcross_diff_Z2":9.63381387797e-09,
+                       "Qsize_sum_Z2":3.87623920212e-08,
+                       "Qsize_diff_Z2":1.32206286512e-09,
+                       "chi_squared":0.0706308584912}
 
-control_full_values = {"Qx_diff_Z2":3.8e-6,
-                       "Qy_diff_Z2":4.0e-6,
-                       "Qplus_sum_Z2":1.1e-3,
-                       "Qplus_diff_Z2":4.4e-4,
-                       "Qcross_sum_Z2":1.7e-4,
-                       "Qcross_diff_Z2":1.1e-4,
-                       "Qsize_sum_Z2":3.9e-4,
-                       "Qsize_diff_Z2":2.2e-4,
-                       "chi_squared":1}
+control_full_values = {"Qx_diff_Z2":7.93153092243e-11,
+                       "Qy_diff_Z2":8.66540730619e-11,
+                       "Qplus_sum_Z2":2.34360169918e-08,
+                       "Qplus_diff_Z2":1.06027649021e-08,
+                       "Qcross_sum_Z2":2.06976827437e-08,
+                       "Qcross_diff_Z2":9.0660876042e-09,
+                       "Qsize_sum_Z2":9.57323954797e-08,
+                       "Qsize_diff_Z2":1.86460152469e-09,
+                       "chi_squared":0.555146019154}
 
 def make_fit_statistic_plots(summary_filename = default_summary_filename,
+                             secondary_summary_filename = None,
                              
-                            plot_name = default_plot_name,
-                            paper_location = default_paper_location,
-                            file_type = default_file_type,
+                             bar_label = None,
+                             secondary_bar_label = None,
+                             
+                             plot_name = default_plot_name,
+                             paper_location = default_paper_location,
+                             file_type = default_file_type,
                             
-                            red_X2_min = default_red_X2_min,
-                            red_X2_max = default_red_X2_max,
-                            nbins = default_nbins,
+                             red_X2_min = default_red_X2_min,
+                             red_X2_max = default_red_X2_max,
+                             nbins = default_nbins,
                             
-                            fade_size = False,
+                             fade_size = False,
                             
-                            plot_chi2 = False,
+                             plot_chi2 = False,
                             
-                            hide = False,
-                            ):
+                             hide = False,
+                             ):
 
     for vals in control_base_values, control_full_values:
         X2 = (vals["Qx_diff_Z2"] + vals["Qy_diff_Z2"] + vals["Qplus_sum_Z2"] + vals["Qplus_diff_Z2"] +
@@ -95,8 +99,12 @@ def make_fit_statistic_plots(summary_filename = default_summary_filename,
         if not fade_size:
             X2 += vals["Qsize_sum_Z2"] + vals["Qsize_diff_Z2"]
         vals["X_squared"] = X2
+        
+    dual_mode = (secondary_summary_filename is not None)
     
     summary_table = fits.open(summary_filename)[1].data
+    if dual_mode:
+        secondary_summary_table = fits.open(secondary_summary_filename)[1].data
     
     fig = pyplot.figure(figsize=figsize)
     
@@ -138,12 +146,44 @@ def make_fit_statistic_plots(summary_filename = default_summary_filename,
         
         ax = pyplot.subplot(gs[i])
         
-        vals = summary_table[param_name]/dofs
-        
-        if fade_size and "size" in param_name:
-            color = "w"
-        
-        pyplot.hist(vals, bins=bins, facecolor=color)
+        if dual_mode:
+            vals = (summary_table[param_name]/dofs,secondary_summary_table[param_name]/dofs)
+            bar_labels = (bar_label,secondary_bar_label)
+            if fade_size and "size" in param_name:
+                colors = ("w", (1,1,1,0))
+                hatches = (None,"xx")
+            elif i==0:
+                colors = ("r",(1,1,1,0))
+                hatches = (None,"xx")
+            else:
+                colors = ("y",(1,1,1,0))
+                hatches = (None,"xx")
+        else:
+            vals = (summary_table[param_name]/dofs,)
+            bar_labels = (bar_label,)
+            if fade_size and "size" in param_name:
+                colors = ("w",)
+                hatches = (None,)
+            elif i==0:
+                colors = ("r",)
+                hatches = (None,)
+            else:
+                colors = ("y",)
+                hatches = (None,)
+                
+        for val, color, hatch, blabel in zip(vals,colors, hatches, bar_labels):
+            pyplot.hist(val, bins=bins, fc=color, hatch=hatch, label=blabel)
+            
+            # Get and print mean and sigma for this value
+            mean = np.mean(val)
+            sigma = np.std(val)
+            
+            print("For parameter " + label + ":\n" +
+                  "mean = " + str(mean) + "\n" +
+                  "sigma = " + str(sigma))
+            
+        if (i==1):
+            ax.legend(prop={'size': 20},loc="upper center")
         
         ax.set_ylim([0,ymax])
         ax.set_yticks(yticks)
@@ -162,14 +202,6 @@ def make_fit_statistic_plots(summary_filename = default_summary_filename,
         
         if xlog:
             ax.set_xscale("log", nonposx='clip')
-            
-        # Get and print mean and sigma for this value
-        mean = np.mean(vals)
-        sigma = np.std(vals)
-        
-        print("For parameter " + label + ":\n" +
-              "mean = " + str(mean) + "\n" +
-              "sigma = " + str(sigma))
         
     # Save the figure
     outfile_name = plot_name + "." + file_type
@@ -193,6 +225,10 @@ def main(argv):
     
     # Image filename
     parser.add_argument("--summary_filename",type=str, default=default_summary_filename)
+    parser.add_argument("--secondary_summary_filename",type=str, default=None)
+    
+    parser.add_argument("--bar_label",type=str, default=None)
+    parser.add_argument("--secondary_bar_label",type=str, default=None)
     
     parser.add_argument("--plot_name",type=str, default=default_plot_name)
     parser.add_argument("--paper_location",type=str, default=default_paper_location)

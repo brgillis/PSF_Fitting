@@ -43,7 +43,7 @@ default_summary_filename = "/disk2/brg/git/Tiny_Tim_PSF_Fitting/PSF_Testing/psf_
 
 default_plot_name = "bestfit_param_v_focus"
 default_paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/PSF_Model_Testing/"
-default_file_type = "png"
+default_file_type = "eps"
 
 default_X2_max = 0.001
 
@@ -104,6 +104,11 @@ def make_bestfit_param_plots(summary_filename = default_summary_filename,
     
     i = 0
     bestfit_params_string = ""
+
+    chip1_mask = ~np.logical_and(summary_table["chip"]==1,summary_table["X_squared"]>0)
+    chip2_mask = ~np.logical_and(summary_table["chip"]==2,summary_table["X_squared"]>0)
+#     chip1_mask = ~np.logical_and(summary_table["45 degree astigmatism"]<=0.05,summary_table["X_squared"]>0)
+#     chip2_mask = ~np.logical_and(summary_table["45 degree astigmatism"]>0.05,summary_table["X_squared"]>0)
     
     for param_name, default_val, col_name, param_key in param_colnames:
         
@@ -114,22 +119,29 @@ def make_bestfit_param_plots(summary_filename = default_summary_filename,
         
         # Draw the plot
         
-        ax.scatter(summary_table["focus"],vals,edgecolor='none',s=1.0)
+        for mask, label, color, marker in ((chip1_mask, "Chip 1", '#C00000', "o"),
+                                           (chip2_mask, "Chip 2", '#4040FF', "^")):
+            compressed_focii = np.ma.masked_array(summary_table["focus"],mask).compressed()
+            compressed_vals = np.ma.masked_array(vals,mask).compressed()
+            ax.scatter(compressed_focii,compressed_vals,edgecolors=color,label=label,alpha=1,
+                       marker=marker,facecolors='none',s=2)
+        # ax.scatter(summary_table["focus"],vals,c=summary_table["num_stars"],edgecolor='none',s=4)
         
         if param_name != "Kernel adjustment":
-            # ax.set_ylim([-0.05,0.05])
-            # ax.set_yticks(np.linspace(-0.04,0.04,5,True))
-            # if i % nx == 1:
-            #     ax.set_yticklabels(["-0.04","-0.02","0","0.02","0.04"],fontsize=tick_fontsize)
-            # else:
-            ax.set_yticklabels([])
+            ax.set_ylim([-0.05,0.09])
+            ax.set_yticks(np.linspace(-0.04,0.08,7,True))
+            if i % nx == 1:
+                ax.set_yticklabels(["-0.04","-0.02","0","0.02","0.04","0.06","0.08"],fontsize=tick_fontsize)
+            else:
+                ax.set_yticklabels([])
         else:
             ax.set_ylim([.98,1.02])
             ax.set_yticks([0.98,0.99,1.00,1.01,1.02])
             if i % nx != 1:
                 ax.set_yticklabels([])
                 
-        ax.set_xlim([-3,1])
+        ax.set_xlim([-3,1.25])
+        ax.set_xticks([-3,-2,-1,0,1])
         
         # Draw the default
         ax.plot(ax.get_xlim(),[default_val,default_val],color='k')
@@ -139,7 +151,7 @@ def make_bestfit_param_plots(summary_filename = default_summary_filename,
         ax.plot(ax.get_xlim(),[regression[1]+regression[0]*ax.get_xlim()[0],regression[1]+regression[0]*ax.get_xlim()[1]],
                 linestyle='dashed')
         
-        ax.set_title(param_name,fontsize=fontsize)
+        ax.set_title(col_name,fontsize=fontsize)
             
         # Get and print mean and sigma for the intercept
         mean = np.mean(vals)
@@ -180,7 +192,7 @@ def make_bestfit_param_plots(summary_filename = default_summary_filename,
     pyplot.savefig(outfile_name, format=file_type, bbox_inches="tight", pad_inches=0.05)
     
     # Copy it to the paper location if in eps format
-    if file_type=="png":
+    if file_type=="eps":
         cmd = "cp " + outfile_name + " " + paper_location
         sbp.call(cmd,shell=True)
         

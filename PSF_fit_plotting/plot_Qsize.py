@@ -32,6 +32,8 @@ import os
 import subprocess as sbp
 import sys
 from scipy.interpolate import InterpolatedUnivariateSpline
+import galsim
+from scipy.optimize import fsolve
 
 matplotlib.rcParams['ps.useafm'] = True
 matplotlib.rcParams['pdf.use14corefonts'] = True
@@ -44,7 +46,7 @@ from psf_testing.moments.coords import get_x_and_y_of_array
 default_plot_name = "Qsize_comparison"
 default_noisy_plot_name = "Qsize_noise_comparison"
 
-default_file_type = "png"
+default_file_type = "eps"
     
 default_paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/PSF_Model_Testing/"
 
@@ -52,7 +54,6 @@ default_nx = default_ny = 41
 default_max_image_sigma = 5.0
 default_num_test_points = 100
 n = 4
-k = 7.669
 
 default_gain = 2.0
 default_flux = 10000.0
@@ -67,10 +68,12 @@ point_size = 4
 fontsize = 24
 tick_fontsize = 16
 
-Qsize_scale = {"core":5, "wings":3}
+Qsize_scale = {"core":1, "wings":1}
 
 star_Qsizes_pix = {"core":0.055599, "wings":0.097552}
 model_Qsizes_pix = {"core":0.048102, "wings":0.094873}
+
+mean_moment_with_det_sizes_pix = {"core":4.9907548738291583, "wings":9.4652238125924129}
 
 def make_Qsize_plots(plot_name = default_plot_name,
                      noisy_plot_name = default_noisy_plot_name,
@@ -104,17 +107,17 @@ def make_Qsize_plots(plot_name = default_plot_name,
         xc = (nx-1)/2.
         yc = (ny-1)/2.
     
-    for wf_i, wf_name, wf_scale, wf_scale_name in ((0,"core",mv.default_weight_sigma,r"\sigma_{\mathrm w}"),
-                                                   (1,"wings",mv.default_weight_rmax,r"r_{\mathrm max}")):
+    for wf_i, wf_name, wf_scale, wf_scale_name in ((0,"core",mv.default_weight_sigma,r"\sigma_{\rm w}"),
+                                                   (1,"wings",mv.default_weight_rmax,r"r_{\rm max}")):
     
-        test_sigmas = np.linspace(max_image_sigma/num_test_points, max_image_sigma, num_test_points)
+        test_sizes = np.linspace(max_image_sigma/num_test_points, max_image_sigma, num_test_points)
         
-        Qsizes = np.zeros_like(test_sigmas)
-        quad_moments = np.zeros_like(test_sigmas)
-        quad_moment_with_dets = np.zeros_like(test_sigmas)
-        noisy_Qsizes = np.zeros_like(test_sigmas)
-        noisy_quad_moments = np.zeros_like(test_sigmas)
-        noisy_quad_moment_with_dets = np.zeros_like(test_sigmas)
+        Qsizes = np.zeros_like(test_sizes)
+        quad_moments = np.zeros_like(test_sizes)
+        quad_moment_with_dets = np.zeros_like(test_sizes)
+        noisy_Qsizes = np.zeros_like(test_sizes)
+        noisy_quad_moments = np.zeros_like(test_sizes)
+        noisy_quad_moment_with_dets = np.zeros_like(test_sizes)
         
         np.random.seed(seed)
             
@@ -126,12 +129,21 @@ def make_Qsize_plots(plot_name = default_plot_name,
         r_array = np.sqrt(x2_array+y2_array)
         r_array = np.clip(r_array,0.25,nx+ny)
         
-        for i in range(len(test_sigmas)):
+        for i in range(len(test_sizes)):
             
-            # Make a Gaussian image with the proper sigma
-            sigma = test_sigmas[i]
+            # Make a profile with the proper size
             
-            unnormed_image = np.exp(-k*np.power(r_array/sigma,1./n))
+#             unnormed_image = np.exp(-k*np.power(r_array/test_sizes[i],1./n))
+            
+            unnormed_image = np.zeros_like(r_array)
+            
+#             galsim.Sersic(half_light_radius=test_sizes[i],n=2).drawImage(galsim.Image(unnormed_image,scale=1.),method='real_space')
+#             size_label = r"$r_{\rm h}$"
+#             galsim.Gaussian(sigma=test_sizes[i]).drawImage(galsim.Image(unnormed_image,scale=1.),method='sb')
+#             size_label = r"$\sigma$"
+            galsim.Airy(lam_over_diam=test_sizes[i]).drawImage(galsim.Image(unnormed_image,scale=1.),method='sb')
+            size_label = r"$(\lambda/d)$"
+            
             image = flux*unnormed_image/unnormed_image.sum() + bg_level
         
             noise_per_pixel = np.sqrt(image/gain + np.square(background_noise))
@@ -157,32 +169,24 @@ def make_Qsize_plots(plot_name = default_plot_name,
             noisy_quad_moment_with_dets[i] = np.abs(noisy_Mxx + noisy_Myy + \
                 2 * np.sqrt( np.abs(noisy_Mxx*noisy_Myy - np.square(noisy_Mxy) ) ) ) /wf_scale**2
         
-        normed_sigmas = test_sigmas/wf_scale
+        normed_sizes = test_sizes/wf_scale
         
         # Calculate some equivalent values needed for the paper
         
-        star_Qsize = star_Qsizes_pix[wf_name]/wf_scale/mv.pixel_scale
-        model_Qsize = model_Qsizes_pix[wf_name]/wf_scale/mv.pixel_scale
+        i_one_px = int(num_test_points / max_image_sigma  - 0.5)
         
-        quad_moments_spline = InterpolatedUnivariateSpline(Qsizes,quad_moments)
+        comp_quad_moments = (quad_moments-quad_moments[i_one_px])/0.75
+        comp_quad_moment_with_dets = (quad_moment_with_dets-quad_moment_with_dets[i_one_px])/1.5
         
-        star_quad_moments = quad_moments_spline(star_Qsize)
-        model_quad_moments = quad_moments_spline(model_Qsize)
+        quad_moments_spline = InterpolatedUnivariateSpline((Qsize_scale[wf_name]*Qsizes)**2,quad_moments)
+        quad_moment_with_dets_spline = InterpolatedUnivariateSpline((Qsize_scale[wf_name]*Qsizes)**2,quad_moment_with_dets)
         
-        print("Equivalent moment size for Qs of " + str(star_Qsize*wf_scale*mv.pixel_scale)
-              + " = " + str(star_quad_moments*(wf_scale*mv.pixel_scale)**2))
-        print("Equivalent moment size for Qs of " + str(model_Qsize*wf_scale*mv.pixel_scale)
-              + " = " + str(model_quad_moments*(wf_scale*mv.pixel_scale)**2))
+        s_to_qmd_spline = InterpolatedUnivariateSpline(normed_sizes,quad_moment_with_dets)
+        s_to_qs_spline = InterpolatedUnivariateSpline(normed_sizes,(Qsize_scale[wf_name]*Qsizes)**2)
         
-        quad_moment_with_dets_spline = InterpolatedUnivariateSpline(Qsizes,quad_moment_with_dets)
-        
-        star_quad_moment_with_dets = quad_moment_with_dets_spline(star_Qsize)
-        model_quad_moment_with_dets = quad_moment_with_dets_spline(model_Qsize)
-        
-        print("Equivalent moment with det size for Qs of " + str(star_Qsize*wf_scale*mv.pixel_scale)
-              + " = " + str(star_quad_moment_with_dets*(wf_scale*mv.pixel_scale)**2))
-        print("Equivalent moment with det size for Qs of " + str(model_Qsize*wf_scale*mv.pixel_scale)
-              + " = " + str(model_quad_moment_with_dets*(wf_scale*mv.pixel_scale)**2))
+        mean_size = fsolve(lambda r: s_to_qmd_spline(r) - mean_moment_with_det_sizes_pix[wf_name]/wf_scale**2,
+                           0.5)
+        mean_Qs2 = s_to_qs_spline(mean_size)
             
         # Do the plotting now
         
@@ -190,45 +194,60 @@ def make_Qsize_plots(plot_name = default_plot_name,
         fig.subplots_adjust(wspace=0.5, hspace=0, bottom=0.1, right=0.95, top=0.95, left=0.12)
         
         ax = fig.add_subplot(1,1,1)
-        ax.set_xlabel(r"$r_{\mathrm{s}}/" + wf_scale_name + r"$",labelpad=10,fontsize=fontsize)
+        ax.set_xlabel(size_label+"$/" + wf_scale_name + r"$",labelpad=10,fontsize=fontsize)
         ax.set_ylabel(r"$(r_{\mathrm{" + wf_name + r"}}/" + wf_scale_name + ")^2$",
                       labelpad=10,fontsize=fontsize)
         
-        ax.plot(normed_sigmas,
+        ax.plot(normed_sizes,
                 (Qsize_scale[wf_name]*Qsizes)**2,
-                label=r"$(" + str(Qsize_scale[wf_name]) + r"Q_{\rm s})^2$",
+                label=r"$M_{\rm s}^2$",
                 color=colors[3],
                 linewidth=2)
-        ax.plot(normed_sigmas,
+        ax.plot(normed_sizes,
                 (Qsize_scale[wf_name]*noisy_Qsizes)**2,
-                label=r"$(" + str(Qsize_scale[wf_name]) + r"Q_{\rm s})^2$ + noise",
+                label=r"$M_{\rm s}^2$ + noise",
                 color=colors[3],
                 linewidth=1)
-        ax.plot(normed_sigmas,
+        ax.plot(normed_sizes,
                 quad_moment_with_dets,
                 label="Moments with det",
                 color=colors[1],
                 linewidth=2)
-        ax.plot(normed_sigmas,
+        ax.plot(normed_sizes,
                 noisy_quad_moment_with_dets,
                 label="Moments with det + noise",
                 color=colors[1],
                 linewidth=1)
-        ax.plot(normed_sigmas,
+        ax.plot(normed_sizes,
                 quad_moments,
                 label="Moments w/o det",
                 color=colors[0],
                 linewidth=2)
-        ax.plot(normed_sigmas,
+        ax.plot(normed_sizes,
                 noisy_quad_moments,
                 label="Moments w/o det + noise",
                 color=colors[0],
                 linewidth=1)
+#         ax.plot(normed_sizes,
+#                 comp_quad_moment_with_dets,
+#                 label="Adjusted Moments with det",
+#                 color=colors[1],
+#                 linewidth=2,
+#                 linestyle="dotted")
+#         ax.plot(normed_sizes,
+#                 comp_quad_moments,
+#                 label="Adjusted Moments w/o det",
+#                 color=colors[0],
+#                 linewidth=2,
+#                 linestyle="dotted")
+        
         
         ax.legend(loc='upper left')
         
-        ax.set_xlim(np.min(normed_sigmas),np.max(normed_sigmas))
-        ax.set_ylim(0,1.1*np.max(noisy_quad_moment_with_dets))
+        ax.set_xlim(np.min(normed_sizes),np.max(normed_sizes))
+        ax.set_ylim(0,1.1*np.max((np.max(noisy_quad_moment_with_dets),np.max((Qsize_scale[wf_name]*noisy_Qsizes)**2))))
+        
+        ax.plot([mean_size,mean_size],ax.get_ylim(),color='k',linestyle="dashed",linewidth=1,label=None)
         
         ax.set_xticklabels(ax.get_xticks(),fontsize=tick_fontsize)
         ax.set_yticklabels(ax.get_yticks(),fontsize=tick_fontsize)
@@ -250,7 +269,7 @@ def make_Qsize_plots(plot_name = default_plot_name,
             Qsize_noise_ratio = np.mean(noisy_Qsizes/Qsizes)
             print("Mean bias ratio: " + str(Qsize_noise_ratio))
             
-        # Now olot the relation between the estimators
+        # Now plot the relation between the estimators
             
         # Do the plotting now for the slopes
         
@@ -258,28 +277,32 @@ def make_Qsize_plots(plot_name = default_plot_name,
         fig.subplots_adjust(wspace=0.5, hspace=0, bottom=0.1, right=0.95, top=0.95, left=0.12)
         
         ax = fig.add_subplot(1,1,1)
-        ax.set_xlabel(r"$Q_{\mathrm s}/" + wf_scale_name + "$",labelpad=10,fontsize=fontsize)
+        ax.set_xlabel(r"$(M_{\mathrm s}/" + wf_scale_name + ")^2$",labelpad=10,fontsize=fontsize)
         ax.set_ylabel(r"$(r_{\mathrm{" + wf_name + r"}}/" + wf_scale_name + ")^2$",
                       labelpad=10,fontsize=fontsize)
         
-        normed_sigmas = test_sigmas/wf_scale
+        normed_sizes = test_sizes/wf_scale
         
-        ax.plot(Qsizes,
-                quad_moment_with_dets,
+        ax.plot((Qsize_scale[wf_name]*Qsizes)**2,
+                quad_moment_with_dets_spline((Qsize_scale[wf_name]*Qsizes)**2),
                 label="Moments with det",
                 color=colors[1],
                 linewidth=2)
-        ax.plot(Qsizes,
-                quad_moments,
+        ax.plot((Qsize_scale[wf_name]*Qsizes)**2,
+                quad_moments_spline((Qsize_scale[wf_name]*Qsizes)**2),
                 label="Moments w/o det",
                 color=colors[0],
                 linewidth=2)
         
         ax.legend(loc='upper left')
         
-        ax.set_xlim(np.min(Qsizes),np.max(Qsizes))
+        ax.set_xlim(np.min((Qsize_scale[wf_name]*Qsizes)**2),np.max((Qsize_scale[wf_name]*Qsizes)**2))
         ax.set_ylim(np.min(quad_moments),
                     1.1*np.max(quad_moment_with_dets))
+#         ax.set_ylim(np.min(quad_moments_spline.derivative()((Qsize_scale[wf_name]*Qsizes)**2)[25:]),
+#                     1.1*np.max(quad_moment_with_dets_spline.derivative()((Qsize_scale[wf_name]*Qsizes)**2)[25:]))
+        
+        ax.plot([mean_Qs2,mean_Qs2],ax.get_ylim(),color='k',linestyle="dashed",linewidth=1,label=None)
         
         ax.set_xticklabels(ax.get_xticks(),fontsize=tick_fontsize)
         ax.set_yticklabels(ax.get_yticks(),fontsize=tick_fontsize)

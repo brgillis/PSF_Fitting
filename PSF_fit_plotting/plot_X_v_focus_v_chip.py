@@ -50,6 +50,33 @@ figsize = (6,6)
 
 fontsize = 12
 
+control_base_values = {"Qx_diff_Z2":2.7e-6,
+                       "Qy_diff_Z2":5.7e-6,
+                       "Qplus_sum_Z2":1.3e-5,
+                       "Qplus_diff_Z2":9.1e-6,
+                       "Qcross_sum_Z2":1.5e-6,
+                       "Qcross_diff_Z2":4.0e-6,
+                       "Qsize_sum_Z2":1.8e-5,
+                       "Qsize_diff_Z2":1.3e-6,
+                       "chi_squared":1}
+
+control_full_values = {"Qx_diff_Z2":3.8e-6,
+                       "Qy_diff_Z2":4.0e-6,
+                       "Qplus_sum_Z2":1.1e-3,
+                       "Qplus_diff_Z2":4.4e-4,
+                       "Qcross_sum_Z2":1.7e-4,
+                       "Qcross_diff_Z2":1.1e-4,
+                       "Qsize_sum_Z2":3.9e-4,
+                       "Qsize_diff_Z2":2.2e-4,
+                       "chi_squared":1}
+
+
+for vals in control_base_values, control_full_values:
+    X2 = (vals["Qx_diff_Z2"] + vals["Qy_diff_Z2"] + vals["Qplus_sum_Z2"] + vals["Qplus_diff_Z2"] +
+          vals["Qcross_sum_Z2"] + vals["Qcross_diff_Z2"])
+    X2 += vals["Qsize_sum_Z2"] + vals["Qsize_diff_Z2"]
+    vals["X_squared"] = X2
+
 def make_X_v_focus_v_chip_plot(summary_filename = default_summary_filename,
                              
                             plot_name = default_plot_name,
@@ -91,10 +118,17 @@ def make_X_v_focus_v_chip_plot(summary_filename = default_summary_filename,
 
         pyplot.scatter(focii,X2s,edgecolors=color,label=label,alpha=1,marker=marker,facecolors='none')
     
+    ax.set_xlim(ax.get_xlim())
     ax.set_ylim([red_X2_min,red_X2_max])
     
     ax.set_xlabel("Best-fit focus offset (microns)",fontsize=fontsize)
     ax.set_ylabel(y_label,fontsize=fontsize,labelpad=-8)
+        
+    # Draw the control means
+    control_base_val = control_base_values["X_squared"]
+    pyplot.plot([-10,10],[control_base_val,control_base_val],linestyle="dashed",color="k")
+    control_full_val = control_full_values["X_squared"]
+    pyplot.plot([-10,10],[control_full_val,control_full_val],linestyle="dotted",color="k")
     
     ax.legend(loc="upper left")
         

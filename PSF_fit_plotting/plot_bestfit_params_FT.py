@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-""" @file /disk2/brg/git/Tiny_Tim_PSF_Fitting/PSF_fit_plotting/plot_bestfit_params_v_obs_time.py
+""" @file /disk2/brg/git/Tiny_Tim_PSF_Fitting/PSF_fit_plotting/plot_bestfit_params_FT.py
 
     Created 29 Jan 2016
 
@@ -30,7 +30,6 @@ import matplotlib.pyplot as pyplot
 import numpy as np
 import subprocess as sbp
 import sys
-from math import erfc, sqrt
 from scipy.stats import linregress
 
 matplotlib.rcParams['ps.useafm'] = True
@@ -41,19 +40,22 @@ from astropy.io import fits
 
 default_summary_filename = "/disk2/brg/git/Tiny_Tim_PSF_Fitting/PSF_Testing/psf_testing_results_all_params_summary.fits"
 
-default_plot_name = "bestfit_param_v_obs_time"
+default_plot_name = "bestfit_param_FT"
 default_paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/PSF_Model_Testing/"
-default_file_type = "eps"
+default_file_type = "png"
 
-default_X2_max = 0.001
+default_fmin = 1.0e-7
+default_fmax = 1.0e-3
+default_Nf = 100000
+averaging = 100
 
 default_nx = 5
 default_ny = 5
 
-figsize = (12,12)
+figsize = (18,18)
 
-base_fontsize = 10
-base_tick_fontsize = 8
+base_fontsize = 15
+base_tick_fontsize = 12
 
 param_colnames = (("Z 2",0.,"$Z_{2}$ (Tip)","z2"),
                   ("Z 3",0.,"$Z_{3}$ (Tilt)","z3"),
@@ -78,13 +80,27 @@ param_colnames = (("Z 2",0.,"$Z_{2}$ (Tip)","z2"),
                   ("Kernel adjustment",1.0,"Kernel Adjustment","kernel_adjustment")
                   )
 
+hst_period = 95.47 / 60 # in units of hours
+hst_frequency = 1. / hst_period
+# default_fmin = hst_frequency
+# default_fmax = 6*hst_frequency
+# default_Nf = 6
+# averaging = 1
+
+def moving_average(a, n) :
+    ret = np.cumsum(a, dtype=float)
+    ret[n:] = ret[n:] - ret[:-n]
+    return ret[n - 1:] / n
+
 def make_bestfit_param_plots(summary_filename = default_summary_filename,
                              
                             plot_name = default_plot_name,
                             paper_location = default_paper_location,
                             file_type = default_file_type,
                             
-                            X2_max = default_X2_max,
+                            fmin = default_fmin,
+                            fmax = default_fmax,
+                            Nf = default_Nf,
                             
                             nx = default_nx,
                             ny = default_ny,
@@ -104,72 +120,57 @@ def make_bestfit_param_plots(summary_filename = default_summary_filename,
     
     i = 0
     
-    obs_times = summary_table["obs_time"]/(60*60*24*365.24)+1970
+    ws = np.linspace(2*np.pi*fmin,2*np.pi*fmax,Nf)
+    cos_wave_basis = np.cos(np.outer(ws,summary_table["obs_time"]))
+    sin_wave_basis = np.sin(np.outer(ws,summary_table["obs_time"]))
     
-    for param_name, default_val, col_name, param_key in param_colnames:
+    ave_ws = moving_average(ws,averaging)[0::averaging]
+    
+    for param_name, _, param_title, _ in param_colnames:
         
         ax = pyplot.subplot(gs[i])
         i += 1
-        
+    
         vals = summary_table[param_name]
+    
+        # Correct for linear relationship with focus
+        regression = linregress(summary_table["focus"],vals)
+        zeroed_vals = vals - (regression[1]+regression[0]*summary_table["focus"])
+        
+        cos_vals = moving_average(np.sum(cos_wave_basis*zeroed_vals,axis=1),averaging)[0::averaging]
+        sin_vals = moving_average(np.sum(sin_wave_basis*zeroed_vals,axis=1),averaging)[0::averaging]
+        
+        amps = np.sqrt(cos_vals**2 + sin_vals**2)
+        normed_amps = amps / np.mean(amps)
+        
+        phases = np.arctan2(sin_vals,cos_vals)
+        
+        ax.set_xlim(3600*fmin,3600*fmax)
+        ax.set_ylim(0,5.0)
+        
+        # Draw multiples of HST's frequency
+        for k in range(6):
+            f = k*hst_frequency
+            ax.plot([f,f],ax.get_ylim(),color=(0.5,0.5,0.5),linestyle='dashed',linewidth=0.5)
         
         # Draw the plot
         
-        ax.scatter(obs_times,vals,edgecolor='none',s=1.0)
+        ax.scatter(3600*ave_ws/(2*np.pi),normed_amps,marker='.',color='b',s=16)
+        # ax.scatter(3600*ave_ws/(2*np.pi),phases,marker='.',color='b',s=16)
         
-        if param_name != "Kernel adjustment":
-            ax.set_ylim([-0.05,0.09])
-            ax.set_yticks(np.linspace(-0.04,0.08,7,True))
-            if i % nx == 1:
-                ax.set_yticklabels(["-0.04","-0.02","0","0.02","0.04","0.06","0.08"],fontsize=tick_fontsize)
-            else:
-                ax.set_yticklabels([])
-        else:
-            ax.set_ylim([.98,1.02])
-            ax.set_yticks([0.98,0.99,1.00,1.01,1.02])
-            if i % nx != 1:
-                ax.set_yticklabels([])
-    
-        ax.set_xlim(2009.3,2011.5)
-        ax.set_xticks([2010,2011])
-        ax.set_xticklabels(["2010","2011"])
-        
-        # Draw the default
-        ax.plot(ax.get_xlim(),[default_val,default_val],color='k',linestyle='dashed')
-        
-        ax.set_title(col_name,fontsize=fontsize)
-        
-        # Get the linear regression and plot it
-        regression = linregress(obs_times,vals)
-        ax.plot(ax.get_xlim(),[regression[1]+regression[0]*ax.get_xlim()[0],regression[1]+regression[0]*ax.get_xlim()[1]],
-                linestyle='dashed')
-        
-        # Get and print mean and sigma for the intercept
-        mean = np.mean(vals)
-        sigma = np.std(vals)
-        stderr = sigma / np.sqrt(len(vals)-1)
-        
-        Z = np.abs((mean-default_val)/stderr)
-        
-        p_int = erfc(Z/sqrt(2.))
+        if i + nx > len(param_colnames):
+            ax.set_xlabel(r"$f$ (Hr$^{-1}$)",fontsize=fontsize)
             
-        if p_int < 0.05/len(vals):
-            p_label = ("$\\mathbf{ p_{\\rm m} =  %1.1e }}$" %  p_int).replace("e","\\times 10^{")
+        if i % nx == 1:
+            ax.set_ylabel(r"$A/\overline{A}$",fontsize=fontsize)
         else:
-            p_label = ("$ p_{\\rm m} =  %1.1e }$" %  p_int).replace("e","\\times 10^{")
-        ax.text(0.05,0.95,p_label,horizontalalignment='left',
-                verticalalignment='top',transform=ax.transAxes,
-                fontsize=fontsize)
+            ax.set_yticklabels([])
         
-        # Get and print p for the slope
-        p_s = regression[3]
-        if p_s < 0.05/len(vals):
-            p_label = ("$\\mathbf{ p_{\\rm s} =  %1.1e }}$" %  p_s).replace("e","\\times 10^{")
-        else:
-            p_label = ("$ p_{\\rm s} =  %1.1e }$" %  p_s).replace("e","\\times 10^{")
-        ax.text(0.05,0.85,p_label,horizontalalignment='left',
-                verticalalignment='top',transform=ax.transAxes,
-                fontsize=fontsize)
+        # Draw zero
+        ax.plot(ax.get_xlim(),[0.,0.],color='k',linestyle='solid')
+        
+        ax.set_title(param_title,fontsize=fontsize)
+        
         
     if not hide:
         fig.show()
@@ -179,7 +180,7 @@ def make_bestfit_param_plots(summary_filename = default_summary_filename,
     pyplot.savefig(outfile_name, format=file_type, bbox_inches="tight", pad_inches=0.05)
     
     # Copy it to the paper location if in eps format
-    if file_type=="eps":
+    if file_type=="png":
         cmd = "cp " + outfile_name + " " + paper_location
         sbp.call(cmd,shell=True)
     

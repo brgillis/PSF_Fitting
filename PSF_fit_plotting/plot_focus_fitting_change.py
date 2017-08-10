@@ -60,6 +60,17 @@ figsize = (10,12)
 base_fontsize = 12
 base_tick_fontsize = 8
 
+Q_labels = {"Qx_diff_Z2":"QXD_Z2",
+            "Qy_diff_Z2":"QYD_Z2",
+            "Qplus_sum_Z2":"QPS_Z2",
+            "Qplus_diff_Z2":"QPD_Z2",
+            "Qcross_sum_Z2":"QCS_Z2",
+            "Qcross_diff_Z2":"QCD_Z2",
+            "Qsize_sum_Z2":"QSS_Z2",
+            "Qsize_diff_Z2":"QSD_Z2",
+            "X_squared":"X_SQR",
+            "chi_squared":"CHI_SQR"}
+
 def main(argv):
     """ @TODO main docstring
     """
@@ -85,10 +96,14 @@ def main(argv):
                      ("Varying Spec. Type", "_rs"),
                      ("Full", "_full"))
     
-    vals = {}
+    focuses = {}
+    X2s = {}
     for control_type, _ in control_types:
-        vals[control_type] = {"Focus": np.zeros(num_images, dtype=float),
+        focuses[control_type] = {"Focus": np.zeros(num_images, dtype=float),
                               "Fit Focus": np.zeros(num_images, dtype=float)}
+        X2s[control_type] = {}
+        for Q_label in Q_labels:
+            X2s[control_type][Q_label] = np.zeros(num_images, dtype=float)
     
     for n in range(num_images):
         
@@ -102,7 +117,11 @@ def main(argv):
             
                 header = fits.open(filename)[1].header
             
-                vals[control_type][which_focus][n] = header["FOCUS"]
+                focuses[control_type][which_focus][n] = header["FOCUS"]
+                
+                if which_focus=="Fit Focus":
+                    for Q_label in Q_labels:
+                        X2s[control_type][Q_label][n] = header[Q_labels[Q_label]]
                 
     # Set up the plot
     fig = pyplot.figure(figsize=figsize)
@@ -120,7 +139,7 @@ def main(argv):
         ax = pyplot.subplot(gs[i])
         i += 1
         
-        pyplot.scatter(vals[control_type]["Focus"],vals[control_type]["Fit Focus"],color='r')
+        pyplot.scatter(focuses[control_type]["Focus"],focuses[control_type]["Fit Focus"],color='r')
         pyplot.plot([-10,10],[-10,10],color='k',linestyle='dashed')
         
         ax.set_xlim([-6.5,4.5])
@@ -130,6 +149,10 @@ def main(argv):
         ax.set_xlabel("Actual Focus Offset",fontsize=fontsize)
         if i % args.nx == 1:
             ax.set_ylabel("Fit Focus Offset",fontsize=fontsize)
+            
+        if control_type == "Base" or control_type == "Full":
+            for Q_label in Q_labels:
+                print Q_labels[Q_label] + " mean for " + control_type + " = " + str(X2s[control_type][Q_label].mean())
         
     # Save the figure
     outfile_name = args.output_filename_root + "." + args.output_extension
