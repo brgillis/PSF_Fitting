@@ -131,7 +131,7 @@ def make_fit_statistic_plots(summary_filename = default_summary_filename,
                         ("Qplus_diff_Z2", r"Z^{2(-)}_+", 'y', 6),
                         ("Qcross_diff_Z2", r"Z^{2(-)}_{\times}", 'y', 7),
                         ("Qsize_diff_Z2", r"Z^{2(-)}_{\rm s}", 'y', 8),)
-        ymax = 225
+        ymax = 200
         yticks = [0,50,100,150,200]
         fontsize = base_fontsize
         tick_fontsize = base_tick_fontsize

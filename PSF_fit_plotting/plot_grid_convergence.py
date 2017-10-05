@@ -123,7 +123,7 @@ def main(argv):
     ax.plot(indices, val_means["Qs_diff_Z2"], label=r"$Q_s^{(-)} Z^2$", linestyle="dashdot")
 
     ax.set_xlim([-0.5, len(indices)-0.5])
-    # ax.set_ylim([0, 0.02])
+    ax.set_ylim([3e-9, 2e-7])
     
     ax.set_yscale("log", nonposy='clip')
     
