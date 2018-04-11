@@ -94,7 +94,7 @@ def fit_best_params_and_test_psf(stars,
     # Don't store fitting record just yet
     fitting_record = None
 
-    # Define a function that we can use for fitting the focus
+    # Define a function that we can use for fitting the parameters
     def get_X2_for_params(test_param_array):
         try:
             focus = focus_scale*(test_param_array[0]-1)

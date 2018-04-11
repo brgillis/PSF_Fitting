@@ -1,4 +1,4 @@
-""" @file test_psf_for_params.py
+""" @file psf_for_params_test.py
 
     Created 21 Sep 2015
 
