@@ -37,7 +37,7 @@ matplotlib.rcParams['ps.useafm'] = True
 matplotlib.rcParams['pdf.use14corefonts'] = True
 matplotlib.rcParams['text.usetex'] = True
 
-data_dir = "/disk2/brg/Data/HST_Fields/"
+data_dir = "/disk2/brg/Data/HST_Fields/control_results"
 default_results_file_root = "control_image_n"
 
 default_output_filename_root = "control_field_tests"
@@ -80,7 +80,7 @@ def main(argv):
                            ("Qs_sum_Z2",r"$Z^{2(+)}_{\rm s}$"),
                            ("Qs_diff_Z2",r"$Z^{2(-)}_{\rm s}$"))
     
-    for results_tail in "_results.fits", "_fit_results.fits":
+    for results_tail in "_results.fits", "_fit_results.fits", "_fit_all_params_results.fits":
     
         vals = {}
         for control_type, _ in control_types:
@@ -95,10 +95,20 @@ def main(argv):
             results_root_n = results_root.replace("_n","_"+str(n))
             
             for control_type, tag in control_types:
+                
+                if results_tail=="_fit_all_params_results.fits":
+                    if control_type not in ("Base","Full"):
+                        continue
             
                 filename = results_root_n + tag + results_tail
+                
+                if not os.path.exists(filename):
+                    raise Exception("Expected file doesn't exist: " + filename)
             
-                header = fits.open(filename)[1].header
+                try:
+                    header = fits.open(filename)[1].header
+                except Exception:
+                    raise
             
                 vals[control_type]["NSTAR"][n] = header["NSTAR"]
                 vals[control_type]["X2"][n] = header["X_SQR"]
@@ -127,9 +137,14 @@ def main(argv):
         if results_tail == "_results.fits":
             output_root = args.output_filename_root
             table_label = "Known Focus Offset"
-        else: 
+        elif results_tail == "_fit_results.fits": 
             output_root = args.output_filename_root + "_fit"
             table_label = "Fit Focus Offset"
+        elif results_tail == "_fit_all_params_results.fits": 
+            output_root = args.output_filename_root + "_fit_all_params"
+            table_label = "Fit All Params"
+        else:
+            raise ValueError("Unknown results_tail value: " + str(results_tail))
     
         # Print the means in table format
         table_filename = output_root + "." + args.output_extension
@@ -149,6 +164,11 @@ def main(argv):
             
             # Print a line for each control type
             for control_type, _ in control_types:
+                
+                if results_tail=="_fit_all_params_results.fits":
+                    if control_type not in ("Base","Full"):
+                        continue
+                    
                 line = "\t\t" + control_type
                 for label, _ in labels_and_colnames:
                     line += (" & $%1.1e}$" % val_means[control_type][label]).replace("e","\\times 10^{").replace("{+0","{").replace("{-0","{-")
@@ -178,6 +198,11 @@ def main(argv):
             
             # Print a line for each control type
             for control_type, _ in control_types:
+                
+                if results_tail=="_fit_all_params_results.fits":
+                    if control_type not in ("Base","Full"):
+                        continue
+                    
                 line = "\t\t" + control_type
                 for label, _ in labels_and_colnames:
                     line += (" & $%1.1e}$" % val_stderrs[control_type][label]).replace("e","\\times 10^{").replace("{+0","{").replace("{-0","{-")

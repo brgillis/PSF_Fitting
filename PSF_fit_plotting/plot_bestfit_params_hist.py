@@ -54,6 +54,8 @@ figsize = (12,12)
 base_fontsize = 10
 base_tick_fontsize = 8
 
+good_X2_limit = 5e-6
+
 param_colnames = (("Z 2",0.,"$Z_{2}$ (Tip)","z2"),
                   ("Z 3",0.,"$Z_{3}$ (Tilt)","z3"),
                   ("0 degree astigmatism",0.031,"$Z_{5}$ (Oblique Astigmatism)","astigmatism_0"),
@@ -104,12 +106,14 @@ def make_bestfit_param_hists(summary_filename = default_summary_filename,
     i = 0
     bestfit_params_string = ""
     
+    good_X2 = summary_table["X_squared"] < good_X2_limit
+    
     for param_name, default_val, col_name, param_key in param_colnames:
         
         ax = pyplot.subplot(gs[i])
         i += 1
         
-        vals = summary_table[param_name]
+        vals = summary_table[param_name][good_X2]
         
         # Draw the histogram
         
@@ -149,7 +153,7 @@ def make_bestfit_param_hists(summary_filename = default_summary_filename,
                 fontsize=fontsize)
         
         # Append to the bestfit params string
-        bestfit_params_string += "--" + param_key + " " + str(mean) + " "
+        bestfit_params_string += "--" + param_key + " %1.4f" % mean + " "
         
     if not hide:
         fig.show()

@@ -1,4 +1,4 @@
-""" @file test_get_Qs.py
+""" @file get_Qs_test.py
 
     Created 18 Sep 2015
 

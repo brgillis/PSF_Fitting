@@ -57,6 +57,8 @@ figsize = (18,18)
 base_fontsize = 15
 base_tick_fontsize = 12
 
+good_X2_limit = 5e-6
+
 param_colnames = (("Z 2",0.,"$Z_{2}$ (Tip)","z2"),
                   ("Z 3",0.,"$Z_{3}$ (Tilt)","z3"),
                   ("0 degree astigmatism",0.031,"$Z_{5}$ (Oblique Astigmatism)","astigmatism_0"),
@@ -110,6 +112,8 @@ def make_bestfit_param_plots(summary_filename = default_summary_filename,
     
     summary_table = fits.open(summary_filename)[1].data
     
+    good_X2 = summary_table["X_squared"] < good_X2_limit
+    
     fig = pyplot.figure(figsize=figsize)
     
     gs = matplotlib.gridspec.GridSpec(ny, nx)
@@ -121,8 +125,8 @@ def make_bestfit_param_plots(summary_filename = default_summary_filename,
     i = 0
     
     ws = np.linspace(2*np.pi*fmin,2*np.pi*fmax,Nf)
-    cos_wave_basis = np.cos(np.outer(ws,summary_table["obs_time"]))
-    sin_wave_basis = np.sin(np.outer(ws,summary_table["obs_time"]))
+    cos_wave_basis = np.cos(np.outer(ws,summary_table["obs_time"][good_X2]))
+    sin_wave_basis = np.sin(np.outer(ws,summary_table["obs_time"][good_X2]))
     
     ave_ws = moving_average(ws,averaging)[0::averaging]
     
@@ -131,11 +135,11 @@ def make_bestfit_param_plots(summary_filename = default_summary_filename,
         ax = pyplot.subplot(gs[i])
         i += 1
     
-        vals = summary_table[param_name]
+        vals = summary_table[param_name][good_X2]
     
         # Correct for linear relationship with focus
-        regression = linregress(summary_table["focus"],vals)
-        zeroed_vals = vals - (regression[1]+regression[0]*summary_table["focus"])
+        regression = linregress(summary_table["focus"][good_X2],vals)
+        zeroed_vals = vals - (regression[1]+regression[0]*summary_table["focus"][good_X2])
         
         cos_vals = moving_average(np.sum(cos_wave_basis*zeroed_vals,axis=1),averaging)[0::averaging]
         sin_vals = moving_average(np.sum(sin_wave_basis*zeroed_vals,axis=1),averaging)[0::averaging]

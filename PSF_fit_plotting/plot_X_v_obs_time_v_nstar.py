@@ -50,28 +50,48 @@ figsize = (7,6)
 
 fontsize = 12
 
-control_base_values = {"Qx_diff_Z2":2.7e-6,
-                       "Qy_diff_Z2":5.7e-6,
-                       "Qplus_sum_Z2":1.3e-5,
-                       "Qplus_diff_Z2":9.1e-6,
-                       "Qcross_sum_Z2":1.5e-6,
-                       "Qcross_diff_Z2":4.0e-6,
-                       "Qsize_sum_Z2":1.8e-5,
-                       "Qsize_diff_Z2":1.3e-6,
-                       "chi_squared":1}
+control_fit_base_values = {"Qx_diff_Z2":9.9e-11,
+                           "Qy_diff_Z2":1.0e-10,
+                           "Qplus_sum_Z2":2.6e-08,
+                           "Qplus_diff_Z2":1.1e-08,
+                           "Qcross_sum_Z2":2.4e-08,
+                           "Qcross_diff_Z2":9.6e-09,
+                           "Qsize_sum_Z2":3.9e-08,
+                           "Qsize_diff_Z2":1.3e-09,
+                           "chi_squared":1.1e-07}
 
-control_full_values = {"Qx_diff_Z2":3.8e-6,
-                       "Qy_diff_Z2":4.0e-6,
-                       "Qplus_sum_Z2":1.1e-3,
-                       "Qplus_diff_Z2":4.4e-4,
-                       "Qcross_sum_Z2":1.7e-4,
-                       "Qcross_diff_Z2":1.1e-4,
-                       "Qsize_sum_Z2":3.9e-4,
-                       "Qsize_diff_Z2":2.2e-4,
-                       "chi_squared":1}
+control_fit_full_values = {"Qx_diff_Z2":7.7e-11,
+                           "Qy_diff_Z2":8.9e-11,
+                           "Qplus_sum_Z2":2.3e-08,
+                           "Qplus_diff_Z2":1.1e-08,
+                           "Qcross_sum_Z2":2.1e-08,
+                           "Qcross_diff_Z2":9.1e-09,
+                           "Qsize_sum_Z2":9.6e-08,
+                           "Qsize_diff_Z2":1.9e-09,
+                           "chi_squared":1.6e-07}
+
+control_fit_all_params_base_values = {"Qx_diff_Z2":9.3e-11,
+                                      "Qy_diff_Z2":7.8e-11,
+                                      "Qplus_sum_Z2":2.6e-08,
+                                      "Qplus_diff_Z2":1.1e-08,
+                                      "Qcross_sum_Z2":2.4e-08,
+                                      "Qcross_diff_Z2":1.0e-08,
+                                      "Qsize_sum_Z2":3.6e-08,
+                                      "Qsize_diff_Z2":1.4e-09,
+                                      "chi_squared":1.1e-07}
+
+control_fit_all_params_full_values = {"Qx_diff_Z2":8.0e-11,
+                                      "Qy_diff_Z2":7.7e-11,
+                                      "Qplus_sum_Z2":2.2e-08,
+                                      "Qplus_diff_Z2":1.0e-08,
+                                      "Qcross_sum_Z2":2.1e-08,
+                                      "Qcross_diff_Z2":9.2e-09,
+                                      "Qsize_sum_Z2":8.9e-08,
+                                      "Qsize_diff_Z2":2.5e-09,
+                                      "chi_squared":1.5e-07}
 
 
-for vals in control_base_values, control_full_values:
+for vals in control_fit_base_values, control_fit_full_values, control_fit_all_params_base_values, control_fit_all_params_full_values:
     X2 = (vals["Qx_diff_Z2"] + vals["Qy_diff_Z2"] + vals["Qplus_sum_Z2"] + vals["Qplus_diff_Z2"] +
           vals["Qcross_sum_Z2"] + vals["Qcross_diff_Z2"])
     X2 += vals["Qsize_sum_Z2"] + vals["Qsize_diff_Z2"]
@@ -127,9 +147,14 @@ def make_X_v_obs_time_v_nstar_plot(summary_filename = default_summary_filename,
     pyplot.colorbar(label="\# of Stars")
         
     # Draw the control means
-    control_base_val = control_base_values["X_squared"]
+    if "all_params" in summary_filename:
+        control_base_val = control_fit_all_params_base_values["X_squared"]
+        control_full_val = control_fit_all_params_full_values["X_squared"]
+    else:
+        control_base_val = control_fit_base_values["X_squared"]
+        control_full_val = control_fit_full_values["X_squared"]
+        
     pyplot.plot(ax.get_xlim(),[control_base_val,control_base_val],linestyle="dashed",color="k")
-    control_full_val = control_full_values["X_squared"]
     pyplot.plot(ax.get_xlim(),[control_full_val,control_full_val],linestyle="dotted",color="k")
         
     # Save the figure

@@ -1,4 +1,4 @@
-""" @file test_remove_outliers.py
+""" @file remove_outliers_test.py
 
     Created 18 Sep 2015
 

@@ -55,6 +55,8 @@ figsize = (12,12)
 base_fontsize = 10
 base_tick_fontsize = 8
 
+good_X2_limit = 5e-6
+
 param_colnames = (("Z 2",0.,"$Z_{2}$ (Tip)","z2"),
                   ("Z 3",0.,"$Z_{3}$ (Tilt)","z3"),
                   ("0 degree astigmatism",0.031,"$Z_{5}$ (Oblique Astigmatism)","astigmatism_0"),
@@ -104,9 +106,11 @@ def make_bestfit_param_plots(summary_filename = default_summary_filename,
     
     i = 0
     bestfit_params_string = ""
+    
+    good_X2 = summary_table["X_squared"] < good_X2_limit
 
-    chip1_mask = ~np.logical_and(summary_table["chip"]==1,summary_table["X_squared"]>0)
-    chip2_mask = ~np.logical_and(summary_table["chip"]==2,summary_table["X_squared"]>0)
+    chip1_mask = ~np.logical_and(summary_table["chip"][good_X2]==1,summary_table["X_squared"][good_X2]>0)
+    chip2_mask = ~np.logical_and(summary_table["chip"][good_X2]==2,summary_table["X_squared"][good_X2]>0)
 #     chip1_mask = ~np.logical_and(summary_table["45 degree astigmatism"]<=0.05,summary_table["X_squared"]>0)
 #     chip2_mask = ~np.logical_and(summary_table["45 degree astigmatism"]>0.05,summary_table["X_squared"]>0)
     
@@ -115,13 +119,13 @@ def make_bestfit_param_plots(summary_filename = default_summary_filename,
         ax = pyplot.subplot(gs[i])
         i += 1
         
-        vals = summary_table[param_name]
+        vals = summary_table[param_name][good_X2]
         
         # Draw the plot
         
         for mask, label, color, marker in ((chip1_mask, "Chip 1", '#C00000', "o"),
                                            (chip2_mask, "Chip 2", '#4040FF', "^")):
-            compressed_focii = np.ma.masked_array(summary_table["focus"],mask).compressed()
+            compressed_focii = np.ma.masked_array(summary_table["focus"][good_X2],mask).compressed()
             compressed_vals = np.ma.masked_array(vals,mask).compressed()
             ax.scatter(compressed_focii,compressed_vals,edgecolors=color,label=label,alpha=1,
                        marker=marker,facecolors='none',s=2)
@@ -147,7 +151,7 @@ def make_bestfit_param_plots(summary_filename = default_summary_filename,
         ax.plot(ax.get_xlim(),[default_val,default_val],color='k')
         
         # Get the linear regression and plot it
-        regression = linregress(summary_table["focus"],vals)
+        regression = linregress(summary_table["focus"][good_X2],vals)
         ax.plot(ax.get_xlim(),[regression[1]+regression[0]*ax.get_xlim()[0],regression[1]+regression[0]*ax.get_xlim()[1]],
                 linestyle='dashed')
         
@@ -181,8 +185,8 @@ def make_bestfit_param_plots(summary_filename = default_summary_filename,
                 fontsize=fontsize)
         
         # Append to the bestfit params string
-        bestfit_params_string += "--" + param_key + " " + str(regression[1]) + " "
-        bestfit_params_string += "--" + param_key + "_slope " + str(regression[0]) + " "
+        bestfit_params_string += "--" + param_key + " %1.4f" % regression[1] + " "
+        bestfit_params_string += "--" + param_key + "_slope %1.4f" % regression[0] + " "
         
     if not hide:
         fig.show()

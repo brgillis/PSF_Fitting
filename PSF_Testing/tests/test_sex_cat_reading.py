@@ -1,4 +1,4 @@
-""" @file test_sex_cat_reading.py
+""" @file sex_cat_reading_test.py
 
     Created 16 Sep 2015
 
