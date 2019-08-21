@@ -27,7 +27,7 @@
 import argparse
 import sys
 
-from astropy.table import Table
+from astropy.io import fits
 import matplotlib
 from scipy.interpolate import UnivariateSpline
 
@@ -44,12 +44,9 @@ matplotlib.rcParams['text.usetex'] = True
 default_summary_filename = "/disk2/brg/git/Tiny_Tim_PSF_Fitting/PSF_Testing/psf_testing_results_all_params_summary.fits"
 default_model_filename = "/home/brg/Data/HST_Fields/ModelFocus.fits"
 
-default_plot_name = "model_focus_v_focus_v_chip"
+default_plot_name = "model_focus_v_focus_v_chip_all_params"
 default_paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/PSF_Model_Testing/"
-default_file_type = "png"
-
-default_red_X2_min = 0.1
-default_red_X2_max = 10.0
+default_file_type = "eps"
 
 figsize = (6, 6)
 
@@ -66,13 +63,31 @@ def make_model_focus_v_focus_v_chip_plot(summary_filename=default_summary_filena
                                          hide=False,
                                          ):
 
-    summary_table = Table.read(summary_filename)
-    model_table = Table.read(model_filename)
+    summary_table = fits.open(summary_filename)[1].data
+    model_table = fits.open(model_filename)[1].data
 
     fitted_focus = summary_table["focus"]
 
+    # model_table.sort("t_sec")  # Make sure it's strictly increasing by time
+
     model_t_sec = model_table["t_sec"]
     model_focus = model_table["focus"]
+
+    # We'll need to mask out any duplicate time values to make sure it's strictly increasing
+
+    strictly_increasing = False
+
+    while not strictly_increasing:
+
+        t_diff = np.ones_like(model_t_sec)
+        t_diff[0:-1] = model_t_sec[1:] - model_t_sec[:-1]
+        t_mask = (t_diff <= 0)
+
+        if t_mask.sum() == 0:
+            strictly_increasing = True
+        else:
+            model_t_sec = np.ma.masked_array(model_t_sec, t_mask).compressed()
+            model_focus = np.ma.masked_array(model_focus, t_mask).compressed()
 
     model_focus_spline = UnivariateSpline(model_t_sec, model_focus, s=0)
 
